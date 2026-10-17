@@ -1,0 +1,13 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# .NET / C# build outputs
+.mono/
+[Bb]in/
+[Oo]bj/
+
+# .NET / C# build outputs
+.mono/
+[Bb]in/
+[Oo]bj/
