@@ -6,8 +6,18 @@
 .mono/
 [Bb]in/
 [Oo]bj/
+*.nupkg
 
-# .NET / C# build outputs
-.mono/
-[Bb]in/
-[Oo]bj/
+# Code Editor / IDE folders (VS Code, Visual Studio, Rider)
+.vscode/
+.vs/
+.idea/
+*.suo
+*.user
+*.userprefs
+
+# Exported builds & OS junk
+build/
+exports/
+.DS_Store
+Thumbs.db
