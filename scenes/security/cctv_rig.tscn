@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://bcctv_rig_001"]
+
+[ext_resource type="Script" path="res://scripts/camera/NighttCamera.cs" id="1_nightcam"]
+
+[node name="NighttCamera" type="Node3D"]
+script = ExtResource("1_nightcam")
+
+[node name="North" type="Camera3D" parent="."]
+transform = Transform3D(-0.5494343, -0.35831395, 0.7548067, 0.011377803, 0.90008694, 0.43556184, -0.83545953, 0.24790065, -0.49046174, -1.970415, 6.1228013, 0.10642332)
+
+[node name="East" type="Camera3D" parent="."]
+transform = Transform3D(0.87862444, 0, 0.47751346, 0, 1, 0, -0.47751346, 0, 0.87862444, -1.970415, 6.1228013, -0.36422598)
+
+[node name="South" type="Camera3D" parent="."]
+transform = Transform3D(0.5049101, 0, -0.86317194, 0, 1, 0, 0.86317194, 0, 0.5049101, -1.3699669, 6.1228013, -0.19527268)
+
+[node name="West" type="Camera3D" parent="."]
+transform = Transform3D(-0.86317194, 0, -0.50491005, 0, 1, 0, 0.50491005, 0, -0.86317194, -1.5072293, 6.1228013, 0.3421669)

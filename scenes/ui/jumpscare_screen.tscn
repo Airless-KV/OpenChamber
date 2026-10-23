@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://bwoxifln5d5re"]
+
+[ext_resource type="Script" uid="uid://t0q5alh3i7ya" path="res://scripts/security/JumpScareScreen.cs" id="1_jumpscare"]
+[ext_resource type="Texture2D" uid="uid://c6pw62i7fuc6s" path="res://assets/textures/ani_ani_jumpscare.svg" id="2_ani_tex"]
+
+[node name="JumpScareScreen" type="CanvasLayer" unique_id=800368482 node_paths=PackedStringArray("JumpscareContainer", "MonsterImage", "RedFlashRect", "TitleLabel", "ReasonLabel", "StatsLabel", "RestartButton")]
+script = ExtResource("1_jumpscare")
+JumpscareContainer = NodePath("Container")
+MonsterImage = NodePath("Container/MonsterImage")
+RedFlashRect = NodePath("Container/RedFlashRect")
+TitleLabel = NodePath("Container/Panel/TitleLabel")
+ReasonLabel = NodePath("Container/Panel/ReasonLabel")
+StatsLabel = NodePath("Container/Panel/StatsLabel")
+RestartButton = NodePath("Container/Panel/RestartButton")
+
+[node name="Container" type="Control" parent="." unique_id=470463532]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RedFlashRect" type="ColorRect" parent="Container" unique_id=1164806554]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.95)
+
+[node name="MonsterImage" type="TextureRect" parent="Container" unique_id=1534953526]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -280.0
+offset_right = 350.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_ani_tex")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="Container" unique_id=390622757]
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -170.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="TitleLabel" type="Label" parent="Container/Panel" unique_id=2027524198]
+layout_mode = 0
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 45.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.95, 0.15, 0.15, 1)
+theme_override_font_sizes/font_size = 26
+text = "BREACH DETECTED"
+horizontal_alignment = 1
+
+[node name="ReasonLabel" type="Label" parent="Container/Panel" unique_id=756220827]
+layout_mode = 0
+anchor_right = 1.0
+offset_top = 45.0
+offset_bottom = 75.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 16
+text = "The Ani-Ani entered through an unsealed entrance!"
+horizontal_alignment = 1
+
+[node name="StatsLabel" type="Label" parent="Container/Panel" unique_id=118317916]
+layout_mode = 0
+anchor_right = 1.0
+offset_top = 75.0
+offset_bottom = 105.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 15
+text = "SURVIVED UNTIL DAY 1 | TOTAL COINS: 0"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="Container/Panel" unique_id=1946017315]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -55.0
+offset_right = 110.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+text = "TRY AGAIN"

@@ -1,0 +1,171 @@
+[gd_scene format=3 uid="uid://bfarm_plot_001"]
+
+[ext_resource type="PackedScene" uid="uid://bp7pd1ta6t7w5" path="res://assets/models/chess_board.glb" id="1_chessboard"]
+[ext_resource type="Script" path="res://scripts/farming/Node3d.cs" id="2_gridmanager"]
+[ext_resource type="Script" path="res://scripts/interaction/InteractableShop.cs" id="3_shop"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cs4l5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w7arm"]
+albedo_color = Color(0.34, 0.30396003, 0.15980001, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_cs4l5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w7tjb"]
+albedo_color = Color(0.043137256, 0.827451, 0.24705882, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cs4l5"]
+size = Vector3(1, 1.5089111, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uvm3q"]
+albedo_color = Color(0.043137256, 0.827451, 0.24705882, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h8ybc"]
+albedo_color = Color(0.043137256, 0.827451, 0.24705882, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cx2dv"]
+transparency = 1
+albedo_color = Color(0.10980392, 0.47058824, 0, 0.54901963)
+emission_enabled = true
+emission = Color(0.10980392, 0.47058824, 0, 0.54901963)
+
+[sub_resource type="BoxMesh" id="BoxMesh_iowxr"]
+size = Vector3(6, 0.1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shop"]
+size = Vector3(2.2, 1, 1.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shop"]
+albedo_color = Color(0.82, 0.52, 0.22, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_shop"]
+size = Vector3(2.2, 1, 1.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_canopy"]
+albedo_color = Color(0.85, 0.22, 0.22, 1)
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_shop_canopy"]
+size = Vector3(2.4, 0.15, 1.5)
+
+[node name="FarmPlot" type="Node3D"]
+
+[node name="grassPlaceHolder" parent="." instance=ExtResource("1_chessboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6614189, 0, 0)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="grassPlaceHolder"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="grassPlaceHolder/StaticBody3D"]
+transform = Transform3D(47.95, 0, 0, 0, 2.5, 0, 0, 0, 47.95, 0, 0, 0)
+shape = SubResource("BoxShape3D_cs4l5")
+
+[node name="FlowerGrid" type="MeshInstance3D" parent="."]
+transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 6.135929, 0.49646187, 1.269474)
+material_override = SubResource("StandardMaterial3D_w7arm")
+mesh = SubResource("PlaneMesh_cs4l5")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 1.0814188)
+material_override = SubResource("StandardMaterial3D_w7tjb")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.39640173, 0.14903736, 0.8438678)
+material_override = SubResource("StandardMaterial3D_uvm3q")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.8417272, -0.0016022491, 0.5123611)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.9773978, 0.07095646, 0.060032498)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.9341863, -0.060343437, -0.43378973)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D7" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.7685903, 0.060336493, -0.77961093)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D8" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.42518562, 0.0125527, -0.9806802)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D9" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.04533859, 0.1106545, -1.1193103)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D10" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.5353253, -0.033120707, -1.0623708)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D11" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.8830542, 0.012382946, -0.7194261)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D12" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.9564041, 0.12945974, -0.39681447)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D13" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.9564041, -0.033577364, 0.08453522)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D14" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -1.0410159, 0.058579348, 0.470868)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D15" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.47706175, 0.12722778, 1.1270334)
+material_override = SubResource("StandardMaterial3D_w7tjb")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="MeshInstance3D16" type="MeshInstance3D" parent="FlowerGrid"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.9564041, 0.12945974, -0.39681447)
+material_override = SubResource("StandardMaterial3D_h8ybc")
+mesh = SubResource("BoxMesh_cs4l5")
+
+[node name="TileSelector" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4406509, 1.0407858, -0.046191216)
+visible = false
+material_override = SubResource("StandardMaterial3D_cx2dv")
+mesh = SubResource("BoxMesh_iowxr")
+
+[node name="GridManager" type="Node3D" parent="." node_paths=PackedStringArray("TileSelector")]
+script = ExtResource("2_gridmanager")
+TileSelector = NodePath("../TileSelector")
+
+[node name="FlowerShopStall" type="StaticBody3D" parent="."]
+transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 4.5, 0.5, 3.5)
+script = ExtResource("3_shop")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlowerShopStall"]
+shape = SubResource("BoxShape3D_shop")
+
+[node name="CounterMesh" type="MeshInstance3D" parent="FlowerShopStall"]
+material_override = SubResource("StandardMaterial3D_shop")
+mesh = SubResource("BoxMesh_shop")
+
+[node name="CanopyMesh" type="MeshInstance3D" parent="FlowerShopStall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+material_override = SubResource("StandardMaterial3D_canopy")
+mesh = SubResource("BoxMesh_shop_canopy")
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 360.0
+autostart = true

@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="IllusionOfChoice"
-run/main_scene="res://node_3d.tscn"
+run/main_scene="res://scenes/node_3d.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+MCPRuntimeServer="*res://addons/godot_mcp_toolkit/runtime/mcp_runtime_server.gd"
 
 [display]
 
@@ -23,6 +27,10 @@ window/stretch/aspect="expand"
 [dotnet]
 
 project/assembly_name="IllusionOfChoice"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_mcp_toolkit/plugin.cfg")
 
 [physics]
 

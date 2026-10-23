@@ -1,0 +1,72 @@
+[gd_scene format=3 uid="uid://bhud_scene_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/HUDManager.cs" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("DayLabel", "PhaseLabel", "TimerLabel", "CoinLabel", "SeedLabel", "BuySeedButton", "InteractionPromptLabel")]
+script = ExtResource("1_hud")
+DayLabel = NodePath("DayLabel")
+PhaseLabel = NodePath("PhaseLabel")
+TimerLabel = NodePath("TimerLabel")
+CoinLabel = NodePath("CoinLabel")
+SeedLabel = NodePath("SeedLabel")
+BuySeedButton = NodePath("BuySeedButton")
+InteractionPromptLabel = NodePath("InteractionPrompt")
+
+[node name="PhaseLabel" type="Label" parent="."]
+offset_left = 1082.0
+offset_right = 1152.0
+offset_bottom = 49.0
+text = "DAYTIME
+"
+
+[node name="DayLabel" type="Label" parent="."]
+offset_left = 542.5
+offset_right = 609.5
+offset_bottom = 23.0
+text = "Day 1 / 7"
+
+[node name="TimerLabel" type="Label" parent="."]
+offset_left = 542.5
+offset_top = 27.0
+offset_right = 609.5
+offset_bottom = 76.0
+text = "00:30
+"
+horizontal_alignment = 1
+
+[node name="CoinLabel" type="Label" parent="."]
+offset_top = 53.0
+offset_right = 102.0
+offset_bottom = 76.0
+text = "Coins: 0"
+
+[node name="SeedLabel" type="Label" parent="."]
+offset_right = 102.0
+offset_bottom = 49.0
+text = "Lvl 1 Seeds: 0
+"
+
+[node name="BuySeedButton" type="Button" parent="."]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="InteractionPrompt" type="Label" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -80.0
+offset_right = 300.0
+offset_bottom = -35.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.95, 0.4, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 22
+text = "[E] Open Front Door"
+horizontal_alignment = 1
+vertical_alignment = 1
