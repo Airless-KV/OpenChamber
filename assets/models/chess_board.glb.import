@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://d4ekw0i24v3nu"
-path="res://.godot/imported/simple_low_poly_trees_and_bushes.glb-afdbc33477e8b513867a4f34114dd3b7.scn"
+uid="uid://bp7pd1ta6t7w5"
+path="res://.godot/imported/chess_board.glb-baf2e033f33480197b01ecc7d8d25491.scn"
 
 [deps]
 
-source_file="res://simple_low_poly_trees_and_bushes.glb"
-dest_files=["res://.godot/imported/simple_low_poly_trees_and_bushes.glb-afdbc33477e8b513867a4f34114dd3b7.scn"]
+source_file="res://assets/models/chess_board.glb"
+dest_files=["res://.godot/imported/chess_board.glb-baf2e033f33480197b01ecc7d8d25491.scn"]
 
 [params]
 

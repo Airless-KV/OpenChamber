@@ -2,6 +2,11 @@ using Godot;
 
 public partial class CameraPivot : Node3D
 {
+	[ExportGroup("Target Follow")]
+	[Export] public Node3D Target;
+	[Export] public float FollowSpeed = 10.0f;
+	[Export] public Vector3 FollowOffset = Vector3.Zero;
+
 	[ExportGroup("Orbit & Pitch")]
 	[Export] public float MouseSensitivity = 0.005f;
 	[Export] public float KeyboardTurnSpeed = 3.0f;
@@ -10,7 +15,7 @@ public partial class CameraPivot : Node3D
 	[Export] public float MaxPitchDegrees = 20.0f;  // Limit looking down
 
 	[ExportGroup("Zoom Settings")]
-	[Export] public float ZoomStep = 0.5f;          // Distance shifted per wheel notch
+	[Export] public float ZoomStep = 1.0f;          // Distance shifted per wheel notch
 	[Export] public float MinZoom = 2.0f;           // Closest camera distance
 	[Export] public float MaxZoom = 50.0f;          // Farthest camera distance
 	[Export] public float ZoomSmoothSpeed = 10.0f;  // Interpolation speed
@@ -24,7 +29,12 @@ public partial class CameraPivot : Node3D
 	public override void _Ready()
 	{
 		// Cache the child Camera3D
-		_camera = GetNode<Camera3D>("Camera3D");
+		_camera = GetNodeOrNull<Camera3D>("Camera3D");
+
+		if (Target == null)
+		{
+			Target = GetTree().Root.FindChild("Player", true, false) as Node3D;
+		}
 
 		// Initialize angles from current node rotation
 		_yaw = Rotation.Y;
@@ -40,10 +50,15 @@ public partial class CameraPivot : Node3D
 
 	public override void _Input(InputEvent @event)
 	{
-		// 1. Mouse Button Handling (Click to orbit + Mouse Wheel Zoom)
+		// 1. Mouse Button Handling (Right-Click or Left-Click to orbit + Mouse Wheel Zoom)
 		if (@event is InputEventMouseButton mouseBtn)
 		{
-			if (mouseBtn.ButtonIndex == MouseButton.Left)
+			// Right-click is preferred for orbit so left-click is free for interaction/farming
+			if (mouseBtn.ButtonIndex == MouseButton.Right || mouseBtn.ButtonIndex == MouseButton.Middle)
+			{
+				_isPressed = mouseBtn.Pressed;
+			}
+			else if (mouseBtn.ButtonIndex == MouseButton.Left && !HoldClickToRotate)
 			{
 				_isPressed = mouseBtn.Pressed;
 			}
@@ -84,13 +99,24 @@ public partial class CameraPivot : Node3D
 	{
 		float dt = (float)delta;
 
-		// 1. Keyboard Horizontal Controls (A/D or Arrow Keys)
+		// 1. Follow Target (Player) if assigned
+		if (Target != null)
+		{
+			Vector3 targetPos = Target.GlobalPosition + FollowOffset;
+			GlobalPosition = GlobalPosition.Lerp(targetPos, FollowSpeed * dt);
+		}
+
+		// 2. Keyboard Horizontal Controls (Q/E or Arrow Keys)
 		float horizontal = 0f;
-		if (Input.IsKeyPressed(Key.A) || Input.IsKeyPressed(Key.Left))
+		if (Input.IsKeyPressed(Key.Q) || Input.IsKeyPressed(Key.Left))
 		{
 			horizontal -= 1.0f;
 		}
-		if (Input.IsKeyPressed(Key.D) || Input.IsKeyPressed(Key.Right))
+		if (Input.IsKeyPressed(Key.E) && Target == null) // E rotates camera only if no player interaction target
+		{
+			// let universal interaction have E priority
+		}
+		if (Input.IsKeyPressed(Key.Right))
 		{
 			horizontal += 1.0f;
 		}
@@ -101,7 +127,7 @@ public partial class CameraPivot : Node3D
 			ApplyRotation();
 		}
 
-		// 2. Smoothly Interpolate Camera Zoom Distance
+		// 3. Smoothly Interpolate Camera Zoom Distance
 		if (_camera != null)
 		{
 			Vector3 camPos = _camera.Position;

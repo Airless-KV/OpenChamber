@@ -12,6 +12,9 @@ public partial class NighttCamera : Node3D
 	private Node3D _cameraPivot;
 	private int _currentNightIndex = 0;
 
+	public int CurrentNightIndex => _currentNightIndex;
+	public Camera3D CurrentNightCamera => (_nightCams != null && _currentNightIndex >= 0 && _currentNightIndex < _nightCams.Length) ? _nightCams[_currentNightIndex] : null;
+
 	[Export] public bool IsNightMode = false;
 	[Export] public NodePath TimerPath = "../../Timer"; // Path from NightCamera to Timer
 
@@ -27,15 +30,28 @@ public partial class NighttCamera : Node3D
 
 		// 2. Fetch sibling CameraPivot
 		_cameraPivot = GetNodeOrNull<Node3D>("../CameraPivot");
+		if (_cameraPivot == null)
+		{
+			_cameraPivot = GetTree().Root.FindChild("CameraPivot", true, false) as Node3D;
+		}
 		if (_cameraPivot != null)
 		{
 			_dayCamera = _cameraPivot.GetNodeOrNull<Camera3D>("Camera3D");
 		}
 
 		// 3. Connect to the Timer node
+		Timer timer = null;
 		if (HasNode(TimerPath))
 		{
-			Timer timer = GetNode<Timer>(TimerPath);
+			timer = GetNode<Timer>(TimerPath);
+		}
+		else
+		{
+			timer = GetTree().Root.FindChild("Timer", true, false) as Timer;
+		}
+
+		if (timer != null)
+		{
 			timer.Timeout += OnTimerTimeout;
 			GD.Print("Timer successfully connected to NighttCamera.");
 		}

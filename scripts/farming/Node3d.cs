@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-public partial class Node3d : Node3D
+public partial class Node3d : Godot.Node3D
 {
 	public enum TileState { Empty, Tilled, Planted }
 
@@ -23,6 +23,15 @@ public partial class Node3d : Node3D
 
 	public override void _Ready()
 	{
+		if (TileSelector == null)
+		{
+			TileSelector = GetNodeOrNull<Node3D>("../TileSelector");
+		}
+		if (TileSelector != null)
+		{
+			TileSelector.Visible = false;
+		}
+
 		// Initialize all tiles as Empty
 		for (int x = 0; x < GridWidth; x++)
 		{
@@ -198,5 +207,44 @@ public partial class Node3d : Node3D
 	public bool IsInsideGrid(Vector2I cell)
 	{
 		return cell.X >= 0 && cell.X < GridWidth && cell.Y >= 0 && cell.Y < GridHeight;
+	}
+
+	public int GetPlantedCropCount()
+	{
+		int count = 0;
+		foreach (var state in _gridStates.Values)
+		{
+			if (state == TileState.Planted) count++;
+		}
+		return count;
+	}
+
+	public Dictionary<int, int> GetFlowerTierCounts()
+	{
+		Dictionary<int, int> tierCounts = new()
+		{
+			{ 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 }
+		};
+
+		foreach (var kvp in _plantedObjects)
+		{
+			int level = 1;
+			if (kvp.Value != null && kvp.Value.HasMeta("Level"))
+			{
+				level = (int)kvp.Value.GetMeta("Level");
+			}
+			level = Mathf.Clamp(level, 1, 5);
+			tierCounts[level]++;
+		}
+
+		int totalPlanted = GetPlantedCropCount();
+		int countedInstances = 0;
+		foreach (var c in tierCounts.Values) countedInstances += c;
+		if (totalPlanted > countedInstances)
+		{
+			tierCounts[1] += (totalPlanted - countedInstances);
+		}
+
+		return tierCounts;
 	}
 }

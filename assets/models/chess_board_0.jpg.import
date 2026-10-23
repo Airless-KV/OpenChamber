@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bosyt2ngi0ajm"
-path.s3tc="res://.godot/imported/chess_board_0.jpg-485aeb255f8034695df547f40e1f9cce.s3tc.ctex"
+uid="uid://cmlivqbro130c"
+path.s3tc="res://.godot/imported/chess_board_0.jpg-b25d2a06ca542230642123c4f31ed36b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -14,8 +14,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://chess_board_0.jpg"
-dest_files=["res://.godot/imported/chess_board_0.jpg-485aeb255f8034695df547f40e1f9cce.s3tc.ctex"]
+source_file="res://assets/models/chess_board_0.jpg"
+dest_files=["res://.godot/imported/chess_board_0.jpg-b25d2a06ca542230642123c4f31ed36b.s3tc.ctex"]
 
 [params]
 

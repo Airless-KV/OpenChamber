@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://dnepyc64kjf56"]
+
+[ext_resource type="Script" uid="uid://lt7bddpig14s" path="res://scripts/core/GameManager.cs" id="1_gamemanager"]
+[ext_resource type="Script" uid="uid://56uti3x0b7e5" path="res://scripts/camera/CameraPivot.cs" id="2_camerapivot"]
+[ext_resource type="Script" uid="uid://8u705w2hsmg2" path="res://scripts/security/BreachManager.cs" id="3_breach"]
+[ext_resource type="PackedScene" path="res://scenes/farm_plot.tscn" id="4_farm"]
+[ext_resource type="PackedScene" path="res://scenes/security/cctv_rig.tscn" id="5_cctv"]
+[ext_resource type="PackedScene" path="res://scenes/house.tscn" id="6_house"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="7_player"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="8_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/jumpscare_screen.tscn" id="9_jumpscare"]
+[ext_resource type="PackedScene" path="res://scenes/ui/victory_screen.tscn" id="10_victory"]
+
+[sub_resource type="Environment" id="Environment_iowxr"]
+ambient_light_source = 2
+ambient_light_color = Color(0.78431374, 0.8392157, 0.8980392, 1)
+ambient_light_energy = 0.3
+tonemap_mode = 3
+
+[node name="Node3D" type="Node3D" unique_id=359472471]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1222800890]
+environment = SubResource("Environment_iowxr")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1116810622]
+transform = Transform3D(0.9996935, 0.006144611, 0.023982251, -0.024755446, 0.23757695, 0.9710533, 0.00026911497, -0.9713493, 0.23765627, -1.6614189, 250.00006, 0)
+
+[node name="GameManager" type="Node" parent="." unique_id=1698871464 node_paths=PackedStringArray("FadeRect")]
+script = ExtResource("1_gamemanager")
+FadeRect = NodePath("FadeLayer/FadeRect")
+
+[node name="FadeLayer" type="CanvasLayer" parent="GameManager" unique_id=1996995055]
+layer = 50
+
+[node name="FadeRect" type="ColorRect" parent="GameManager/FadeLayer" unique_id=1988160781]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="BreachManager" type="Node" parent="." unique_id=1165219863]
+script = ExtResource("3_breach")
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=1007978221 node_paths=PackedStringArray("Target")]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 2.5, 0.5, 0)
+script = ExtResource("2_camerapivot")
+Target = NodePath("../Player")
+FollowOffset = Vector3(0, 1.2, 0)
+MinZoom = 4.0
+MaxZoom = 45.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1156475418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 12)
+current = true
+
+[node name="FarmPlot" parent="." unique_id=105765636 instance=ExtResource("4_farm")]
+
+[node name="NighttCamera" parent="." unique_id=1041632257 instance=ExtResource("5_cctv")]
+
+[node name="HouseInterior" parent="." unique_id=1018571243 instance=ExtResource("6_house")]
+
+[node name="Player" parent="." unique_id=36189929 instance=ExtResource("7_player")]
+
+[node name="HUD" parent="." unique_id=1251348134 instance=ExtResource("8_hud")]
+
+[node name="JumpScareScreen" parent="." unique_id=1087540926 instance=ExtResource("9_jumpscare")]
+
+[node name="VictoryScreen" parent="." unique_id=1543762532 instance=ExtResource("10_victory")]

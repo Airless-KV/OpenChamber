@@ -1,0 +1,106 @@
+[gd_scene format=3 uid="uid://byopg1iqtcd6q"]
+
+[ext_resource type="Script" uid="uid://ddrvciguawpig" path="res://scripts/security/VictoryScreen.cs" id="1_victory"]
+
+[node name="VictoryScreen" type="CanvasLayer" unique_id=681216280 node_paths=PackedStringArray("TitleLabel", "SubtitleLabel", "BreakdownLabel", "TotalScoreLabel", "LeaderboardLabel", "PlayAgainButton")]
+script = ExtResource("1_victory")
+TitleLabel = NodePath("Container/TitleLabel")
+SubtitleLabel = NodePath("Container/SubtitleLabel")
+BreakdownLabel = NodePath("Container/BreakdownLabel")
+TotalScoreLabel = NodePath("Container/TotalScoreLabel")
+LeaderboardLabel = NodePath("Container/LeaderboardLabel")
+PlayAgainButton = NodePath("Container/PlayAgainButton")
+
+[node name="Container" type="Control" parent="." unique_id=1066903179]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="Container" unique_id=996259663]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.08, 0.96)
+
+[node name="TitleLabel" type="Label" parent="Container" unique_id=1329322605]
+layout_mode = 0
+anchor_right = 1.0
+offset_top = 25.0
+offset_bottom = 75.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 32
+text = "YOU SURVIVED 7 DAYS!"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="Container" unique_id=1736688033]
+layout_mode = 0
+anchor_right = 1.0
+offset_top = 75.0
+offset_bottom = 105.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "The Ani-Ani has been vanquished. Your farm and harvest are secure!"
+horizontal_alignment = 1
+
+[node name="BreakdownLabel" type="Label" parent="Container" unique_id=1281570203]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 130.0
+offset_right = 540.0
+offset_bottom = 370.0
+theme_override_font_sizes/font_size = 16
+text = "Tier 1 Flowers:   0  x   5 pts  =     0 pts
+Tier 2 Flowers:   0  x  10 pts  =     0 pts
+Tier 3 Flowers:   0  x  15 pts  =     0 pts
+Tier 4 Flowers:   0  x  20 pts  =     0 pts
+Tier 5 Flowers:   0  x  25 pts  =     0 pts
+Coins Remaining:  0  x   1 pt   =     0 pts"
+
+[node name="LeaderboardLabel" type="Label" parent="Container" unique_id=1844213247]
+layout_mode = 0
+offset_left = 600.0
+offset_top = 130.0
+offset_right = 1060.0
+offset_bottom = 370.0
+theme_override_font_sizes/font_size = 16
+text = "RANK   NAME                 SCORE
+#1     Grand Harvester      350 pts
+#2     Night Watchman       280 pts
+#3     Green Thumb          210 pts
+#4     Novice Sprout        120 pts"
+
+[node name="TotalScoreLabel" type="Label" parent="Container" unique_id=1025628817]
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -140.0
+offset_bottom = -90.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 26
+text = "TOTAL VICTORY SCORE: 0 PTS"
+horizontal_alignment = 1
+
+[node name="PlayAgainButton" type="Button" parent="Container" unique_id=1541060076]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -70.0
+offset_right = 120.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "PLAY AGAIN"

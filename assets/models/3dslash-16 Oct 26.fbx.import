@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bxcjfxhvjuu7g"
-path="res://.godot/imported/3dslash-16 Oct 26.fbx-9782a6df08cfb5f1377aa60aaf3301f6.scn"
+path="res://.godot/imported/3dslash-16 Oct 26.fbx-e5d59db9593168c2a3f602817812f183.scn"
 
 [deps]
 
-source_file="res://3dslash-16 Oct 26.fbx"
-dest_files=["res://.godot/imported/3dslash-16 Oct 26.fbx-9782a6df08cfb5f1377aa60aaf3301f6.scn"]
+source_file="res://assets/models/3dslash-16 Oct 26.fbx"
+dest_files=["res://.godot/imported/3dslash-16 Oct 26.fbx-e5d59db9593168c2a3f602817812f183.scn"]
 
 [params]
 

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#150000" />
+      <stop offset="60%" stop-color="#0a0000" />
+      <stop offset="100%" stop-color="#000000" />
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#ff1a1a" />
+      <stop offset="70%" stop-color="#800000" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+    <linearGradient id="clawGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#302020" />
+      <stop offset="100%" stop-color="#100505" />
+    </linearGradient>
+    <filter id="horrorBlur">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#vignette)" />
+
+  <!-- Glitch stripes in background -->
+  <rect x="0" y="45" width="800" height="4" fill="#ff0000" opacity="0.3" />
+  <rect x="0" y="120" width="800" height="8" fill="#ff0000" opacity="0.15" />
+  <rect x="0" y="310" width="800" height="3" fill="#ff0000" opacity="0.25" />
+  <rect x="0" y="480" width="800" height="6" fill="#ff0000" opacity="0.2" />
+
+  <!-- Monster Crouching Body Silhouette -->
+  <g filter="url(#horrorBlur)">
+    <!-- Shoulders & Torso -->
+    <path d="M 220 520 Q 200 340 330 260 Q 400 220 480 260 Q 600 330 580 520 Z" fill="#181014" />
+    <path d="M 280 480 Q 250 300 370 240 Q 420 210 470 240 Q 560 300 530 480 Z" fill="#241418" />
+
+    <!-- Monster Head & Horns/Ears -->
+    <ellipse cx="400" cy="210" rx="95" ry="110" fill="#140a0e" />
+    <!-- Jagged Spikes/Horns -->
+    <polygon points="340,160 310,90 355,145" fill="#140a0e" />
+    <polygon points="460,160 490,90 445,145" fill="#140a0e" />
+    <polygon points="380,130 395,80 405,130" fill="#140a0e" />
+
+    <!-- Massive Claws Framing Fore-ground -->
+    <path d="M 80 580 Q 140 400 220 380 Q 180 480 150 580 Z" fill="url(#clawGrad)" />
+    <polygon points="215,375 255,340 230,395" fill="#e0e0e0" />
+    <polygon points="190,385 220,330 205,405" fill="#e0e0e0" />
+    <polygon points="160,405 180,335 175,420" fill="#e0e0e0" />
+
+    <path d="M 720 580 Q 660 400 580 380 Q 620 480 650 580 Z" fill="url(#clawGrad)" />
+    <polygon points="585,375 545,340 570,395" fill="#e0e0e0" />
+    <polygon points="610,385 580,330 595,405" fill="#e0e0e0" />
+    <polygon points="640,405 620,335 625,420" fill="#e0e0e0" />
+
+    <!-- Gaping Terrifying Mouth -->
+    <path d="M 330 250 Q 400 225 470 250 Q 480 315 400 330 Q 320 315 330 250 Z" fill="#080002" stroke="#500000" stroke-width="4" />
+    <path d="M 345 258 Q 400 245 455 258 Q 465 295 400 310 Q 335 295 345 258 Z" fill="#300005" />
+
+    <!-- Razor Sharp Teeth (Upper) -->
+    <polygon points="345,258 355,278 360,258" fill="#f0ebe0" />
+    <polygon points="362,256 372,282 378,256" fill="#f0ebe0" />
+    <polygon points="382,254 394,286 400,254" fill="#f0ebe0" />
+    <polygon points="404,254 416,286 422,254" fill="#f0ebe0" />
+    <polygon points="426,256 436,282 442,256" fill="#f0ebe0" />
+    <polygon points="445,258 455,278 460,258" fill="#f0ebe0" />
+
+    <!-- Razor Sharp Teeth (Lower) -->
+    <polygon points="355,300 365,278 370,302" fill="#f0ebe0" />
+    <polygon points="375,304 385,275 392,305" fill="#f0ebe0" />
+    <polygon points="398,306 408,272 415,306" fill="#f0ebe0" />
+    <polygon points="420,304 430,275 437,304" fill="#f0ebe0" />
+    <polygon points="442,300 450,280 456,298" fill="#f0ebe0" />
+
+    <!-- Glowing Demonic Eyes -->
+    <ellipse cx="355" cy="190" rx="36" ry="24" fill="url(#eyeGlow)" />
+    <ellipse cx="445" cy="190" rx="36" ry="24" fill="url(#eyeGlow)" />
+    <circle cx="355" cy="190" r="12" fill="#ff0000" />
+    <circle cx="445" cy="190" r="12" fill="#ff0000" />
+    <ellipse cx="355" cy="190" rx="3" ry="10" fill="#000000" />
+    <ellipse cx="445" cy="190" rx="3" ry="10" fill="#000000" />
+    <circle cx="352" cy="186" r="3" fill="#ffffff" />
+    <circle cx="442" cy="186" r="3" fill="#ffffff" />
+  </g>
+
+  <!-- Red Slash Marks Across Screen -->
+  <path d="M 120 180 L 320 380" stroke="#ff0000" stroke-width="3" stroke-linecap="round" opacity="0.4" />
+  <path d="M 160 160 L 360 360" stroke="#ff1a1a" stroke-width="4" stroke-linecap="round" opacity="0.6" />
+  <path d="M 200 150 L 400 350" stroke="#ff0000" stroke-width="3" stroke-linecap="round" opacity="0.4" />
+
+  <text x="400" y="560" font-family="sans-serif" font-weight="900" font-size="36" fill="#ff2020" text-anchor="middle" letter-spacing="8" opacity="0.85">ANI - ANI</text>
+</svg>
