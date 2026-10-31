@@ -1,0 +1,639 @@
+[gd_scene format=3 uid="uid://c_main_menu_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/MainMenu.cs" id="1_mainmenu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.04, 0.03, 0.05, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.07, 0.1, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.22, 0.3, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.12, 0.1, 0.15, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.3, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.22, 0.15, 0.25, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_primary"]
+bg_color = Color(0.45, 0.1, 0.1, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9, 0.25, 0.25, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="MainMenu" type="Control" node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "FullscreenCheck", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mainmenu")
+PlayButton = NodePath("MainContent/ButtonsContainer/PlayButton")
+SettingsButton = NodePath("MainContent/ButtonsContainer/SettingsButton")
+LeaderboardButton = NodePath("MainContent/ButtonsContainer/LeaderboardButton")
+HowToPlayButton = NodePath("MainContent/ButtonsContainer/HowToPlayButton")
+QuitButton = NodePath("MainContent/ButtonsContainer/QuitButton")
+CurrentProfileLabel = NodePath("MainContent/ProfileBadge/ProfileLabel")
+NameEntryModal = NodePath("Modals/NameEntryModal")
+NameInput = NodePath("Modals/NameEntryModal/Panel/VBox/InputContainer/NameInput")
+StartGameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/StartButton")
+CancelNameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/CancelButton")
+NameErrorLabel = NodePath("Modals/NameEntryModal/Panel/VBox/ErrorLabel")
+SettingsModal = NodePath("Modals/SettingsModal")
+MasterSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MasterSlider")
+MasterValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MasterVal")
+MusicSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MusicSlider")
+MusicValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MusicVal")
+SFXSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/SFXSlider")
+SFXValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/SFXVal")
+FullscreenCheck = NodePath("Modals/SettingsModal/Panel/VBox/FullscreenCheck")
+CloseSettingsButton = NodePath("Modals/SettingsModal/Panel/VBox/CloseButton")
+LeaderboardModal = NodePath("Modals/LeaderboardModal")
+LifetimeStatsLabel = NodePath("Modals/LeaderboardModal/Panel/VBox/StatsSummary")
+LeaderboardRowsContainer = NodePath("Modals/LeaderboardModal/Panel/VBox/Scroll/RowsContainer")
+CloseLeaderboardButton = NodePath("Modals/LeaderboardModal/Panel/VBox/CloseButton")
+HowToPlayModal = NodePath("Modals/HowToPlayModal")
+CloseHowToPlayButton = NodePath("Modals/HowToPlayModal/Panel/VBox/CloseButton")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="Vignette" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="MainContent" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HeaderContainer" type="VBoxContainer" parent="MainContent"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -350.0
+offset_top = 70.0
+offset_right = 350.0
+offset_bottom = 200.0
+grow_horizontal = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="MainContent/HeaderContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.16, 0.16, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 46
+text = "ILLUSION OF CHOICE"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="MainContent/HeaderContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.68, 0.72, 1)
+theme_override_font_sizes/font_size = 17
+text = "7 Days to Cultivate.  7 Nights to Survive."
+horizontal_alignment = 1
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="MainContent"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -40.0
+offset_right = 160.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="PlayButton" type="Button" parent="MainContent/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_primary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "PLAY GAME"
+
+[node name="SettingsButton" type="Button" parent="MainContent/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "SETTINGS"
+
+[node name="LeaderboardButton" type="Button" parent="MainContent/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "LEADERBOARD"
+
+[node name="HowToPlayButton" type="Button" parent="MainContent/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "HOW TO PLAY"
+
+[node name="QuitButton" type="Button" parent="MainContent/ButtonsContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "QUIT"
+
+[node name="ProfileBadge" type="HBoxContainer" parent="MainContent"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -45.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+
+[node name="ProfileLabel" type="Label" parent="MainContent/ProfileBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.92, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+text = "CURRENT CALLSIGN: SURVIVOR"
+
+[node name="Modals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="NameEntryModal" type="ColorRect" parent="Modals"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Panel" type="Panel" parent="Modals/NameEntryModal"]
+custom_minimum_size = Vector2(500, 260)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -130.0
+offset_right = 250.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/NameEntryModal/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 25.0
+offset_right = -30.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Modals/NameEntryModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "SURVIVOR REGISTRATION"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Modals/NameEntryModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+theme_override_font_sizes/font_size = 15
+text = "Enter your callsign to enter the farmstead:"
+horizontal_alignment = 1
+
+[node name="InputContainer" type="HBoxContainer" parent="Modals/NameEntryModal/Panel/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="NameInput" type="LineEdit" parent="Modals/NameEntryModal/Panel/VBox/InputContainer"]
+custom_minimum_size = Vector2(340, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+placeholder_text = "Enter callsign..."
+alignment = 1
+max_length = 20
+
+[node name="ErrorLabel" type="Label" parent="Modals/NameEntryModal/Panel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 13
+text = "Invalid callsign."
+horizontal_alignment = 1
+
+[node name="ButtonContainer" type="HBoxContainer" parent="Modals/NameEntryModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="Modals/NameEntryModal/Panel/VBox/ButtonContainer"]
+custom_minimum_size = Vector2(140, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "CANCEL"
+
+[node name="StartButton" type="Button" parent="Modals/NameEntryModal/Panel/VBox/ButtonContainer"]
+custom_minimum_size = Vector2(170, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_primary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "ENTER CABIN"
+
+[node name="SettingsModal" type="ColorRect" parent="Modals"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Panel" type="Panel" parent="Modals/SettingsModal"]
+custom_minimum_size = Vector2(580, 420)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -290.0
+offset_top = -210.0
+offset_right = 290.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/SettingsModal/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Modals/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "SETTINGS & AUDIO"
+horizontal_alignment = 1
+
+[node name="Grid" type="GridContainer" parent="Modals/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 3
+
+[node name="MasterLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Master Volume"
+
+[node name="MasterSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(240, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="MasterVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "100%"
+
+[node name="MusicLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Music Volume"
+
+[node name="MusicSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(240, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 80.0
+
+[node name="MusicVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "80%"
+
+[node name="SFXLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "SFX Volume"
+
+[node name="SFXSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(240, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="SFXVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "100%"
+
+[node name="FullscreenCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Fullscreen Mode"
+
+[node name="CloseButton" type="Button" parent="Modals/SettingsModal/Panel/VBox"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "BACK"
+
+[node name="LeaderboardModal" type="ColorRect" parent="Modals"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Panel" type="Panel" parent="Modals/LeaderboardModal"]
+custom_minimum_size = Vector2(760, 520)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -260.0
+offset_right = 380.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/LeaderboardModal/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 25.0
+offset_right = -30.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Modals/LeaderboardModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.75, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "SURVIVOR LEADERBOARD"
+horizontal_alignment = 1
+
+[node name="StatsSummary" type="Label" parent="Modals/LeaderboardModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+text = "GAMES PLAYED: 0 | VICTORIES: 0 | BEST DAY: 1 | HIGH SCORE: 0"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Modals/LeaderboardModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Modals/LeaderboardModal/Panel/VBox"]
+custom_minimum_size = Vector2(0, 310)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RowsContainer" type="VBoxContainer" parent="Modals/LeaderboardModal/Panel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="CloseButton" type="Button" parent="Modals/LeaderboardModal/Panel/VBox"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "BACK"
+
+[node name="HowToPlayModal" type="ColorRect" parent="Modals"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Panel" type="Panel" parent="Modals/HowToPlayModal"]
+custom_minimum_size = Vector2(780, 560)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -390.0
+offset_top = -280.0
+offset_right = 390.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/HowToPlayModal/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 35.0
+offset_top = 25.0
+offset_right = -35.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Modals/HowToPlayModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "HOW TO PLAY - ILLUSION OF CHOICE"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Modals/HowToPlayModal/Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentVBox" type="VBoxContainer" parent="Modals/HowToPlayModal/Panel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Sec1Title" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 17
+text = "1. DAYTIME: CULTIVATION & PREPARATION"
+
+[node name="Sec1Desc" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "• Plant Level 1 seeds on the chessboard field outside your cabin.
+• Click adjacent identical flowers to MERGE them into higher tiers for exponential value.
+• Sell harvested blooms at the Flower Shop to earn coins for seeds and upgrades.
+• Keep an eye on the daytime countdown timer — when it reaches 00:00, night falls."
+autowrap_mode = 2
+
+[node name="Sec2Title" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 17
+text = "2. NIGHTTIME: SURVEILLANCE & HORROR DEFENSE"
+
+[node name="Sec2Desc" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "• Enter your cabin and approach the security monitor desk. Press [E] (or hotkey [N]) to view CCTV feeds.
+• Switch camera channels with [1 - 4] or [TAB] to inspect North, East, South, and West perimeters.
+• The Ani-Ani entity stalks through 3 stages: Distant (far silhouette), Approaching (menacing glow), and Imminent (at your door/window!).
+• Rush to close and secure doors and windows before the entity breaches your cabin!
+• Survive 7 days and 7 nights to claim victory and eternal ranking."
+autowrap_mode = 2
+
+[node name="Sec3Title" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 17
+text = "3. CONTROLS CHEAT SHEET"
+
+[node name="Sec3Desc" type="Label" parent="Modals/HowToPlayModal/Panel/VBox/Scroll/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "• [W][A][S][D] : Move First-Person Player
+• Mouse : Look Around
+• [E] : Interact (Doors, Windows, Shop, CCTV Desk)
+• [1-4 / TAB] : Switch CCTV Channels (North, East, South, West)
+• [N / E] : Exit CCTV Desk
+• [ESC] : Pause Game (Freeze timers, adjust volume, or quit)"
+autowrap_mode = 2
+
+[node name="CloseButton" type="Button" parent="Modals/HowToPlayModal/Panel/VBox"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "BACK"

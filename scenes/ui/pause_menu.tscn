@@ -1,0 +1,382 @@
+[gd_scene format=3 uid="uid://c_pause_menu_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/PauseMenu.cs" id="1_pausemenu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.06, 0.05, 0.08, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.25, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.12, 0.1, 0.15, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.3, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.25, 0.15, 0.25, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_resume"]
+bg_color = Color(0.15, 0.4, 0.2, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.8, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("PauseContainer", "ButtonsContainer", "ResumeButton", "SettingsButton", "HowToPlayButton", "RestartButton", "TitleButton", "SettingsPanel", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "CloseSettingsButton", "HowToPlayPanel", "CloseHowToPlayButton")]
+process_mode = 3
+layer = 90
+visible = false
+script = ExtResource("1_pausemenu")
+PauseContainer = NodePath("Container")
+ButtonsContainer = NodePath("Container/MainPanel")
+ResumeButton = NodePath("Container/MainPanel/VBox/ResumeButton")
+SettingsButton = NodePath("Container/MainPanel/VBox/SettingsButton")
+HowToPlayButton = NodePath("Container/MainPanel/VBox/HowToPlayButton")
+RestartButton = NodePath("Container/MainPanel/VBox/RestartButton")
+TitleButton = NodePath("Container/MainPanel/VBox/TitleButton")
+SettingsPanel = NodePath("Container/SettingsPanel")
+MasterSlider = NodePath("Container/SettingsPanel/VBox/Grid/MasterSlider")
+MasterValLabel = NodePath("Container/SettingsPanel/VBox/Grid/MasterVal")
+MusicSlider = NodePath("Container/SettingsPanel/VBox/Grid/MusicSlider")
+MusicValLabel = NodePath("Container/SettingsPanel/VBox/Grid/MusicVal")
+SFXSlider = NodePath("Container/SettingsPanel/VBox/Grid/SFXSlider")
+SFXValLabel = NodePath("Container/SettingsPanel/VBox/Grid/SFXVal")
+CloseSettingsButton = NodePath("Container/SettingsPanel/VBox/CloseButton")
+HowToPlayPanel = NodePath("Container/HowToPlayPanel")
+CloseHowToPlayButton = NodePath("Container/HowToPlayPanel/VBox/CloseButton")
+
+[node name="DimOverlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="Container" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainPanel" type="Panel" parent="Container"]
+custom_minimum_size = Vector2(380, 420)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -190.0
+offset_top = -210.0
+offset_right = 190.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Container/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 35.0
+offset_top = 30.0
+offset_right = -35.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Container/MainPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 26
+text = "GAME PAUSED"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Container/MainPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 13
+text = "Countdowns & movements frozen"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Container/MainPanel/VBox"]
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_resume")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "RESUME"
+
+[node name="SettingsButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "AUDIO & SETTINGS"
+
+[node name="HowToPlayButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "HOW TO PLAY"
+
+[node name="RestartButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "RESTART RUN"
+
+[node name="TitleButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "RETURN TO TITLE"
+
+[node name="SettingsPanel" type="Panel" parent="Container"]
+visible = false
+custom_minimum_size = Vector2(540, 380)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -270.0
+offset_top = -190.0
+offset_right = 270.0
+offset_bottom = 190.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Container/SettingsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 35.0
+offset_top = 25.0
+offset_right = -35.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Container/SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "AUDIO SETTINGS"
+horizontal_alignment = 1
+
+[node name="Grid" type="GridContainer" parent="Container/SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 3
+
+[node name="MasterLabel" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Master Volume"
+
+[node name="MasterSlider" type="HSlider" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(220, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="MasterVal" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "100%"
+
+[node name="MusicLabel" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Music Volume"
+
+[node name="MusicSlider" type="HSlider" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(220, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 80.0
+
+[node name="MusicVal" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "80%"
+
+[node name="SFXLabel" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "SFX Volume"
+
+[node name="SFXSlider" type="HSlider" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(220, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="SFXVal" type="Label" parent="Container/SettingsPanel/VBox/Grid"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "100%"
+
+[node name="CloseButton" type="Button" parent="Container/SettingsPanel/VBox"]
+custom_minimum_size = Vector2(150, 38)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "BACK"
+
+[node name="HowToPlayPanel" type="Panel" parent="Container"]
+visible = false
+custom_minimum_size = Vector2(650, 480)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -325.0
+offset_top = -240.0
+offset_right = 325.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Container/HowToPlayPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 20.0
+offset_right = -30.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Container/HowToPlayPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "SURVIVAL GUIDE & CONTROLS"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Container/HowToPlayPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Content" type="VBoxContainer" parent="Container/HowToPlayPanel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Day" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "DAYTIME: FARMING & CULTIVATION"
+
+[node name="DayInfo" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "• Plant seeds, click adjacent identical flowers to merge higher tiers.
+• Sell blooms at the Flower Shop for coins before the timer hits 00:00."
+autowrap_mode = 2
+
+[node name="Night" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "NIGHTTIME: CCTV SURVEILLANCE & DEFENSE"
+
+[node name="NightInfo" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "• Cabin CCTV Desk: [E] or [N] toggles monitor.
+• Cycle feeds with [1 - 4] or [TAB] (North, East, South, West).
+• Close and seal doors/windows when Ani-Ani reaches Imminent stage!
+• Survive 7 days and nights to win."
+autowrap_mode = 2
+
+[node name="Controls" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 15
+text = "KEYBINDINGS"
+
+[node name="ControlsInfo" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "[W][A][S][D] Move | Mouse Look | [E] Interact | [1-4/TAB] CCTV | [ESC] Pause"
+autowrap_mode = 2
+
+[node name="CloseButton" type="Button" parent="Container/HowToPlayPanel/VBox"]
+custom_minimum_size = Vector2(150, 38)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "BACK"

@@ -1,4 +1,12 @@
-//anj - Oct 22 - Initial Implement 
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 22, 2026
+// Responsibilities: - Day/Night phase countdown timer and transition manager (Day 1 to Day 7 loop)
+//                   - Coin Wallet (10 coins awarded per survived night)
+//                   - Flower Shop purchase logic (1 coin = 1 Level 1 seed)
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 23, 2026 | air : Added FadeRect auto-lookup fallback for robust scene loading
+// =========================================================================================
 using Godot;
 
 public partial class GameManager : Node
@@ -27,7 +35,7 @@ public partial class GameManager : Node
 
 	// Daytime and nighttime durations in seconds, from Day 1 to Day 7.
 	private readonly float[] DayDurations =
-		{ 300, 300, 240, 240, 180, 180, 120 };
+		{ 30, 300, 240, 240, 180, 180, 120 };
 
 	private readonly float[] NightDurations =
 		{ 180, 180, 240, 240, 300, 300, 600 };

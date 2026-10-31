@@ -11,12 +11,14 @@ config_version=5
 [application]
 
 config/name="IllusionOfChoice"
-run/main_scene="res://scenes/node_3d.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+SaveManager="*res://scripts/save/SaveManager.cs"
+AudioManager="*res://scripts/audio/AudioManager.cs"
 MCPRuntimeServer="*res://addons/godot_mcp_toolkit/runtime/mcp_runtime_server.gd"
 
 [display]

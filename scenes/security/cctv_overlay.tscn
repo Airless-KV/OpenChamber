@@ -1,0 +1,177 @@
+[gd_scene format=3 uid="uid://dpjht3t8bvxg1"]
+
+[ext_resource type="Script" uid="uid://46h80e1tr1rc" path="res://scripts/security/CCTVOverlay.cs" id="1_cctvoverlay"]
+[ext_resource type="Shader" uid="uid://doctmglbavyhg" path="res://assets/shaders/crt_scanlines.gdshader" id="2_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_scanlines"]
+shader = ExtResource("2_shader")
+
+[node name="CCTVOverlay" type="CanvasLayer" unique_id=1041679977 node_paths=PackedStringArray("ChannelLabel", "RecDot", "RecText", "TimestampLabel", "ControlsLabel", "StatusLabel", "ExitLabel", "ScanlinesRect")]
+layer = 60
+visible = false
+script = ExtResource("1_cctvoverlay")
+ChannelLabel = NodePath("Container/Header/ChannelLabel")
+RecDot = NodePath("Container/Header/RecContainer/RecDot")
+RecText = NodePath("Container/Header/RecContainer/RecText")
+TimestampLabel = NodePath("Container/Footer/LeftCol/TimestampLabel")
+ControlsLabel = NodePath("Container/Footer/LeftCol/ControlsLabel")
+StatusLabel = NodePath("Container/Footer/RightCol/StatusLabel")
+ExitLabel = NodePath("Container/Footer/RightCol/ExitLabel")
+ScanlinesRect = NodePath("Container/Scanlines")
+
+[node name="Container" type="Control" parent="." unique_id=1468162601]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Scanlines" type="ColorRect" parent="Container" unique_id=860426629]
+material = SubResource("ShaderMaterial_scanlines")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Header" type="Control" parent="Container" unique_id=1285105018]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 50.0
+offset_top = 35.0
+offset_right = -50.0
+offset_bottom = 80.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="ChannelLabel" type="Label" parent="Container/Header" unique_id=1211160332]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -14.0
+offset_right = 450.0
+offset_bottom = 16.0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.25, 0.96, 0.45, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 22
+text = "CAM 01 - NORTH PERIMETER"
+vertical_alignment = 1
+
+[node name="RecContainer" type="HBoxContainer" parent="Container/Header" unique_id=1057646730]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = -14.0
+offset_bottom = 16.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="RecDot" type="Label" parent="Container/Header/RecContainer" unique_id=283343562]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.15, 0.15, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 20
+text = "●"
+vertical_alignment = 1
+
+[node name="RecText" type="Label" parent="Container/Header/RecContainer" unique_id=171689267]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.96, 0.96, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+text = "REC"
+vertical_alignment = 1
+
+[node name="Footer" type="Control" parent="Container" unique_id=873360305]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = -90.0
+offset_right = -50.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="LeftCol" type="VBoxContainer" parent="Container/Footer" unique_id=937187895]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -52.0
+offset_right = 420.0
+grow_vertical = 0
+theme_override_constants/separation = 4
+
+[node name="TimestampLabel" type="Label" parent="Container/Footer/LeftCol" unique_id=155025855]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.96, 0.88, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 18
+text = "2026-10-30 02:44:12 AM"
+
+[node name="ControlsLabel" type="Label" parent="Container/Footer/LeftCol" unique_id=281745405]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.88, 0.72, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 15
+text = "[1-4 / TAB] SWITCH CAMERA"
+
+[node name="RightCol" type="VBoxContainer" parent="Container/Footer" unique_id=1385122617]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -52.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 4
+
+[node name="StatusLabel" type="Label" parent="Container/Footer/RightCol" unique_id=1795933779]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.96, 0.88, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 18
+text = "SIGNAL: 98% | 30 FPS"
+horizontal_alignment = 2
+
+[node name="ExitLabel" type="Label" parent="Container/Footer/RightCol" unique_id=2140501788]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.88, 0.72, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 15
+text = "[E / N] EXIT DESK"
+horizontal_alignment = 2

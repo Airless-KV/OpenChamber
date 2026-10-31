@@ -1,3 +1,7 @@
+// =========================================================================================
+// Original Author : air (Airless-KV) - Oct 2026
+// Responsibilities: - Base abstract class for 3D physics body interactables
+// =========================================================================================
 using Godot;
 
 public abstract partial class InteractableBase : StaticBody3D, IInteractable

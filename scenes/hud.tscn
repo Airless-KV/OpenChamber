@@ -1,8 +1,8 @@
-[gd_scene format=3 uid="uid://bhud_scene_001"]
+[gd_scene format=3 uid="uid://66su1fg3yq5o"]
 
-[ext_resource type="Script" path="res://scripts/ui/HUDManager.cs" id="1_hud"]
+[ext_resource type="Script" uid="uid://dfmmr4ktrqhqd" path="res://scripts/ui/HUDManager.cs" id="1_hud"]
 
-[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("DayLabel", "PhaseLabel", "TimerLabel", "CoinLabel", "SeedLabel", "BuySeedButton", "InteractionPromptLabel")]
+[node name="HUD" type="CanvasLayer" unique_id=1873493561 node_paths=PackedStringArray("DayLabel", "PhaseLabel", "TimerLabel", "CoinLabel", "SeedLabel", "BuySeedButton", "InteractionPromptLabel")]
 script = ExtResource("1_hud")
 DayLabel = NodePath("DayLabel")
 PhaseLabel = NodePath("PhaseLabel")
@@ -12,20 +12,20 @@ SeedLabel = NodePath("SeedLabel")
 BuySeedButton = NodePath("BuySeedButton")
 InteractionPromptLabel = NodePath("InteractionPrompt")
 
-[node name="PhaseLabel" type="Label" parent="."]
+[node name="PhaseLabel" type="Label" parent="." unique_id=1222144881]
 offset_left = 1082.0
 offset_right = 1152.0
 offset_bottom = 49.0
 text = "DAYTIME
 "
 
-[node name="DayLabel" type="Label" parent="."]
+[node name="DayLabel" type="Label" parent="." unique_id=1446868532]
 offset_left = 542.5
 offset_right = 609.5
 offset_bottom = 23.0
 text = "Day 1 / 7"
 
-[node name="TimerLabel" type="Label" parent="."]
+[node name="TimerLabel" type="Label" parent="." unique_id=49552151]
 offset_left = 542.5
 offset_top = 27.0
 offset_right = 609.5
@@ -34,23 +34,23 @@ text = "00:30
 "
 horizontal_alignment = 1
 
-[node name="CoinLabel" type="Label" parent="."]
+[node name="CoinLabel" type="Label" parent="." unique_id=1967310406]
 offset_top = 53.0
 offset_right = 102.0
 offset_bottom = 76.0
 text = "Coins: 0"
 
-[node name="SeedLabel" type="Label" parent="."]
+[node name="SeedLabel" type="Label" parent="." unique_id=1451682645]
 offset_right = 102.0
 offset_bottom = 49.0
 text = "Lvl 1 Seeds: 0
 "
 
-[node name="BuySeedButton" type="Button" parent="."]
+[node name="BuySeedButton" type="Button" parent="." unique_id=804860427]
 offset_right = 8.0
 offset_bottom = 8.0
 
-[node name="InteractionPrompt" type="Label" parent="."]
+[node name="InteractionPrompt" type="Label" parent="." unique_id=2065331650]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -70,3 +70,18 @@ theme_override_font_sizes/font_size = 22
 text = "[E] Open Front Door"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Crosshair" type="ColorRect" parent="." unique_id=2019398025]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.75)

@@ -1,3 +1,7 @@
+// =========================================================================================
+// Original Author : air (Airless-KV) - Oct 2026
+// Responsibilities: - Interface contract for all in-world interactable objects
+// =========================================================================================
 using Godot;
 
 public interface IInteractable

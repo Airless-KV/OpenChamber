@@ -1,3 +1,8 @@
+// =========================================================================================
+// Original Author : air (Airless-KV) - Oct 2026
+// Responsibilities: - In-world interactive flower shop stall for purchasing seeds with coins
+//                   - Connects player interaction to GameManager purchase logic
+// =========================================================================================
 using Godot;
 
 public partial class InteractableShop : InteractableBase

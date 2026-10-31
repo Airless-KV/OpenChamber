@@ -1,0 +1,111 @@
+[gd_scene format=3 uid="uid://dnepyc64kjf56"]
+
+[ext_resource type="Script" uid="uid://lt7bddpig14s" path="res://scripts/core/GameManager.cs" id="1_gamemanager"]
+[ext_resource type="Script" uid="uid://56uti3x0b7e5" path="res://scripts/camera/CameraPivot.cs" id="2_camerapivot"]
+[ext_resource type="Script" uid="uid://8u705w2hsmg2" path="res://scripts/security/BreachManager.cs" id="3_breach"]
+[ext_resource type="PackedScene" uid="uid://d4far8lqhyjx7" path="res://scenes/farm_plot.tscn" id="4_farm"]
+[ext_resource type="PackedScene" path="res://scenes/security/cctv_rig.tscn" id="5_cctv"]
+[ext_resource type="PackedScene" uid="uid://dht0npv3gkdtm" path="res://scenes/house.tscn" id="6_house"]
+[ext_resource type="PackedScene" uid="uid://c32ge0cn8uw2m" path="res://scenes/player.tscn" id="7_player"]
+[ext_resource type="PackedScene" uid="uid://66su1fg3yq5o" path="res://scenes/hud.tscn" id="8_hud"]
+[ext_resource type="PackedScene" uid="uid://bwoxifln5d5re" path="res://scenes/ui/jumpscare_screen.tscn" id="9_jumpscare"]
+[ext_resource type="PackedScene" uid="uid://byopg1iqtcd6q" path="res://scenes/ui/victory_screen.tscn" id="10_victory"]
+[ext_resource type="Script" uid="uid://23mroof4squl" path="res://scripts/environment/AtmosphereManager.cs" id="11_atmosphere"]
+[ext_resource type="Script" uid="uid://c5cpe6lvgxmxx" path="res://scripts/save/SaveManager.cs" id="12_savemanager"]
+[ext_resource type="PackedScene" path="res://scenes/security/ani_ani_monster.tscn" id="13_anianimonster"]
+[ext_resource type="PackedScene" uid="uid://dpjht3t8bvxg1" path="res://scenes/security/cctv_overlay.tscn" id="14_cctvoverlay"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="15_pausemenu"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
+sky_top_color = Color(0.35, 0.62, 0.95, 1)
+sky_horizon_color = Color(0.72, 0.82, 0.92, 1)
+ground_bottom_color = Color(0.14, 0.25, 0.38, 1)
+ground_horizon_color = Color(0.58, 0.66, 0.74, 1)
+
+[sub_resource type="Sky" id="Sky_atm"]
+sky_material = SubResource("ProceduralSkyMaterial_atm")
+
+[sub_resource type="Environment" id="Environment_iowxr"]
+background_mode = 2
+sky = SubResource("Sky_atm")
+ambient_light_source = 2
+ambient_light_color = Color(0.85, 0.82, 0.75, 1)
+ambient_light_energy = 0.35
+tonemap_mode = 3
+fog_enabled = true
+fog_light_color = Color(0.82, 0.86, 0.92, 1)
+fog_density = 0.0015
+adjustment_enabled = true
+adjustment_contrast = 1.02
+adjustment_saturation = 1.05
+
+[node name="Game" type="Node3D" unique_id=359472471]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1222800890]
+environment = SubResource("Environment_iowxr")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1116810622]
+transform = Transform3D(0.9996935, 0.006144611, 0.023982251, -0.024755446, 0.23757695, 0.9710533, 0.00026911497, -0.9713493, 0.23765627, -1.6614189, 250.00006, 0)
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.3
+shadow_enabled = true
+
+[node name="AtmosphereManager" type="Node3D" parent="." unique_id=1847192841 node_paths=PackedStringArray("GameManagerNode", "SunLightNode", "WorldEnvironmentNode", "InteriorLightNode")]
+script = ExtResource("11_atmosphere")
+GameManagerNode = NodePath("../GameManager")
+SunLightNode = NodePath("../DirectionalLight3D")
+WorldEnvironmentNode = NodePath("../WorldEnvironment")
+InteriorLightNode = NodePath("../HouseInterior/CeilingLight")
+
+[node name="SaveManager" type="Node" parent="." unique_id=1498327154]
+script = ExtResource("12_savemanager")
+
+[node name="GameManager" type="Node" parent="." unique_id=1698871464 node_paths=PackedStringArray("FadeRect")]
+script = ExtResource("1_gamemanager")
+FadeRect = NodePath("FadeLayer/FadeRect")
+
+[node name="FadeLayer" type="CanvasLayer" parent="GameManager" unique_id=1996995055]
+layer = 50
+
+[node name="FadeRect" type="ColorRect" parent="GameManager/FadeLayer" unique_id=1988160781]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="AniAniMonster" parent="." unique_id=1984218731 instance=ExtResource("13_anianimonster")]
+
+[node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("MonsterNode")]
+script = ExtResource("3_breach")
+MonsterNode = NodePath("../AniAniMonster")
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=1007978221 node_paths=PackedStringArray("Target")]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 2.5, 0.5, 0)
+script = ExtResource("2_camerapivot")
+Target = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1156475418]
+current = true
+
+[node name="FarmPlot" parent="." unique_id=105765636 instance=ExtResource("4_farm")]
+
+[node name="NighttCamera" parent="." unique_id=1041632257 instance=ExtResource("5_cctv")]
+
+[node name="HouseInterior" parent="." unique_id=1018571243 instance=ExtResource("6_house")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.2080944, 0)
+
+[node name="Player" parent="." unique_id=36189929 instance=ExtResource("7_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4420223, 1.5545688, 0)
+
+[node name="HUD" parent="." unique_id=1251348134 instance=ExtResource("8_hud")]
+
+[node name="JumpScareScreen" parent="." unique_id=1087540926 instance=ExtResource("9_jumpscare")]
+
+[node name="VictoryScreen" parent="." unique_id=1543762532 instance=ExtResource("10_victory")]
+
+[node name="CCTVOverlay" parent="." unique_id=1849172314 instance=ExtResource("14_cctvoverlay")]
+
+[node name="PauseMenu" parent="." unique_id=1928374650 instance=ExtResource("15_pausemenu")]

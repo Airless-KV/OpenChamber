@@ -1,3 +1,8 @@
+// =========================================================================================
+// Original Author : air (Airless-KV) - Oct 2026
+// Responsibilities: - Interactive cabin CCTV security desk station
+//                   - Toggle CCTV monitoring mode on NighttCamera
+// =========================================================================================
 using Godot;
 
 public partial class InteractableCCTVStation : InteractableBase

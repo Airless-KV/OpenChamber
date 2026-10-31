@@ -1,4 +1,13 @@
-//anj - Oct 22 - Initial Implement 
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 22, 2026
+// Responsibilities: - Persistent Daytime/Nighttime HUD (timer, coin balance, day counter)
+//                   - UI signal listener updates for coins, seeds, timer, and phase
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 23, 2026 | air : Added InteractionPromptLabel and SetInteractionPrompt / ClearInteractionPrompt methods
+// - Oct 23, 2026 | air : Added GameManagerNode auto-lookup fallback in _Ready()
+// - Oct 30, 2026 | air : Added SetHUDVisible method for CCTV surveillance feed toggling
+// =========================================================================================
 
 using Godot;
 
@@ -73,6 +82,11 @@ public partial class HUDManager : CanvasLayer
 			InteractionPromptLabel.Text = "";
 			InteractionPromptLabel.Visible = false;
 		}
+	}
+
+	public void SetHUDVisible(bool isVisible)
+	{
+		Visible = isVisible;
 	}
 
 	private void OnTimeUpdated(float timeRemaining)
