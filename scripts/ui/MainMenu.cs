@@ -8,10 +8,10 @@
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 30, 2026 | air : Implemented full Main Menu navigation flow, name entry, and settings
+// - Oct 31, 2026 | air : Streamlined audio volume settings using shared AudioSettingsBinder
+// - Oct 31, 2026 | air : Parameterized leaderboard row construction and consolidated modal navigation
 // =========================================================================================
 using Godot;
-using System;
-using System.Collections.Generic;
 
 public partial class MainMenu : Control
 {
@@ -55,150 +55,69 @@ public partial class MainMenu : Control
 	{
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 
-		// Wire Main Nav
 		if (PlayButton != null) PlayButton.Pressed += OnPlayPressed;
 		if (SettingsButton != null) SettingsButton.Pressed += OnSettingsPressed;
 		if (LeaderboardButton != null) LeaderboardButton.Pressed += OnLeaderboardPressed;
-		if (HowToPlayButton != null) HowToPlayButton.Pressed += OnHowToPlayPressed;
-		if (QuitButton != null) QuitButton.Pressed += OnQuitPressed;
+		if (HowToPlayButton != null) HowToPlayButton.Pressed += () => ShowModal(HowToPlayModal);
+		if (QuitButton != null) QuitButton.Pressed += () => GetTree().Quit();
 
-		// Wire Name Entry Modal
 		if (StartGameButton != null) StartGameButton.Pressed += OnStartGamePressed;
 		if (CancelNameButton != null) CancelNameButton.Pressed += () => HideModal(NameEntryModal);
-		if (NameInput != null)
-		{
-			NameInput.TextSubmitted += (text) => OnStartGamePressed();
-		}
+		if (NameInput != null) NameInput.TextSubmitted += _ => OnStartGamePressed();
 
-		// Wire Settings
-		if (MasterSlider != null) MasterSlider.ValueChanged += OnMasterVolumeChanged;
-		if (MusicSlider != null) MusicSlider.ValueChanged += OnMusicVolumeChanged;
-		if (SFXSlider != null) SFXSlider.ValueChanged += OnSFXVolumeChanged;
+		AudioSettingsBinder.BindSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
 		if (FullscreenCheck != null) FullscreenCheck.Toggled += OnFullscreenToggled;
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += () => HideModal(SettingsModal);
-
-		// Wire Leaderboard
 		if (CloseLeaderboardButton != null) CloseLeaderboardButton.Pressed += () => HideModal(LeaderboardModal);
-
-		// Wire How To Play
 		if (CloseHowToPlayButton != null) CloseHowToPlayButton.Pressed += () => HideModal(HowToPlayModal);
 
-		UpdateCurrentProfileDisplay();
+		UpdateProfileDisplay();
 		CloseAllModals();
 	}
 
 	private void CloseAllModals()
 	{
-		if (NameEntryModal != null) NameEntryModal.Visible = false;
-		if (SettingsModal != null) SettingsModal.Visible = false;
-		if (LeaderboardModal != null) LeaderboardModal.Visible = false;
-		if (HowToPlayModal != null) HowToPlayModal.Visible = false;
+		foreach (var m in new[] { NameEntryModal, SettingsModal, LeaderboardModal, HowToPlayModal })
+			if (m != null) m.Visible = false;
 	}
 
-	private void ShowModal(Control modal)
-	{
-		CloseAllModals();
-		if (modal != null) modal.Visible = true;
-	}
+	private void ShowModal(Control modal) { CloseAllModals(); if (modal != null) modal.Visible = true; }
+	private void HideModal(Control modal) { if (modal != null) modal.Visible = false; UpdateProfileDisplay(); }
 
-	private void HideModal(Control modal)
+	private void UpdateProfileDisplay()
 	{
-		if (modal != null) modal.Visible = false;
-		UpdateCurrentProfileDisplay();
-	}
-
-	private void UpdateCurrentProfileDisplay()
-	{
-		string currentName = SaveManager.CurrentData.Profile.PlayerName;
 		if (CurrentProfileLabel != null)
-		{
-			CurrentProfileLabel.Text = $"CURRENT CALLSIGN: {currentName.ToUpper()}";
-		}
+			CurrentProfileLabel.Text = $"CURRENT CALLSIGN: {SaveManager.CurrentData.Profile.PlayerName.ToUpper()}";
 	}
 
 	private void OnPlayPressed()
 	{
-		string currentName = SaveManager.CurrentData.Profile.PlayerName;
-		if (NameInput != null)
-		{
-			NameInput.Text = string.IsNullOrWhiteSpace(currentName) ? "Survivor" : currentName;
-			NameInput.SelectAll();
-		}
+		string name = SaveManager.CurrentData.Profile.PlayerName;
+		if (NameInput != null) { NameInput.Text = string.IsNullOrWhiteSpace(name) ? "Survivor" : name; NameInput.SelectAll(); }
 		if (NameErrorLabel != null) NameErrorLabel.Visible = false;
-
 		ShowModal(NameEntryModal);
 		NameInput?.GrabFocus();
 	}
 
 	private void OnStartGamePressed()
 	{
-		string enteredName = NameInput?.Text?.Trim();
-		if (string.IsNullOrWhiteSpace(enteredName))
+		string name = NameInput?.Text?.Trim();
+		if (string.IsNullOrWhiteSpace(name))
 		{
-			if (NameErrorLabel != null)
-			{
-				NameErrorLabel.Text = "Please enter a valid callsign (1-20 characters).";
-				NameErrorLabel.Visible = true;
-			}
+			if (NameErrorLabel != null) { NameErrorLabel.Text = "Please enter a valid callsign (1-20 characters)."; NameErrorLabel.Visible = true; }
 			return;
 		}
-
-		if (enteredName.Length > 20)
-		{
-			enteredName = enteredName.Substring(0, 20);
-		}
-
-		SaveManager.SetPlayerName(enteredName);
+		if (name.Length > 20) name = name[..20];
+		SaveManager.SetPlayerName(name);
 		GetTree().ChangeSceneToFile("res://scenes/game.tscn");
 	}
 
 	private void OnSettingsPressed()
 	{
-		var audio = AudioManager.Instance;
-		float master = audio != null ? audio.GetMasterVolume() : SaveManager.CurrentData.Audio.MasterVolume;
-		float music = audio != null ? audio.GetMusicVolume() : SaveManager.CurrentData.Audio.MusicVolume;
-		float sfx = audio != null ? audio.GetSFXVolume() : SaveManager.CurrentData.Audio.SFXVolume;
-
-		if (MasterSlider != null) MasterSlider.Value = master * 100.0f;
-		if (MusicSlider != null) MusicSlider.Value = music * 100.0f;
-		if (SFXSlider != null) SFXSlider.Value = sfx * 100.0f;
-
-		UpdateVolumeLabels(master, music, sfx);
-
+		AudioSettingsBinder.SyncSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
 		if (FullscreenCheck != null)
-		{
 			FullscreenCheck.ButtonPressed = DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Fullscreen;
-		}
-
 		ShowModal(SettingsModal);
-	}
-
-	private void OnMasterVolumeChanged(double val)
-	{
-		float linear = (float)val / 100.0f;
-		AudioManager.Instance?.SetMasterVolume(linear);
-		if (MasterValLabel != null) MasterValLabel.Text = $"{Mathf.RoundToInt(val)}%";
-	}
-
-	private void OnMusicVolumeChanged(double val)
-	{
-		float linear = (float)val / 100.0f;
-		AudioManager.Instance?.SetMusicVolume(linear);
-		if (MusicValLabel != null) MusicValLabel.Text = $"{Mathf.RoundToInt(val)}%";
-	}
-
-	private void OnSFXVolumeChanged(double val)
-	{
-		float linear = (float)val / 100.0f;
-		AudioManager.Instance?.SetSFXVolume(linear);
-		if (SFXValLabel != null) SFXValLabel.Text = $"{Mathf.RoundToInt(val)}%";
-	}
-
-	private void UpdateVolumeLabels(float master, float music, float sfx)
-	{
-		if (MasterValLabel != null) MasterValLabel.Text = $"{Mathf.RoundToInt(master * 100.0f)}%";
-		if (MusicValLabel != null) MusicValLabel.Text = $"{Mathf.RoundToInt(music * 100.0f)}%";
-		if (SFXValLabel != null) SFXValLabel.Text = $"{Mathf.RoundToInt(sfx * 100.0f)}%";
 	}
 
 	private void OnFullscreenToggled(bool isFullscreen)
@@ -212,89 +131,34 @@ public partial class MainMenu : Control
 	{
 		var data = SaveManager.CurrentData;
 		if (LifetimeStatsLabel != null)
-		{
-			LifetimeStatsLabel.Text = $"GAMES PLAYED: {data.Profile.TotalGamesPlayed}  |  VICTORIES: {data.Profile.TotalVictories}  |  BEST DAY: {data.Profile.HighestDayReached}  |  HIGH SCORE: {data.Profile.AllTimeHighScore}";
-		}
+			LifetimeStatsLabel.Text = $"GAMES: {data.Profile.TotalGamesPlayed}  |  VICTORIES: {data.Profile.TotalVictories}  |  BEST DAY: {data.Profile.HighestDayReached}  |  HIGH SCORE: {data.Profile.AllTimeHighScore}";
 
 		if (LeaderboardRowsContainer != null)
 		{
-			// Clear old rows
-			foreach (Node child in LeaderboardRowsContainer.GetChildren())
-			{
-				child.QueueFree();
-			}
+			foreach (Node c in LeaderboardRowsContainer.GetChildren()) c.QueueFree();
+			LeaderboardRowsContainer.AddChild(CreateRow(true, new(0.9f, 0.75f, 0.2f), ("#", 45), ("CALLSIGN", 220), ("SCORE", 110), ("DAY", 90), ("STATUS", 120), ("DATE", 160)));
 
-			// Header row
-			var headerRow = CreateLeaderboardRow("#", "CALLSIGN", "SCORE", "DAY", "STATUS", "DATE", true);
-			LeaderboardRowsContainer.AddChild(headerRow);
-
-			// Populate top entries
 			int rank = 1;
-			foreach (var entry in data.Leaderboard)
+			foreach (var e in data.Leaderboard)
 			{
-				string status = entry.Survived ? "SURVIVED" : "BREACHED";
-				var row = CreateLeaderboardRow(
-					$"{rank:00}",
-					entry.PlayerName,
-					entry.Score.ToString(),
-					$"Day {entry.DayReached}",
-					status,
-					entry.Date,
-					false
-				);
-				LeaderboardRowsContainer.AddChild(row);
+				Color col = e.Survived ? new Color(0.4f, 0.95f, 0.5f) : new Color(0.85f, 0.85f, 0.85f);
+				LeaderboardRowsContainer.AddChild(CreateRow(false, col, ($"{rank:00}", 45), (e.PlayerName, 220), (e.Score.ToString(), 110), ($"Day {e.DayReached}", 90), (e.Survived ? "SURVIVED" : "BREACHED", 120), (e.Date, 160)));
 				rank++;
 			}
-
-			if (data.Leaderboard.Count == 0)
-			{
-				var emptyLabel = new Label
-				{
-					Text = "No survival records yet. Surpass the night to claim your standing!",
-					HorizontalAlignment = HorizontalAlignment.Center
-				};
-				LeaderboardRowsContainer.AddChild(emptyLabel);
-			}
 		}
-
 		ShowModal(LeaderboardModal);
 	}
 
-	private HBoxContainer CreateLeaderboardRow(string rank, string name, string score, string day, string status, string date, bool isHeader)
+	private static HBoxContainer CreateRow(bool header, Color color, params (string text, float width)[] cells)
 	{
 		var row = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-		Color col = isHeader ? new Color(0.9f, 0.75f, 0.2f) : (status == "SURVIVED" ? new Color(0.4f, 0.95f, 0.5f) : new Color(0.85f, 0.85f, 0.85f));
-
-		row.AddChild(CreateCell(rank, 45, col, isHeader));
-		row.AddChild(CreateCell(name, 220, col, isHeader));
-		row.AddChild(CreateCell(score, 110, col, isHeader));
-		row.AddChild(CreateCell(day, 90, col, isHeader));
-		row.AddChild(CreateCell(status, 120, col, isHeader));
-		row.AddChild(CreateCell(date, 160, col, isHeader));
-
-		return row;
-	}
-
-	private Label CreateCell(string text, float minWidth, Color color, bool isHeader)
-	{
-		var label = new Label
+		foreach (var (text, width) in cells)
 		{
-			Text = text,
-			CustomMinimumSize = new Vector2(minWidth, 26),
-			HorizontalAlignment = HorizontalAlignment.Left
-		};
-		label.AddThemeColorOverride("font_color", color);
-		label.AddThemeFontSizeOverride("font_size", isHeader ? 16 : 14);
-		return label;
-	}
-
-	private void OnHowToPlayPressed()
-	{
-		ShowModal(HowToPlayModal);
-	}
-
-	private void OnQuitPressed()
-	{
-		GetTree().Quit();
+			var lbl = new Label { Text = text, CustomMinimumSize = new(width, 26), HorizontalAlignment = HorizontalAlignment.Left };
+			lbl.AddThemeColorOverride("font_color", color);
+			lbl.AddThemeFontSizeOverride("font_size", header ? 16 : 14);
+			row.AddChild(lbl);
+		}
+		return row;
 	}
 }

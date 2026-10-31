@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://bp7pd1ta6t7w5" path="res://assets/models/chess_board.glb" id="1_chessboard"]
 [ext_resource type="Script" uid="uid://cicpbn73d8l1f" path="res://scripts/farming/Node3d.cs" id="2_gridmanager"]
 [ext_resource type="Script" uid="uid://b6qswqwvxq6t1" path="res://scripts/interaction/InteractableShop.cs" id="3_shop"]
+[ext_resource type="PackedScene" path="res://scenes/flower.tscn" id="4_flower"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cs4l5"]
 
@@ -149,6 +150,7 @@ mesh = SubResource("BoxMesh_iowxr")
 [node name="GridManager" type="Node3D" parent="." unique_id=129876319 node_paths=PackedStringArray("TileSelector")]
 script = ExtResource("2_gridmanager")
 TileSelector = NodePath("../TileSelector")
+CropPrefab = ExtResource("4_flower")
 
 [node name="FlowerShopStall" type="StaticBody3D" parent="." unique_id=257898360]
 transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 4.5, 1.7216101, 3.5)
@@ -165,7 +167,3 @@ mesh = SubResource("BoxMesh_shop")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
 material_override = SubResource("StandardMaterial3D_canopy")
 mesh = SubResource("BoxMesh_shop_canopy")
-
-[node name="Timer" type="Timer" parent="." unique_id=1780478299]
-wait_time = 360.0
-autostart = true

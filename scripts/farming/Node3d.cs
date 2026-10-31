@@ -9,6 +9,9 @@
 // - Oct 24, 2026 | air : Streamlined grid coordinate math, fallback mesh generation, and scoring queries for Alpha build
 // - Oct 30, 2026 | air : Adapted grid hover raycast to first-person crosshair center targeting
 // - Oct 30, 2026 | air : Implemented drag-and-drop flower merge formula (N+N->N+1) and 5 tier materials
+// - Oct 31, 2026 | air : Consolidated tier attributes into FlowerTier struct, optimized procedural mesh instantiation
+// - Oct 31, 2026 | air : Unified grid state storage into single Tile class and streamlined drag-and-drop execution
+// - Oct 31, 2026 | air : Migrated procedural flower mesh construction to pure scene asset (res://scenes/flower.tscn)
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -18,18 +21,18 @@ public partial class Node3d : Node3D
 {
 	public enum TileState { Empty, Tilled, Planted }
 
-	// 5 Flower Tiers: Colors, Points, and Model Scales
-	public static readonly Color[] TierColors =
+	public readonly record struct FlowerTier(Color Color, int Points, float Scale);
+
+	public static readonly FlowerTier[] Tiers =
 	{
-		new(0.96f, 0.95f, 0.86f), // Tier 1: Daisy White / Cream (5 pts)
-		new(1.00f, 0.82f, 0.15f), // Tier 2: Golden Sunburst Yellow (10 pts)
-		new(0.98f, 0.45f, 0.15f), // Tier 3: Sunset Coral / Orange (15 pts)
-		new(0.88f, 0.12f, 0.32f), // Tier 4: Royal Crimson Rose (20 pts)
-		new(0.12f, 0.92f, 0.42f)  // Tier 5: Mythic Emerald Bloom (25 pts)
+		new(new(0.96f, 0.95f, 0.86f), 5, 0.85f),  // Tier 1: Daisy White / Cream (5 pts)
+		new(new(1.00f, 0.82f, 0.15f), 10, 1.05f), // Tier 2: Golden Sunburst Yellow (10 pts)
+		new(new(0.98f, 0.45f, 0.15f), 15, 1.25f), // Tier 3: Sunset Coral / Orange (15 pts)
+		new(new(0.88f, 0.12f, 0.32f), 20, 1.45f), // Tier 4: Royal Crimson Rose (20 pts)
+		new(new(0.12f, 0.92f, 0.42f), 25, 1.65f)  // Tier 5: Mythic Emerald Bloom (25 pts)
 	};
 
 	public static readonly int[] TierPoints = { 5, 10, 15, 20, 25 };
-	public static readonly float[] TierScales = { 0.85f, 1.05f, 1.25f, 1.45f, 1.65f };
 
 	[ExportGroup("Grid Dimensions")]
 	[Export] public int GridWidth = 8;
@@ -42,169 +45,140 @@ public partial class Node3d : Node3D
 	[Export] public PackedScene CropPrefab;
 	[Export] public HUDManager HUDNode;
 
-	private readonly Dictionary<Vector2I, TileState> _gridStates = new();
-	private readonly Dictionary<Vector2I, Node3D> _plantedObjects = new();
-	private readonly Dictionary<Vector2I, int> _plantedTiers = new();
+	private sealed class Tile
+	{
+		public TileState State;
+		public int Tier;
+		public Node3D Visual;
+	}
 
-	private Vector2I? _currentHoveredCell;
+	private readonly Dictionary<Vector2I, Tile> _tiles = new();
+	private Vector2I? _hoveredCell;
 	private Vector2I? _heldCell;
-	private ulong _pressTimestamp = 0;
-	private bool _isDragHolding = false;
+	private ulong _pressTime;
+	private bool _isDragging;
+	private string _lastPrompt = "";
 
 	public override void _Ready()
 	{
 		TileSelector ??= GetNodeOrNull<Node3D>("../TileSelector");
 		if (TileSelector != null) TileSelector.Visible = false;
-
 		HUDNode ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
 	}
 
 	public override void _Process(double delta)
 	{
-		UpdateMouseHover();
-		UpdateHeldFlowerVisual((float)delta);
+		UpdateHover();
+		if (_heldCell.HasValue && GetTile(_heldCell.Value)?.Visual is { } held)
+		{
+			Vector3 target = GridToWorld(_hoveredCell ?? _heldCell.Value) + new Vector3(0, 1.8f, 0);
+			held.GlobalPosition = held.GlobalPosition.Lerp(target, 20f * (float)delta);
+		}
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (@event is InputEventMouseButton btn)
+		if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left } btn)
 		{
-			if (btn.ButtonIndex == MouseButton.Left)
-			{
-				if (btn.Pressed)
-				{
-					OnLeftClickPressed();
-				}
-				else
-				{
-					OnLeftClickReleased();
-				}
-			}
-			else if (btn.ButtonIndex == MouseButton.Right && btn.Pressed)
-			{
-				OnRightClickPressed();
-			}
+			if (btn.Pressed) OnLeftClickPressed();
+			else OnLeftClickReleased();
+		}
+		else if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
+		{
+			if (_heldCell.HasValue) CancelHold();
+			else if (_hoveredCell.HasValue) RemoveCrop(_hoveredCell.Value);
 		}
 	}
 
-	private void UpdateMouseHover()
+	private Tile GetTile(Vector2I c) => _tiles.GetValueOrDefault(c);
+
+	private void SetPrompt(string prompt)
+	{
+		if (_lastPrompt == prompt) return;
+		_lastPrompt = prompt;
+		HUDNode?.SetInteractionPrompt(prompt);
+	}
+
+	private void ClearPrompt()
+	{
+		if (string.IsNullOrEmpty(_lastPrompt)) return;
+		_lastPrompt = "";
+		HUDNode?.ClearInteractionPrompt();
+	}
+
+	private void UpdateHover()
 	{
 		Camera3D cam = GetViewport().GetCamera3D();
 		if (cam == null) return;
 
-		Vector3 rayOrigin = cam.GlobalPosition;
-		Vector3 rayDir = -cam.GlobalTransform.Basis.Z.Normalized();
-
 		var hit = GetWorld3D().DirectSpaceState.IntersectRay(new PhysicsRayQueryParameters3D
 		{
-			From = rayOrigin,
-			To = rayOrigin + rayDir * 50f
+			From = cam.GlobalPosition,
+			To = cam.GlobalPosition - cam.GlobalTransform.Basis.Z * 50f
 		});
 
 		if (hit.Count > 0 && WorldToGrid((Vector3)hit["position"]) is var cell && IsInsideGrid(cell))
 		{
-			_currentHoveredCell = cell;
+			_hoveredCell = cell;
 			if (TileSelector != null)
 			{
 				TileSelector.Visible = true;
 				TileSelector.GlobalPosition = GridToWorld(cell) + new Vector3(0, 0.05f, 0);
 			}
-
-			UpdateHoverPrompt(cell);
+			UpdatePrompt(cell);
 			return;
 		}
 
-		_currentHoveredCell = null;
+		_hoveredCell = null;
 		if (TileSelector != null) TileSelector.Visible = false;
-
-		if (_heldCell.HasValue)
-		{
-			HUDNode?.SetInteractionPrompt("[RMB] Cancel Drag");
-		}
+		if (_heldCell.HasValue) SetPrompt("[RMB] Cancel Drag");
+		else ClearPrompt();
 	}
 
-	private void UpdateHoverPrompt(Vector2I cell)
+	private void UpdatePrompt(Vector2I cell)
 	{
+		var tile = GetTile(cell);
 		if (_heldCell.HasValue)
 		{
-			int heldTier = _plantedTiers.GetValueOrDefault(_heldCell.Value, 1);
-			if (cell == _heldCell.Value)
+			int heldTier = GetTile(_heldCell.Value)?.Tier ?? 1;
+			if (cell == _heldCell.Value) SetPrompt($"[LMB] Put down Tier {heldTier} Flower | [RMB] Cancel");
+			else if (tile?.State == TileState.Planted)
 			{
-				HUDNode?.SetInteractionPrompt($"[LMB] Put down Tier {heldTier} Flower | [RMB] Cancel");
-			}
-			else if (_gridStates.GetValueOrDefault(cell) == TileState.Planted)
-			{
-				int targetTier = _plantedTiers.GetValueOrDefault(cell, 1);
-				if (targetTier == heldTier && targetTier < 5)
-				{
-					HUDNode?.SetInteractionPrompt($"[★ MERGE!] Tier {heldTier} + Tier {heldTier} -> Tier {heldTier + 1}! (+{TierPoints[heldTier]} pts)");
-				}
+				if (tile.Tier == heldTier && heldTier < 5)
+					SetPrompt($"[★ MERGE!] Tier {heldTier} + Tier {heldTier} -> Tier {heldTier + 1}! (+{TierPoints[heldTier]} pts)");
 				else
-				{
-					HUDNode?.SetInteractionPrompt($"[LMB] Swap with Tier {targetTier} Flower | [RMB] Cancel");
-				}
+					SetPrompt($"[LMB] Swap with Tier {tile.Tier} Flower | [RMB] Cancel");
 			}
-			else
-			{
-				HUDNode?.SetInteractionPrompt($"[LMB] Move Tier {heldTier} Flower here | [RMB] Cancel");
-			}
+			else SetPrompt($"[LMB] Move Tier {heldTier} Flower here | [RMB] Cancel");
 			return;
 		}
 
-		var state = _gridStates.GetValueOrDefault(cell, TileState.Empty);
-		if (state == TileState.Empty)
-		{
-			HUDNode?.SetInteractionPrompt("[LMB] Till Soil");
-		}
-		else if (state == TileState.Tilled)
-		{
-			HUDNode?.SetInteractionPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
-		}
-		else if (state == TileState.Planted)
-		{
-			int tier = _plantedTiers.GetValueOrDefault(cell, 1);
-			HUDNode?.SetInteractionPrompt($"[LMB] Grab Tier {tier} Flower ({TierPoints[tier - 1]} pts) to Drag & Merge | [RMB] Remove");
-		}
-	}
-
-	private void UpdateHeldFlowerVisual(float dt)
-	{
-		if (!_heldCell.HasValue || !_plantedObjects.TryGetValue(_heldCell.Value, out var heldObj) || heldObj == null)
-			return;
-
-		Vector3 targetPos = _currentHoveredCell.HasValue
-			? GridToWorld(_currentHoveredCell.Value) + new Vector3(0, 1.8f, 0)
-			: GridToWorld(_heldCell.Value) + new Vector3(0, 1.8f, 0);
-
-		heldObj.GlobalPosition = heldObj.GlobalPosition.Lerp(targetPos, 20.0f * dt);
+		var state = tile?.State ?? TileState.Empty;
+		if (state == TileState.Empty) SetPrompt("[LMB] Till Soil");
+		else if (state == TileState.Tilled) SetPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
+		else SetPrompt($"[LMB] Grab Tier {tile.Tier} Flower ({TierPoints[tile.Tier - 1]} pts) to Drag & Merge | [RMB] Remove");
 	}
 
 	private void OnLeftClickPressed()
 	{
-		if (!_currentHoveredCell.HasValue) return;
-		Vector2I cell = _currentHoveredCell.Value;
+		if (!_hoveredCell.HasValue) return;
+		Vector2I cell = _hoveredCell.Value;
 
-		if (_heldCell.HasValue)
-		{
-			// Second click in click-to-pick / click-to-place mode
-			ExecuteDrop(cell);
-			return;
-		}
+		if (_heldCell.HasValue) { ExecuteDrop(cell); return; }
 
-		var state = _gridStates.GetValueOrDefault(cell, TileState.Empty);
-		if (state == TileState.Planted)
+		var tile = GetTile(cell);
+		if (tile?.State == TileState.Planted)
 		{
-			// Pick up flower to start drag / merge
 			_heldCell = cell;
-			_pressTimestamp = Time.GetTicksMsec();
-			_isDragHolding = true;
+			_pressTime = Time.GetTicksMsec();
+			_isDragging = true;
 		}
-		else if (state == TileState.Empty)
+		else if (tile == null || tile.State == TileState.Empty)
 		{
-			_gridStates[cell] = TileState.Tilled;
-			HUDNode?.SetInteractionPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
+			_tiles[cell] = new Tile { State = TileState.Tilled };
+			SetPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
 		}
-		else if (state == TileState.Tilled)
+		else if (tile.State == TileState.Tilled)
 		{
 			PlantCropAt(cell, 1);
 		}
@@ -212,239 +186,122 @@ public partial class Node3d : Node3D
 
 	private void OnLeftClickReleased()
 	{
-		if (!_heldCell.HasValue || !_isDragHolding) return;
-		_isDragHolding = false;
-
-		ulong heldDuration = Time.GetTicksMsec() - _pressTimestamp;
-
-		// If dragged to another cell or held longer than click threshold, execute drop
-		if (heldDuration > 220 || (_currentHoveredCell.HasValue && _currentHoveredCell.Value != _heldCell.Value))
+		if (!_heldCell.HasValue || !_isDragging) return;
+		_isDragging = false;
+		if (Time.GetTicksMsec() - _pressTime > 220 || (_hoveredCell.HasValue && _hoveredCell.Value != _heldCell.Value))
 		{
-			if (_currentHoveredCell.HasValue)
-			{
-				ExecuteDrop(_currentHoveredCell.Value);
-			}
-			else
-			{
-				CancelHeldFlower();
-			}
-		}
-		// Otherwise, keep holding for click-to-place style
-	}
-
-	private void OnRightClickPressed()
-	{
-		if (_heldCell.HasValue)
-		{
-			CancelHeldFlower();
-			return;
-		}
-
-		if (_currentHoveredCell.HasValue)
-		{
-			RemoveCrop(_currentHoveredCell.Value);
+			if (_hoveredCell.HasValue) ExecuteDrop(_hoveredCell.Value);
+			else CancelHold();
 		}
 	}
 
-	private void ExecuteDrop(Vector2I targetCell)
+	private void ExecuteDrop(Vector2I target)
 	{
 		if (!_heldCell.HasValue) return;
-		Vector2I fromCell = _heldCell.Value;
+		Vector2I from = _heldCell.Value;
+		if (target == from) { ResetVisual(from); _heldCell = null; return; }
 
-		if (targetCell == fromCell)
+		var fromTile = GetTile(from);
+		var targetTile = GetTile(target);
+
+		if (targetTile?.State == TileState.Planted && fromTile != null)
 		{
-			ResetFlowerPosition(fromCell);
-			_heldCell = null;
-			return;
-		}
-
-		var targetState = _gridStates.GetValueOrDefault(targetCell, TileState.Empty);
-
-		if (targetState == TileState.Planted)
-		{
-			int tierFrom = _plantedTiers.GetValueOrDefault(fromCell, 1);
-			int tierTo = _plantedTiers.GetValueOrDefault(targetCell, 1);
-
-			if (tierFrom == tierTo && tierFrom < 5)
+			if (fromTile.Tier == targetTile.Tier && fromTile.Tier < 5)
 			{
-				// MERGE FORMULA: Level N + Level N = Level N + 1
-				int newTier = tierFrom + 1;
+				int newTier = fromTile.Tier + 1;
+				fromTile.Visual?.QueueFree();
+				_tiles[from] = new Tile { State = TileState.Tilled };
 
-				// Remove old dragged flower
-				if (_plantedObjects.Remove(fromCell, out var oldObj)) oldObj.QueueFree();
-				_plantedTiers.Remove(fromCell);
-				_gridStates[fromCell] = TileState.Tilled;
+				targetTile.Visual?.QueueFree();
+				var flower = SpawnFlower(newTier);
+				AddChild(flower);
+				flower.GlobalPosition = GridToWorld(target);
+				_tiles[target] = new Tile { State = TileState.Planted, Tier = newTier, Visual = flower };
 
-				// Upgrade target flower
-				if (_plantedObjects.Remove(targetCell, out var targetOld)) targetOld.QueueFree();
-				Node3D upgradedFlower = CreateFlowerInstance(newTier);
-				AddChild(upgradedFlower);
-				upgradedFlower.GlobalPosition = GridToWorld(targetCell);
-
-				_plantedObjects[targetCell] = upgradedFlower;
-				_plantedTiers[targetCell] = newTier;
-
-				// Visual merge pulse tween
-				upgradedFlower.Scale = Vector3.One * 0.4f;
+				float s = Tiers[newTier - 1].Scale;
+				flower.Scale = Vector3.One * (s * 0.4f);
 				Tween tw = CreateTween();
-				tw.TweenProperty(upgradedFlower, "scale", Vector3.One * 1.35f, 0.12f);
-				tw.TweenProperty(upgradedFlower, "scale", Vector3.One, 0.15f);
+				tw.TweenProperty(flower, "scale", Vector3.One * (s * 1.35f), 0.12f);
+				tw.TweenProperty(flower, "scale", Vector3.One * s, 0.15f);
 
-				HUDNode?.SetInteractionPrompt($"[★ MERGED!] Level {newTier} Flower created! (+{TierPoints[newTier - 1]} pts)");
-				GD.Print($"[Node3d] MERGED: Level {tierFrom} + Level {tierFrom} -> Level {newTier} at {targetCell}");
+				SetPrompt($"[★ MERGED!] Level {newTier} Flower created! (+{TierPoints[newTier - 1]} pts)");
 				SaveManager.RecordMerge();
 			}
 			else
 			{
-				// SWAP: Different tiers or max tier
-				var objFrom = _plantedObjects[fromCell];
-				var objTo = _plantedObjects[targetCell];
-
-				_plantedObjects[fromCell] = objTo;
-				_plantedObjects[targetCell] = objFrom;
-
-				_plantedTiers[fromCell] = tierTo;
-				_plantedTiers[targetCell] = tierFrom;
-
-				objFrom.GlobalPosition = GridToWorld(targetCell);
-				objTo.GlobalPosition = GridToWorld(fromCell);
-
-				HUDNode?.SetInteractionPrompt("Swapped flower positions.");
+				_tiles[from] = targetTile;
+				_tiles[target] = fromTile;
+				if (fromTile.Visual != null) fromTile.Visual.GlobalPosition = GridToWorld(target);
+				if (targetTile.Visual != null) targetTile.Visual.GlobalPosition = GridToWorld(from);
+				SetPrompt("Swapped flower positions.");
 			}
 		}
-		else
+		else if (fromTile != null)
 		{
-			// MOVE: Target is Empty or Tilled
-			var obj = _plantedObjects[fromCell];
-			int tier = _plantedTiers[fromCell];
-
-			_plantedObjects.Remove(fromCell);
-			_plantedTiers.Remove(fromCell);
-			_gridStates[fromCell] = TileState.Tilled;
-
-			_gridStates[targetCell] = TileState.Planted;
-			_plantedObjects[targetCell] = obj;
-			_plantedTiers[targetCell] = tier;
-
-			obj.GlobalPosition = GridToWorld(targetCell);
-			HUDNode?.SetInteractionPrompt($"Moved Tier {tier} flower to {targetCell}.");
+			_tiles[target] = fromTile;
+			_tiles[from] = new Tile { State = TileState.Tilled };
+			if (fromTile.Visual != null) fromTile.Visual.GlobalPosition = GridToWorld(target);
+			SetPrompt($"Moved Tier {fromTile.Tier} flower to {target}.");
 		}
-
 		_heldCell = null;
 	}
 
-	private void CancelHeldFlower()
+	private void CancelHold()
 	{
-		if (_heldCell.HasValue)
-		{
-			ResetFlowerPosition(_heldCell.Value);
-			_heldCell = null;
-			HUDNode?.ClearInteractionPrompt();
-		}
+		if (!_heldCell.HasValue) return;
+		ResetVisual(_heldCell.Value);
+		_heldCell = null;
+		ClearPrompt();
 	}
 
-	private void ResetFlowerPosition(Vector2I cell)
+	private void ResetVisual(Vector2I cell)
 	{
-		if (_plantedObjects.TryGetValue(cell, out var obj) && obj != null)
-		{
-			obj.GlobalPosition = GridToWorld(cell);
-		}
+		if (GetTile(cell)?.Visual is { } vis) vis.GlobalPosition = GridToWorld(cell);
 	}
 
 	private void PlantCropAt(Vector2I cell, int level = 1)
 	{
 		level = Mathf.Clamp(level, 1, 5);
-		_gridStates[cell] = TileState.Planted;
-		_plantedTiers[cell] = level;
-
-		Node3D crop = CropPrefab?.Instantiate<Node3D>() ?? CreateFlowerInstance(level);
+		Node3D crop = SpawnFlower(level);
 		AddChild(crop);
 		crop.GlobalPosition = GridToWorld(cell);
-		_plantedObjects[cell] = crop;
-
-		HUDNode?.SetInteractionPrompt($"Planted Tier {level} Flower! (+{TierPoints[level - 1]} pts)");
+		_tiles[cell] = new Tile { State = TileState.Planted, Tier = level, Visual = crop };
+		SetPrompt($"Planted Tier {level} Flower! (+{TierPoints[level - 1]} pts)");
 	}
 
-	private Node3D CreateFlowerInstance(int level)
+	private Node3D SpawnFlower(int level)
 	{
 		level = Mathf.Clamp(level, 1, 5);
-		Node3D root = new() { Name = $"Flower_T{level}" };
+		var tier = Tiers[level - 1];
+		CropPrefab ??= GD.Load<PackedScene>("res://scenes/flower.tscn");
+		Node3D flower = CropPrefab?.Instantiate<Node3D>() ?? new Node3D();
+		flower.Name = $"Flower_T{level}";
+		flower.Scale = Vector3.One * tier.Scale;
 
-		float scaleMultiplier = TierScales[level - 1];
-		Color blossomColor = TierColors[level - 1];
-
-		// Stem Mesh
-		var stemMesh = new MeshInstance3D
+		var blossomMat = new StandardMaterial3D
 		{
-			Name = "Stem",
-			Mesh = new CylinderMesh
-			{
-				TopRadius = 0.15f * scaleMultiplier,
-				BottomRadius = 0.20f * scaleMultiplier,
-				Height = 1.8f * scaleMultiplier
-			},
-			MaterialOverride = new StandardMaterial3D
-			{
-				AlbedoColor = new Color(0.15f, 0.55f, 0.18f),
-				Roughness = 0.6f
-			},
-			Position = new Vector3(0, (1.8f * scaleMultiplier) / 2.0f, 0)
-		};
-		root.AddChild(stemMesh);
-
-		// Blossom Center
-		var blossomMaterial = new StandardMaterial3D
-		{
-			AlbedoColor = blossomColor,
-			Roughness = 0.35f
+			AlbedoColor = tier.Color,
+			Roughness = 0.35f,
+			EmissionEnabled = level == 5,
+			Emission = new Color(0.08f, 0.55f, 0.25f),
+			EmissionEnergyMultiplier = level == 5 ? 1.5f : 0.0f
 		};
 
-		if (level == 5)
-		{
-			blossomMaterial.EmissionEnabled = true;
-			blossomMaterial.Emission = new Color(0.08f, 0.55f, 0.25f);
-			blossomMaterial.EmissionEnergyMultiplier = 1.5f;
-		}
+		if (flower.GetNodeOrNull<MeshInstance3D>("Blossom") is { } blossom)
+			blossom.MaterialOverride = blossomMat;
+		if (flower.GetNodeOrNull<MeshInstance3D>("Petals") is { } petals)
+			petals.MaterialOverride = blossomMat;
 
-		var blossomMesh = new MeshInstance3D
-		{
-			Name = "Blossom",
-			Mesh = new SphereMesh
-			{
-				Radius = 0.65f * scaleMultiplier,
-				Height = 1.0f * scaleMultiplier
-			},
-			MaterialOverride = blossomMaterial,
-			Position = new Vector3(0, 1.8f * scaleMultiplier + (0.3f * scaleMultiplier), 0)
-		};
-		root.AddChild(blossomMesh);
-
-		// Petal Ring
-		var petalRing = new MeshInstance3D
-		{
-			Name = "Petals",
-			Mesh = new TorusMesh
-			{
-				InnerRadius = 0.25f * scaleMultiplier,
-				OuterRadius = 0.80f * scaleMultiplier
-			},
-			MaterialOverride = blossomMaterial,
-			Position = new Vector3(0, 1.8f * scaleMultiplier + (0.15f * scaleMultiplier), 0)
-		};
-		root.AddChild(petalRing);
-
-		root.SetMeta("Level", level);
-		return root;
+		flower.SetMeta("Level", level);
+		return flower;
 	}
 
 	private void RemoveCrop(Vector2I cell)
 	{
-		if (_gridStates.GetValueOrDefault(cell, TileState.Empty) != TileState.Empty)
+		if (_tiles.Remove(cell, out var tile))
 		{
-			if (_plantedObjects.Remove(cell, out var obj)) obj.QueueFree();
-			_plantedTiers.Remove(cell);
-			_gridStates[cell] = TileState.Empty;
-			HUDNode?.SetInteractionPrompt("Removed crop.");
+			tile.Visual?.QueueFree();
+			SetPrompt("Removed crop.");
 		}
 	}
 
@@ -461,16 +318,14 @@ public partial class Node3d : Node3D
 
 	public bool IsInsideGrid(Vector2I cell) => cell.X >= 0 && cell.X < GridWidth && cell.Y >= 0 && cell.Y < GridHeight;
 
-	public int GetPlantedCropCount() => _gridStates.Values.Count(s => s == TileState.Planted);
+	public int GetPlantedCropCount() => _tiles.Values.Count(t => t.State == TileState.Planted);
 
 	public Dictionary<int, int> GetFlowerTierCounts()
 	{
-		var tierCounts = new Dictionary<int, int> { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 } };
-		foreach (var kvp in _plantedTiers)
-		{
-			int level = Mathf.Clamp(kvp.Value, 1, 5);
-			tierCounts[level]++;
-		}
-		return tierCounts;
+		var counts = new Dictionary<int, int> { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 } };
+		foreach (var t in _tiles.Values)
+			if (t.State == TileState.Planted && t.Tier is >= 1 and <= 5)
+				counts[t.Tier]++;
+		return counts;
 	}
 }

@@ -11,7 +11,6 @@
 [ext_resource type="PackedScene" uid="uid://bwoxifln5d5re" path="res://scenes/ui/jumpscare_screen.tscn" id="9_jumpscare"]
 [ext_resource type="PackedScene" uid="uid://byopg1iqtcd6q" path="res://scenes/ui/victory_screen.tscn" id="10_victory"]
 [ext_resource type="Script" uid="uid://23mroof4squl" path="res://scripts/environment/AtmosphereManager.cs" id="11_atmosphere"]
-[ext_resource type="Script" uid="uid://c5cpe6lvgxmxx" path="res://scripts/save/SaveManager.cs" id="12_savemanager"]
 [ext_resource type="PackedScene" path="res://scenes/security/ani_ani_monster.tscn" id="13_anianimonster"]
 [ext_resource type="PackedScene" uid="uid://dpjht3t8bvxg1" path="res://scenes/security/cctv_overlay.tscn" id="14_cctvoverlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="15_pausemenu"]
@@ -56,9 +55,6 @@ GameManagerNode = NodePath("../GameManager")
 SunLightNode = NodePath("../DirectionalLight3D")
 WorldEnvironmentNode = NodePath("../WorldEnvironment")
 InteriorLightNode = NodePath("../HouseInterior/CeilingLight")
-
-[node name="SaveManager" type="Node" parent="." unique_id=1498327154]
-script = ExtResource("12_savemanager")
 
 [node name="GameManager" type="Node" parent="." unique_id=1698871464 node_paths=PackedStringArray("FadeRect")]
 script = ExtResource("1_gamemanager")

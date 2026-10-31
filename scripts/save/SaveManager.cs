@@ -7,6 +7,7 @@
 // Change Log:
 // - Oct 30, 2026 | air : Implemented persistent JSON save system and ranked leaderboard standings
 // - Oct 30, 2026 | air : Added AudioSettings persistence for Master, Music, SFX, and display options
+// - Oct 31, 2026 | air : Compacted file I/O, DTO initializers, and leaderboard table formatting
 // =========================================================================================
 using Godot;
 using System;
@@ -17,14 +18,14 @@ using System.Text.Json;
 public class PlayerProfile
 {
 	public string PlayerName { get; set; } = "Survivor";
-	public int TotalGamesPlayed { get; set; } = 0;
-	public int TotalVictories { get; set; } = 0;
-	public int TotalBreaches { get; set; } = 0;
+	public int TotalGamesPlayed { get; set; }
+	public int TotalVictories { get; set; }
+	public int TotalBreaches { get; set; }
 	public int HighestDayReached { get; set; } = 1;
-	public int AllTimeHighScore { get; set; } = 0;
-	public int TotalCoinsEarned { get; set; } = 0;
-	public int TotalMerges { get; set; } = 0;
-	public int TotalAttacksRepelled { get; set; } = 0;
+	public int AllTimeHighScore { get; set; }
+	public int TotalCoinsEarned { get; set; }
+	public int TotalMerges { get; set; }
+	public int TotalAttacksRepelled { get; set; }
 }
 
 public class AudioSettings
@@ -32,16 +33,16 @@ public class AudioSettings
 	public float MasterVolume { get; set; } = 1.0f;
 	public float MusicVolume { get; set; } = 0.8f;
 	public float SFXVolume { get; set; } = 1.0f;
-	public bool Fullscreen { get; set; } = false;
+	public bool Fullscreen { get; set; }
 }
 
 public class LeaderboardEntry
 {
 	public string PlayerName { get; set; } = "Survivor";
-	public int Score { get; set; } = 0;
+	public int Score { get; set; }
 	public int DayReached { get; set; } = 1;
-	public bool Survived { get; set; } = false;
-	public int Coins { get; set; } = 0;
+	public bool Survived { get; set; }
+	public int Coins { get; set; }
 	public string Date { get; set; } = "";
 }
 
@@ -58,101 +59,59 @@ public partial class SaveManager : Node
 	public const string SaveFilePath = "user://save_data.json";
 
 	private static SaveData _cachedData;
-	public static SaveData CurrentData
-	{
-		get
-		{
-			if (_cachedData == null) LoadDirect();
-			return _cachedData;
-		}
-	}
+	public static SaveData CurrentData => _cachedData ?? LoadDirect();
 
 	public override void _EnterTree()
 	{
-		if (Instance != null && Instance != this)
-		{
-			QueueFree();
-			return;
-		}
+		if (Instance != null && Instance != this) { QueueFree(); return; }
 		Instance = this;
 		LoadDirect();
 	}
 
-	public static void LoadDirect()
+	public static SaveData LoadDirect()
 	{
 		try
 		{
-			if (!FileAccess.FileExists(SaveFilePath))
+			if (FileAccess.FileExists(SaveFilePath))
 			{
-				_cachedData = CreateDefaultSaveData();
-				SaveDirect();
-				return;
+				using var file = FileAccess.Open(SaveFilePath, FileAccess.ModeFlags.Read);
+				if (file != null)
+					_cachedData = JsonSerializer.Deserialize<SaveData>(file.GetAsText());
 			}
-
-			using var file = FileAccess.Open(SaveFilePath, FileAccess.ModeFlags.Read);
-			if (file == null)
-			{
-				_cachedData = CreateDefaultSaveData();
-				return;
-			}
-
-			string json = file.GetAsText();
-			_cachedData = JsonSerializer.Deserialize<SaveData>(json) ?? CreateDefaultSaveData();
 		}
-		catch (Exception ex)
-		{
-			GD.PrintErr($"[SaveManager] Failed to load {SaveFilePath}: {ex.Message}. Falling back to defaults.");
-			_cachedData = CreateDefaultSaveData();
-		}
+		catch { }
+		return _cachedData ??= CreateDefaultSaveData();
 	}
 
 	public static void SaveDirect()
 	{
 		try
 		{
-			if (_cachedData == null)
-				_cachedData = CreateDefaultSaveData();
-
-			var options = new JsonSerializerOptions { WriteIndented = true };
-			string json = JsonSerializer.Serialize(_cachedData, options);
-
 			using var file = FileAccess.Open(SaveFilePath, FileAccess.ModeFlags.Write);
-			if (file != null)
-			{
-				file.StoreString(json);
-			}
+			file?.StoreString(JsonSerializer.Serialize(_cachedData ??= CreateDefaultSaveData(), new JsonSerializerOptions { WriteIndented = true }));
 		}
-		catch (Exception ex)
-		{
-			GD.PrintErr($"[SaveManager] Failed to save {SaveFilePath}: {ex.Message}");
-		}
+		catch { }
 	}
 
-	private static SaveData CreateDefaultSaveData()
+	private static SaveData CreateDefaultSaveData() => new()
 	{
-		return new SaveData
+		Profile = new PlayerProfile(),
+		Audio = new AudioSettings(),
+		Leaderboard = new List<LeaderboardEntry>
 		{
-			Profile = new PlayerProfile { PlayerName = "Survivor" },
-			Audio = new AudioSettings(),
-			Leaderboard = new List<LeaderboardEntry>
-			{
-				new() { PlayerName = "Grand Champion", Score = 320, DayReached = 7, Survived = true, Coins = 20, Date = "Legacy Record" },
-				new() { PlayerName = "Night Watcher", Score = 240, DayReached = 7, Survived = true, Coins = 15, Date = "Legacy Record" },
-				new() { PlayerName = "Country Farmer", Score = 130, DayReached = 5, Survived = false, Coins = 8, Date = "Legacy Record" },
-				new() { PlayerName = "Ani-Ani Evader", Score = 75, DayReached = 3, Survived = false, Coins = 5, Date = "Legacy Record" }
-			}
-		};
-	}
+			new() { PlayerName = "Grand Champion", Score = 320, DayReached = 7, Survived = true, Coins = 20, Date = "Legacy Record" },
+			new() { PlayerName = "Night Watcher", Score = 240, DayReached = 7, Survived = true, Coins = 15, Date = "Legacy Record" },
+			new() { PlayerName = "Country Farmer", Score = 130, DayReached = 5, Survived = false, Coins = 8, Date = "Legacy Record" },
+			new() { PlayerName = "Ani-Ani Evader", Score = 75, DayReached = 3, Survived = false, Coins = 5, Date = "Legacy Record" }
+		}
+	};
 
 	public static int RecordGameResult(string playerName, int score, int dayReached, bool survived, int coins, out LeaderboardEntry entry)
 	{
 		var data = CurrentData;
-		if (string.IsNullOrWhiteSpace(playerName))
-			playerName = data.Profile.PlayerName;
-
 		entry = new LeaderboardEntry
 		{
-			PlayerName = playerName,
+			PlayerName = string.IsNullOrWhiteSpace(playerName) ? data.Profile.PlayerName : playerName.Trim(),
 			Score = score,
 			DayReached = dayReached,
 			Survived = survived,
@@ -160,39 +119,22 @@ public partial class SaveManager : Node
 			Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
 		};
 
-		// Update lifetime profile statistics
 		data.Profile.TotalGamesPlayed++;
-		if (survived) data.Profile.TotalVictories++;
-		else data.Profile.TotalBreaches++;
-
+		if (survived) data.Profile.TotalVictories++; else data.Profile.TotalBreaches++;
 		data.Profile.HighestDayReached = Mathf.Max(data.Profile.HighestDayReached, dayReached);
 		data.Profile.AllTimeHighScore = Mathf.Max(data.Profile.AllTimeHighScore, score);
 		data.Profile.TotalCoinsEarned += coins;
 
-		// Insert into ranked leaderboard
 		data.Leaderboard.Add(entry);
-		data.Leaderboard = data.Leaderboard
-			.OrderByDescending(e => e.Score)
-			.ThenByDescending(e => e.DayReached)
-			.Take(10)
-			.ToList();
+		data.Leaderboard = data.Leaderboard.OrderByDescending(e => e.Score).ThenByDescending(e => e.DayReached).Take(10).ToList();
 
-		int rank = data.Leaderboard.IndexOf(entry) + 1; // 1-indexed rank, or 0 if knocked off top 10
+		int rank = data.Leaderboard.IndexOf(entry) + 1;
 		SaveDirect();
 		return rank;
 	}
 
-	public static void RecordMerge()
-	{
-		CurrentData.Profile.TotalMerges++;
-		SaveDirect();
-	}
-
-	public static void RecordAttackRepelled()
-	{
-		CurrentData.Profile.TotalAttacksRepelled++;
-		SaveDirect();
-	}
+	public static void RecordMerge() { CurrentData.Profile.TotalMerges++; SaveDirect(); }
+	public static void RecordAttackRepelled() { CurrentData.Profile.TotalAttacksRepelled++; SaveDirect(); }
 
 	public static void SetPlayerName(string name)
 	{
@@ -203,28 +145,14 @@ public partial class SaveManager : Node
 		}
 	}
 
-	public static string GetLeaderboardFormatted(LeaderboardEntry highlightEntry = null, int maxDisplay = 5)
+	public static string GetLeaderboardFormatted(LeaderboardEntry highlight = null, int maxDisplay = 5)
 	{
-		var data = CurrentData;
-		var lines = new List<string> { "RANK   NAME                 SCORE" };
-
-		int count = Math.Min(data.Leaderboard.Count, maxDisplay);
-		for (int i = 0; i < count; i++)
+		var rows = CurrentData.Leaderboard.Take(maxDisplay).Select((e, i) =>
 		{
-			var item = data.Leaderboard[i];
-			int rank = i + 1;
-			bool isHighlight = highlightEntry != null && ReferenceEquals(item, highlightEntry);
-
-			string name = item.PlayerName;
-			if (name.Length > 18) name = name.Substring(0, 15) + "...";
-
-			string line = isHighlight
-				? $"#{rank,-4} >>> {name,-16} {item.Score,4} pts <<<"
-				: $"#{rank,-4} {name,-20} {item.Score,4} pts";
-
-			lines.Add(line);
-		}
-
-		return string.Join("\n", lines);
+			string name = e.PlayerName.Length > 18 ? e.PlayerName[..15] + "..." : e.PlayerName;
+			bool hl = highlight != null && ReferenceEquals(e, highlight);
+			return hl ? $"#{i + 1,-4} >>> {name,-16} {e.Score,4} pts <<<" : $"#{i + 1,-4} {name,-20} {e.Score,4} pts";
+		});
+		return "RANK   NAME                 SCORE\n" + string.Join("\n", rows);
 	}
 }

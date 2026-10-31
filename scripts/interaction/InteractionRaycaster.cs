@@ -8,6 +8,7 @@
 // - Oct 24, 2026 | air : Added viewport center raycast aiming support when mouse is captured in First-Person mode
 // - Oct 24, 2026 | air : Streamlined raycasting queries and ancestor resolution for Alpha build
 // - Oct 30, 2026 | air : Adapted raycaster strictly for First-Person crosshair center-ray targeting
+// - Oct 31, 2026 | air : Optimized prompt dispatch to fire only on target transitions, preventing prompt flicker
 // =========================================================================================
 using Godot;
 
@@ -73,18 +74,19 @@ public partial class InteractionRaycaster : Node3D
 
 		if (found != CurrentInteractable)
 		{
+			bool hadInteractable = CurrentInteractable != null;
 			CurrentInteractable = found;
 			CurrentTargetNode = foundNode;
 			EmitSignal(SignalName.TargetChanged, CurrentTargetNode);
-		}
 
-		HUD ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
-		if (HUD != null)
-		{
-			if (CurrentInteractable != null && CurrentInteractable.CanInteract(Player))
-				HUD.SetInteractionPrompt(CurrentInteractable.GetPrompt());
-			else
-				HUD.ClearInteractionPrompt();
+			HUD ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
+			if (HUD != null)
+			{
+				if (CurrentInteractable != null && CurrentInteractable.CanInteract(Player))
+					HUD.SetInteractionPrompt(CurrentInteractable.GetPrompt());
+				else if (hadInteractable)
+					HUD.ClearInteractionPrompt();
+			}
 		}
 	}
 

@@ -9,6 +9,8 @@
 // Change Log:
 // - Oct 30, 2026 | air : Implemented CCTV monitor overlay with scanlines, timestamp, and REC dot
 // - Oct 30, 2026 | air : Aligned OSD layout with exact two-row specifications and corner viewfinder frame
+// - Oct 31, 2026 | air : Exposed ChannelNames as public static single source of truth for CCTV feeds
+// - Oct 31, 2026 | air : Compacted timer updates and node resolution
 // =========================================================================================
 using Godot;
 using System;
@@ -25,7 +27,7 @@ public partial class CCTVOverlay : CanvasLayer
 	[Export] public Label ExitLabel;
 	[Export] public ColorRect ScanlinesRect;
 
-	private readonly string[] _channelNames =
+	public static readonly string[] ChannelNames =
 	{
 		"CAM 01 - NORTH PERIMETER",
 		"CAM 02 - EAST PORCH & DOOR",
@@ -33,14 +35,13 @@ public partial class CCTVOverlay : CanvasLayer
 		"CAM 04 - WEST BOUNDARY"
 	};
 
-	private int _currentChannel = 0;
-	private float _recTimer = 0.0f;
+	private int _currentChannel;
+	private float _recTimer;
 	private float _clockTimer = 1.0f;
 
 	public override void _Ready()
 	{
-		Layer = 60; // Render above 3D world, below jumpscare/pause screens
-
+		Layer = 60;
 		ChannelLabel ??= GetNodeOrNull<Label>("Container/Header/ChannelLabel");
 		RecDot ??= GetNodeOrNull<Label>("Container/Header/RecContainer/RecDot");
 		RecText ??= GetNodeOrNull<Label>("Container/Header/RecContainer/RecText");
@@ -52,73 +53,36 @@ public partial class CCTVOverlay : CanvasLayer
 
 		SetChannel(0);
 		UpdateTimestamp();
-
 		Visible = false;
 	}
 
 	public override void _Process(double delta)
 	{
 		if (!Visible) return;
-
 		float dt = (float)delta;
 
-		// Blinking REC dot (1 Hz)
 		_recTimer += dt;
-		if (RecDot != null)
-		{
-			RecDot.Visible = (Mathf.FloorToInt(_recTimer * 2.0f) % 2) == 0;
-		}
+		if (RecDot != null) RecDot.Visible = (Mathf.FloorToInt(_recTimer * 2f) % 2) == 0;
 
-		// Update live timestamp every second
 		_clockTimer += dt;
-		if (_clockTimer >= 1.0f)
-		{
-			_clockTimer = 0.0f;
-			UpdateTimestamp();
-		}
+		if (_clockTimer >= 1f) { _clockTimer = 0f; UpdateTimestamp(); }
 	}
 
-	public void ShowOverlay(int channelIndex = 0)
-	{
-		Visible = true;
-		SetChannel(channelIndex);
-		UpdateTimestamp();
-	}
-
-	public void HideOverlay()
-	{
-		Visible = false;
-	}
+	public void ShowOverlay(int channelIndex = 0) { Visible = true; SetChannel(channelIndex); UpdateTimestamp(); }
+	public void HideOverlay() => Visible = false;
 
 	public void SetChannel(int channelIndex)
 	{
-		_currentChannel = Mathf.Clamp(channelIndex, 0, _channelNames.Length - 1);
-		if (ChannelLabel != null)
-		{
-			ChannelLabel.Text = _channelNames[_currentChannel];
-		}
-
-		if (StatusLabel != null)
-		{
-			StatusLabel.Text = "SIGNAL: 98% | 30 FPS";
-		}
-
-		if (ControlsLabel != null)
-		{
-			ControlsLabel.Text = "[1-4 / TAB] SWITCH CAMERA";
-		}
-
-		if (ExitLabel != null)
-		{
-			ExitLabel.Text = "[E / N] EXIT DESK";
-		}
+		_currentChannel = Mathf.Clamp(channelIndex, 0, ChannelNames.Length - 1);
+		if (ChannelLabel != null) ChannelLabel.Text = ChannelNames[_currentChannel];
+		if (StatusLabel != null) StatusLabel.Text = "SIGNAL: 98% | 30 FPS";
+		if (ControlsLabel != null) ControlsLabel.Text = "[1-4 / TAB] SWITCH CAMERA";
+		if (ExitLabel != null) ExitLabel.Text = "[E / N] EXIT DESK";
 	}
 
 	private void UpdateTimestamp()
 	{
 		if (TimestampLabel != null)
-		{
 			TimestampLabel.Text = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt").ToUpper();
-		}
 	}
 }

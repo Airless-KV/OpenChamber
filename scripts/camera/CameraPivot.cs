@@ -9,13 +9,15 @@
 // - Oct 30, 2026 | air : Transitioned camera exclusively to First-Person horror perspective
 //                        Removed 3rd-person orbit, wheel zoom, and perspective toggle keys
 //                        Streamlined mouse look clamping and CCTV feed switching
+// - Oct 31, 2026 | air : Removed duplicate Escape key intercept to prevent conflict with PauseMenu
+// - Oct 31, 2026 | air : Compacted mouse look and target follow interpolation
 // =========================================================================================
 using Godot;
 
 public partial class CameraPivot : Node3D
 {
 	[ExportGroup("First-Person Settings")]
-	[Export] public Vector3 FollowOffset = new(0, 1.45f, 0); // Eye level height
+	[Export] public Vector3 FollowOffset = new(0, 1.45f, 0);
 	[Export] public float MouseSensitivity = 0.0035f;
 	[Export] public float MinPitchDegrees = -85.0f;
 	[Export] public float MaxPitchDegrees = 85.0f;
@@ -24,30 +26,21 @@ public partial class CameraPivot : Node3D
 	[Export] public Node3D Target;
 	[Export] public float FollowSpeed = 25.0f;
 
-	private Camera3D _camera;
-	private PlayerController _playerController;
 	private Control _crosshair;
-	private float _pitch = 0f;
-	private float _yaw = 0f;
-	private bool _isCCTVActive = false;
+	private float _pitch;
+	private float _yaw;
+	private bool _isCCTVActive;
 
 	public override void _Ready()
 	{
-		_camera = GetNodeOrNull<Camera3D>("Camera3D");
-		if (_camera != null)
-			_camera.Position = Vector3.Zero;
-
+		if (GetNodeOrNull<Camera3D>("Camera3D") is { } cam) cam.Position = Vector3.Zero;
 		Target ??= GetTree().Root.FindChild("Player", true, false) as Node3D;
-		_playerController = Target as PlayerController;
-
-		if (_playerController?.VisualRoot != null)
-			_playerController.VisualRoot.Visible = false;
+		if (Target is PlayerController { VisualRoot: { } vis }) vis.Visible = false;
 
 		_yaw = Rotation.Y;
 		_pitch = Rotation.X;
-
 		Input.MouseMode = Input.MouseModeEnum.Captured;
-		UpdateCrosshairVisibility();
+		UpdateCrosshair();
 	}
 
 	public void SetCCTVActive(bool active)
@@ -56,38 +49,23 @@ public partial class CameraPivot : Node3D
 		SetProcess(!_isCCTVActive);
 		SetProcessInput(!_isCCTVActive);
 		Input.MouseMode = _isCCTVActive ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
-		UpdateCrosshairVisibility();
+		UpdateCrosshair();
 	}
 
 	public override void _Input(InputEvent @event)
 	{
 		if (_isCCTVActive) return;
 
-		// Escape to toggle mouse capture during gameplay
-		if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
-		{
-			Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured 
-				? Input.MouseModeEnum.Visible 
-				: Input.MouseModeEnum.Captured;
-			return;
-		}
-
-		// Click to recapture mouse if freed
 		if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } && Input.MouseMode == Input.MouseModeEnum.Visible)
 		{
 			Input.MouseMode = Input.MouseModeEnum.Captured;
 			return;
 		}
 
-		// First-Person Mouse Look
 		if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
 		{
 			_yaw -= motion.Relative.X * MouseSensitivity;
-			_pitch = Mathf.Clamp(
-				_pitch - motion.Relative.Y * MouseSensitivity, 
-				Mathf.DegToRad(MinPitchDegrees), 
-				Mathf.DegToRad(MaxPitchDegrees)
-			);
+			_pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, Mathf.DegToRad(MinPitchDegrees), Mathf.DegToRad(MaxPitchDegrees));
 			Rotation = new Vector3(_pitch, _yaw, 0f);
 		}
 	}
@@ -95,16 +73,12 @@ public partial class CameraPivot : Node3D
 	public override void _Process(double delta)
 	{
 		if (Target != null)
-		{
-			Vector3 targetPos = Target.GlobalPosition + FollowOffset;
-			GlobalPosition = GlobalPosition.Lerp(targetPos, FollowSpeed * (float)delta);
-		}
+			GlobalPosition = GlobalPosition.Lerp(Target.GlobalPosition + FollowOffset, FollowSpeed * (float)delta);
 	}
 
-	private void UpdateCrosshairVisibility()
+	private void UpdateCrosshair()
 	{
 		_crosshair ??= GetTree().Root.FindChild("Crosshair", true, false) as Control;
-		if (_crosshair != null)
-			_crosshair.Visible = !_isCCTVActive;
+		if (_crosshair != null) _crosshair.Visible = !_isCCTVActive;
 	}
 }

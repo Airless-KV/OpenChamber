@@ -7,12 +7,98 @@
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 30, 2026 | air : Implemented dynamic Day/Night lighting and atmosphere system
+// - Oct 31, 2026 | air : Streamlined atmosphere profiles into encapsulated struct, eliminated
+//                        redundant lerp fields and multi-parameter target resolution
 // =========================================================================================
 using Godot;
 using System;
 
 public partial class AtmosphereManager : Node3D
 {
+	public struct AtmosphereProfile
+	{
+		public Color SunColor;
+		public float SunEnergy;
+		public Vector3 SunRotation;
+		public Color SkyTop;
+		public Color SkyHorizon;
+		public Color AmbientColor;
+		public float AmbientEnergy;
+		public Color FogColor;
+		public float FogDensity;
+		public float Saturation;
+		public float Contrast;
+		public float InteriorEnergy;
+
+		public static AtmosphereProfile Lerp(AtmosphereProfile a, AtmosphereProfile b, float t) => new()
+		{
+			SunColor = a.SunColor.Lerp(b.SunColor, t),
+			SunEnergy = Mathf.Lerp(a.SunEnergy, b.SunEnergy, t),
+			SunRotation = new Vector3(
+				Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(a.SunRotation.X), Mathf.DegToRad(b.SunRotation.X), t)),
+				Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(a.SunRotation.Y), Mathf.DegToRad(b.SunRotation.Y), t)),
+				Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(a.SunRotation.Z), Mathf.DegToRad(b.SunRotation.Z), t))
+			),
+			SkyTop = a.SkyTop.Lerp(b.SkyTop, t),
+			SkyHorizon = a.SkyHorizon.Lerp(b.SkyHorizon, t),
+			AmbientColor = a.AmbientColor.Lerp(b.AmbientColor, t),
+			AmbientEnergy = Mathf.Lerp(a.AmbientEnergy, b.AmbientEnergy, t),
+			FogColor = a.FogColor.Lerp(b.FogColor, t),
+			FogDensity = Mathf.Lerp(a.FogDensity, b.FogDensity, t),
+			Saturation = Mathf.Lerp(a.Saturation, b.Saturation, t),
+			Contrast = Mathf.Lerp(a.Contrast, b.Contrast, t),
+			InteriorEnergy = Mathf.Lerp(a.InteriorEnergy, b.InteriorEnergy, t)
+		};
+	}
+
+	public static readonly AtmosphereProfile DayProfile = new()
+	{
+		SunColor = new(1.0f, 0.94f, 0.82f),
+		SunEnergy = 1.30f,
+		SunRotation = new(-52.0f, 35.0f, 0.0f),
+		SkyTop = new(0.35f, 0.62f, 0.95f),
+		SkyHorizon = new(0.72f, 0.82f, 0.92f),
+		AmbientColor = new(0.85f, 0.82f, 0.75f),
+		AmbientEnergy = 0.35f,
+		FogColor = new(0.82f, 0.86f, 0.92f),
+		FogDensity = 0.0015f,
+		Saturation = 1.05f,
+		Contrast = 1.02f,
+		InteriorEnergy = 0.25f
+	};
+
+	public static readonly AtmosphereProfile DuskProfile = new()
+	{
+		SunColor = new(1.0f, 0.58f, 0.28f),
+		SunEnergy = 0.85f,
+		SunRotation = new(-8.0f, 75.0f, 0.0f),
+		SkyTop = new(0.18f, 0.20f, 0.42f),
+		SkyHorizon = new(0.92f, 0.48f, 0.28f),
+		AmbientColor = new(0.55f, 0.42f, 0.42f),
+		AmbientEnergy = 0.24f,
+		FogColor = new(0.42f, 0.35f, 0.45f),
+		FogDensity = 0.015f,
+		Saturation = 0.92f,
+		Contrast = 1.08f,
+		InteriorEnergy = 0.80f
+	};
+
+	public static readonly AtmosphereProfile NightProfile = new()
+	{
+		SunColor = new(0.32f, 0.45f, 0.70f),
+		SunEnergy = 0.18f,
+		SunRotation = new(-30.0f, -145.0f, 0.0f),
+		SkyTop = new(0.015f, 0.020f, 0.040f),
+		SkyHorizon = new(0.050f, 0.080f, 0.130f),
+		AmbientColor = new(0.07f, 0.10f, 0.17f),
+		AmbientEnergy = 0.10f,
+		FogColor = new(0.10f, 0.14f, 0.20f),
+		FogDensity = 0.045f,
+		Saturation = 0.42f,
+		Contrast = 1.18f,
+		InteriorEnergy = 1.40f
+	};
+
 	[ExportGroup("Dependencies")]
 	[Export] public GameManager GameManagerNode;
 	[Export] public DirectionalLight3D SunLightNode;
@@ -23,67 +109,12 @@ public partial class AtmosphereManager : Node3D
 	[Export] public float TransitionSpeed = 2.5f;
 	[Export] public bool EnableDynamicSunMovement = true;
 
-	[ExportGroup("Daytime Sunlight Settings")]
-	[Export] public Color DaySunColor = new(1.0f, 0.94f, 0.82f);
-	[Export] public float DaySunEnergy = 1.30f;
-	[Export] public Vector3 DaySunRotationDegrees = new(-52.0f, 35.0f, 0.0f);
-	[Export] public Color DaySkyTopColor = new(0.35f, 0.62f, 0.95f);
-	[Export] public Color DaySkyHorizonColor = new(0.72f, 0.82f, 0.92f);
-	[Export] public Color DayAmbientColor = new(0.85f, 0.82f, 0.75f);
-	[Export] public float DayAmbientEnergy = 0.35f;
-	[Export] public Color DayFogColor = new(0.82f, 0.86f, 0.92f);
-	[Export] public float DayFogDensity = 0.0015f;
-	[Export] public float DaySaturation = 1.05f;
-	[Export] public float DayContrast = 1.02f;
-	[Export] public float DayInteriorLightEnergy = 0.25f;
-
-	[ExportGroup("Dusk Sunset Settings")]
-	[Export] public Color DuskSunColor = new(1.0f, 0.58f, 0.28f);
-	[Export] public float DuskSunEnergy = 0.85f;
-	[Export] public Vector3 DuskSunRotationDegrees = new(-8.0f, 75.0f, 0.0f);
-	[Export] public Color DuskSkyTopColor = new(0.18f, 0.20f, 0.42f);
-	[Export] public Color DuskSkyHorizonColor = new(0.92f, 0.48f, 0.28f);
-	[Export] public Color DuskAmbientColor = new(0.55f, 0.42f, 0.42f);
-	[Export] public float DuskAmbientEnergy = 0.24f;
-	[Export] public Color DuskFogColor = new(0.42f, 0.35f, 0.45f);
-	[Export] public float DuskFogDensity = 0.015f;
-	[Export] public float DuskSaturation = 0.92f;
-	[Export] public float DuskContrast = 1.08f;
-	[Export] public float DuskInteriorLightEnergy = 0.80f;
-
-	[ExportGroup("Nighttime Horror Settings")]
-	[Export] public Color NightMoonColor = new(0.32f, 0.45f, 0.70f);
-	[Export] public float NightMoonEnergy = 0.18f;
-	[Export] public Vector3 NightMoonRotationDegrees = new(-30.0f, -145.0f, 0.0f);
-	[Export] public Color NightSkyTopColor = new(0.015f, 0.020f, 0.040f);
-	[Export] public Color NightSkyHorizonColor = new(0.050f, 0.080f, 0.130f);
-	[Export] public Color NightAmbientColor = new(0.07f, 0.10f, 0.17f);
-	[Export] public float NightAmbientEnergy = 0.10f;
-	[Export] public Color NightFogColor = new(0.10f, 0.14f, 0.20f);
-	[Export] public float NightFogDensity = 0.045f;
-	[Export] public float NightSaturation = 0.42f;
-	[Export] public float NightContrast = 1.18f;
-	[Export] public float NightInteriorLightEnergy = 1.40f;
-
 	private Godot.Environment _environment;
 	private ProceduralSkyMaterial _skyMaterial;
+	private AtmosphereProfile _current;
 	private bool _isNight = false;
 	private float _dayProgress = 0.0f;
 	private float _initialPhaseDuration = 300.0f;
-
-	// Current interpolated values
-	private Color _currentSunColor;
-	private float _currentSunEnergy;
-	private Vector3 _currentSunRotationDeg;
-	private Color _currentSkyTop;
-	private Color _currentSkyHorizon;
-	private Color _currentAmbientColor;
-	private float _currentAmbientEnergy;
-	private Color _currentFogColor;
-	private float _currentFogDensity;
-	private float _currentSaturation;
-	private float _currentContrast;
-	private float _currentInteriorEnergy;
 
 	public override void _Ready()
 	{
@@ -104,48 +135,26 @@ public partial class AtmosphereManager : Node3D
 			_initialPhaseDuration = Mathf.Max(1.0f, GameManagerNode.TimeRemaining);
 		}
 
-		// Initialize current values to daytime or nighttime directly
-		InitializeCurrentValues(_isNight ? 1.0f : 0.0f);
+		_current = _isNight ? NightProfile : DayProfile;
 		ApplyAtmosphereImmediate();
 	}
 
 	private void SetupEnvironment()
 	{
-		if (WorldEnvironmentNode == null)
-			return;
+		if (WorldEnvironmentNode == null) return;
 
-		if (WorldEnvironmentNode.Environment == null)
-			WorldEnvironmentNode.Environment = new Godot.Environment();
-
-		// Duplicate environment instance to avoid modifying shared scene resources
-		_environment = (Godot.Environment)WorldEnvironmentNode.Environment.Duplicate();
-		WorldEnvironmentNode.Environment = _environment;
-
-		// Ensure background mode is Sky
+		WorldEnvironmentNode.Environment = (Godot.Environment)(WorldEnvironmentNode.Environment?.Duplicate() ?? new Godot.Environment());
+		_environment = WorldEnvironmentNode.Environment;
 		_environment.BackgroundMode = Godot.Environment.BGMode.Sky;
 
-		if (_environment.Sky == null)
-			_environment.Sky = new Sky();
-
-		if (_environment.Sky.SkyMaterial is ProceduralSkyMaterial existingPsm)
-		{
-			_skyMaterial = (ProceduralSkyMaterial)existingPsm.Duplicate();
-		}
-		else
-		{
-			_skyMaterial = new ProceduralSkyMaterial();
-		}
+		if (_environment.Sky == null) _environment.Sky = new Sky();
+		_skyMaterial = _environment.Sky.SkyMaterial is ProceduralSkyMaterial psm ? (ProceduralSkyMaterial)psm.Duplicate() : new ProceduralSkyMaterial();
 		_environment.Sky.SkyMaterial = _skyMaterial;
 
-		// Ambient lighting configuration
 		_environment.AmbientLightSource = Godot.Environment.AmbientSource.Color;
-
-		// Fog configuration
 		_environment.FogEnabled = true;
 		_environment.FogAerialPerspective = 0.6f;
 		_environment.FogSkyAffect = 0.85f;
-
-		// Post-processing adjustment configuration
 		_environment.AdjustmentEnabled = true;
 		_environment.AdjustmentBrightness = 0.98f;
 		_environment.TonemapMode = Godot.Environment.ToneMapper.Filmic;
@@ -153,148 +162,56 @@ public partial class AtmosphereManager : Node3D
 
 	private void SetupLight()
 	{
-		if (SunLightNode != null)
-		{
-			SunLightNode.ShadowEnabled = true;
-		}
-
-		if (InteriorLightNode != null)
-		{
-			InteriorLightNode.LightColor = new Color(1.0f, 0.88f, 0.70f);
-		}
-	}
-
-	private void InitializeCurrentValues(float nightWeight)
-	{
-		if (nightWeight > 0.5f)
-		{
-			_currentSunColor = NightMoonColor;
-			_currentSunEnergy = NightMoonEnergy;
-			_currentSunRotationDeg = NightMoonRotationDegrees;
-			_currentSkyTop = NightSkyTopColor;
-			_currentSkyHorizon = NightSkyHorizonColor;
-			_currentAmbientColor = NightAmbientColor;
-			_currentAmbientEnergy = NightAmbientEnergy;
-			_currentFogColor = NightFogColor;
-			_currentFogDensity = NightFogDensity;
-			_currentSaturation = NightSaturation;
-			_currentContrast = NightContrast;
-			_currentInteriorEnergy = NightInteriorLightEnergy;
-		}
-		else
-		{
-			_currentSunColor = DaySunColor;
-			_currentSunEnergy = DaySunEnergy;
-			_currentSunRotationDeg = DaySunRotationDegrees;
-			_currentSkyTop = DaySkyTopColor;
-			_currentSkyHorizon = DaySkyHorizonColor;
-			_currentAmbientColor = DayAmbientColor;
-			_currentAmbientEnergy = DayAmbientEnergy;
-			_currentFogColor = DayFogColor;
-			_currentFogDensity = DayFogDensity;
-			_currentSaturation = DaySaturation;
-			_currentContrast = DayContrast;
-			_currentInteriorEnergy = DayInteriorLightEnergy;
-		}
+		if (SunLightNode != null) SunLightNode.ShadowEnabled = true;
+		if (InteriorLightNode != null) InteriorLightNode.LightColor = new Color(1.0f, 0.88f, 0.70f);
 	}
 
 	public override void _Process(double delta)
 	{
-		float dt = (float)delta;
-		UpdateAtmosphereTargets(out var targetSunColor, out var targetSunEnergy, out var targetSunRot,
-			out var targetSkyTop, out var targetSkyHorizon, out var targetAmbientColor, out var targetAmbientEnergy,
-			out var targetFogColor, out var targetFogDensity, out var targetSaturation, out var targetContrast,
-			out var targetInteriorEnergy);
-
-		float lerpFactor = Mathf.Clamp(dt * TransitionSpeed, 0.0f, 1.0f);
-
-		_currentSunColor = _currentSunColor.Lerp(targetSunColor, lerpFactor);
-		_currentSunEnergy = Mathf.Lerp(_currentSunEnergy, targetSunEnergy, lerpFactor);
-		_currentSunRotationDeg = LerpDegreesVector(_currentSunRotationDeg, targetSunRot, lerpFactor);
-		_currentSkyTop = _currentSkyTop.Lerp(targetSkyTop, lerpFactor);
-		_currentSkyHorizon = _currentSkyHorizon.Lerp(targetSkyHorizon, lerpFactor);
-		_currentAmbientColor = _currentAmbientColor.Lerp(targetAmbientColor, lerpFactor);
-		_currentAmbientEnergy = Mathf.Lerp(_currentAmbientEnergy, targetAmbientEnergy, lerpFactor);
-		_currentFogColor = _currentFogColor.Lerp(targetFogColor, lerpFactor);
-		_currentFogDensity = Mathf.Lerp(_currentFogDensity, targetFogDensity, lerpFactor);
-		_currentSaturation = Mathf.Lerp(_currentSaturation, targetSaturation, lerpFactor);
-		_currentContrast = Mathf.Lerp(_currentContrast, targetContrast, lerpFactor);
-		_currentInteriorEnergy = Mathf.Lerp(_currentInteriorEnergy, targetInteriorEnergy, lerpFactor);
-
+		AtmosphereProfile target = GetTargetProfile();
+		float lerpFactor = Mathf.Clamp((float)delta * TransitionSpeed, 0.0f, 1.0f);
+		_current = AtmosphereProfile.Lerp(_current, target, lerpFactor);
 		ApplyAtmosphereImmediate();
 	}
 
-	private void UpdateAtmosphereTargets(
-		out Color sunColor, out float sunEnergy, out Vector3 sunRot,
-		out Color skyTop, out Color skyHorizon, out Color ambientColor, out float ambientEnergy,
-		out Color fogColor, out float fogDensity, out float saturation, out float contrast,
-		out float interiorEnergy)
+	private AtmosphereProfile GetTargetProfile()
 	{
-		if (_isNight)
-		{
-			sunColor = NightMoonColor;
-			sunEnergy = NightMoonEnergy;
-			sunRot = NightMoonRotationDegrees;
-			skyTop = NightSkyTopColor;
-			skyHorizon = NightSkyHorizonColor;
-			ambientColor = NightAmbientColor;
-			ambientEnergy = NightAmbientEnergy;
-			fogColor = NightFogColor;
-			fogDensity = NightFogDensity;
-			saturation = NightSaturation;
-			contrast = NightContrast;
-			interiorEnergy = NightInteriorLightEnergy;
-			return;
-		}
+		if (_isNight) return NightProfile;
 
-		// Daytime progression: shifts from noon warmth into dusk sunset as countdown runs down
 		float t = EnableDynamicSunMovement ? Mathf.Clamp((_dayProgress - 0.55f) / 0.45f, 0.0f, 1.0f) : 0.0f;
-		float smoothT = Mathf.SmoothStep(0.0f, 1.0f, t);
-
-		sunColor = DaySunColor.Lerp(DuskSunColor, smoothT);
-		sunEnergy = Mathf.Lerp(DaySunEnergy, DuskSunEnergy, smoothT);
-		sunRot = DaySunRotationDegrees.Lerp(DuskSunRotationDegrees, smoothT);
-		skyTop = DaySkyTopColor.Lerp(DuskSkyTopColor, smoothT);
-		skyHorizon = DaySkyHorizonColor.Lerp(DuskSkyHorizonColor, smoothT);
-		ambientColor = DayAmbientColor.Lerp(DuskAmbientColor, smoothT);
-		ambientEnergy = Mathf.Lerp(DayAmbientEnergy, DuskAmbientEnergy, smoothT);
-		fogColor = DayFogColor.Lerp(DuskFogColor, smoothT);
-		fogDensity = Mathf.Lerp(DayFogDensity, DuskFogDensity, smoothT);
-		saturation = Mathf.Lerp(DaySaturation, DuskSaturation, smoothT);
-		contrast = Mathf.Lerp(DayContrast, DuskContrast, smoothT);
-		interiorEnergy = Mathf.Lerp(DayInteriorLightEnergy, DuskInteriorLightEnergy, smoothT);
+		return AtmosphereProfile.Lerp(DayProfile, DuskProfile, Mathf.SmoothStep(0.0f, 1.0f, t));
 	}
 
 	private void ApplyAtmosphereImmediate()
 	{
 		if (SunLightNode != null)
 		{
-			SunLightNode.LightColor = _currentSunColor;
-			SunLightNode.LightEnergy = _currentSunEnergy;
-			SunLightNode.RotationDegrees = _currentSunRotationDeg;
+			SunLightNode.LightColor = _current.SunColor;
+			SunLightNode.LightEnergy = _current.SunEnergy;
+			SunLightNode.RotationDegrees = _current.SunRotation;
 		}
 
 		if (_skyMaterial != null)
 		{
-			_skyMaterial.SkyTopColor = _currentSkyTop;
-			_skyMaterial.SkyHorizonColor = _currentSkyHorizon;
-			_skyMaterial.GroundBottomColor = _currentSkyTop.Darkened(0.6f);
-			_skyMaterial.GroundHorizonColor = _currentSkyHorizon.Darkened(0.2f);
+			_skyMaterial.SkyTopColor = _current.SkyTop;
+			_skyMaterial.SkyHorizonColor = _current.SkyHorizon;
+			_skyMaterial.GroundBottomColor = _current.SkyTop.Darkened(0.6f);
+			_skyMaterial.GroundHorizonColor = _current.SkyHorizon.Darkened(0.2f);
 		}
 
 		if (_environment != null)
 		{
-			_environment.AmbientLightColor = _currentAmbientColor;
-			_environment.AmbientLightEnergy = _currentAmbientEnergy;
-			_environment.FogLightColor = _currentFogColor;
-			_environment.FogDensity = _currentFogDensity;
-			_environment.AdjustmentSaturation = _currentSaturation;
-			_environment.AdjustmentContrast = _currentContrast;
+			_environment.AmbientLightColor = _current.AmbientColor;
+			_environment.AmbientLightEnergy = _current.AmbientEnergy;
+			_environment.FogLightColor = _current.FogColor;
+			_environment.FogDensity = _current.FogDensity;
+			_environment.AdjustmentSaturation = _current.Saturation;
+			_environment.AdjustmentContrast = _current.Contrast;
 		}
 
 		if (InteriorLightNode != null)
 		{
-			InteriorLightNode.LightEnergy = _currentInteriorEnergy;
+			InteriorLightNode.LightEnergy = _current.InteriorEnergy;
 		}
 	}
 
@@ -316,19 +233,12 @@ public partial class AtmosphereManager : Node3D
 		}
 	}
 
-	private static Vector3 LerpDegreesVector(Vector3 from, Vector3 to, float weight) => new(
-		Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(from.X), Mathf.DegToRad(to.X), weight)),
-		Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(from.Y), Mathf.DegToRad(to.Y), weight)),
-		Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(from.Z), Mathf.DegToRad(to.Z), weight))
-	);
-
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		// Developer hotkey to toggle between day and night atmosphere preview in debug mode
 		if (OS.IsDebugBuild() && @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F6 })
 		{
 			_isNight = !_isNight;
-			_dayProgress = _isNight ? 0.0f : 0.0f;
+			_dayProgress = 0.0f;
 			GD.Print($"[AtmosphereManager] Toggled Atmosphere Preview: {(_isNight ? "NIGHT (Cold Fog)" : "DAY (Warm Sunlight)")}");
 		}
 	}

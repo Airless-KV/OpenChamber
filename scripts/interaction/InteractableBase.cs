@@ -1,8 +1,19 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Oct 2026
-// Responsibilities: - Base abstract class for 3D physics body interactables
+// Responsibilities: - Interface contract and base class for all 3D physics body interactables
+//                   - Standardized interaction prompts, validation, and signal dispatch
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Merged IInteractable interface into InteractableBase.cs to reduce fragmentation
 // =========================================================================================
 using Godot;
+
+public interface IInteractable
+{
+	string GetPrompt();
+	void Interact(PlayerController player);
+	bool CanInteract(PlayerController player);
+}
 
 public abstract partial class InteractableBase : StaticBody3D, IInteractable
 {

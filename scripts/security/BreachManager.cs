@@ -9,6 +9,9 @@
 // - Oct 24, 2026 | air : Streamlined breach state machine, entrance Linq queries, and audio stinger for Alpha build
 // - Oct 30, 2026 | air : Integrated SaveManager to record repelled attacks in persistent profile stats
 // - Oct 30, 2026 | air : Added progressive CCTV stalking stages across directional feeds with AniAniMonster
+// - Oct 31, 2026 | air : Routed monster attack stinger to AudioManager.Sfx, removing duplicate PCM audio synthesis
+// - Oct 31, 2026 | air : Simplified entrance verification using unified InteractableEntrance group query
+// - Oct 31, 2026 | air : Consolidated state reset transitions and dependency resolution
 // =========================================================================================
 using Godot;
 using System;
@@ -40,44 +43,50 @@ public partial class BreachManager : Node
 	[Export] public float ReactionWindow = 7.0f;
 	[Export] public bool EnableOutdoorLoss = true;
 
-	public bool IsMonsterAttacking { get; private set; } = false;
-	public AttackDirection CurrentApproachDir { get; private set; } = AttackDirection.North;
-	public StalkingStage CurrentStage { get; private set; } = StalkingStage.Hidden;
-	public float AttackCountdown { get; private set; } = 0.0f;
+	public bool IsMonsterAttacking { get; private set; }
+	public AttackDirection CurrentApproachDir { get; private set; }
+	public StalkingStage CurrentStage { get; private set; }
+	public float AttackCountdown { get; private set; }
 
-	private float _nextAttackTimer = 0.0f;
-	private bool _isNight = false;
-	private Random _rng = new();
-	private AudioStreamPlayer _stingerPlayer;
+	private float _nextAttackTimer;
+	private bool _isNight;
+	private readonly Random _rng = new();
+
+	private T Find<T>(string name) where T : class => GetTree().Root.FindChild(name, true, false) as T;
 
 	public override void _Ready()
 	{
-		GameManagerNode ??= GetTree().Root.FindChild("GameManager", true, false) as GameManager;
-		NightCameraNode ??= GetTree().Root.FindChild("NighttCamera", true, false) as NighttCamera;
-		PlayerNode ??= GetTree().Root.FindChild("Player", true, false) as PlayerController;
-		GridManagerNode ??= GetTree().Root.FindChild("GridManager", true, false) as Node3d;
-		JumpScareScreenNode ??= GetTree().Root.FindChild("JumpScareScreen", true, false) as JumpScareScreen;
-		VictoryScreenNode ??= GetTree().Root.FindChild("VictoryScreen", true, false) as VictoryScreen;
-		HUDNode ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
-		MonsterNode ??= GetTree().Root.FindChild("AniAniMonster", true, false) as AniAniMonster;
+		GameManagerNode ??= Find<GameManager>("GameManager");
+		NightCameraNode ??= Find<NighttCamera>("NighttCamera");
+		PlayerNode ??= Find<PlayerController>("Player");
+		GridManagerNode ??= Find<Node3d>("GridManager");
+		JumpScareScreenNode ??= Find<JumpScareScreen>("JumpScareScreen");
+		VictoryScreenNode ??= Find<VictoryScreen>("VictoryScreen");
+		HUDNode ??= Find<HUDManager>("HUD");
+		MonsterNode ??= Find<AniAniMonster>("AniAniMonster");
 
 		if (GameManagerNode != null)
 		{
-			GameManagerNode.PhaseChanged += OnPhaseChanged;
-			GameManagerNode.GameCompleted += OnGameCompleted;
+			GameManagerNode.PhaseChanged += (isDay, _) =>
+			{
+				_isNight = !isDay;
+				ResetAttack();
+				if (_isNight) _nextAttackTimer = FirstAttackDelay;
+				else HUDNode?.ClearInteractionPrompt();
+			};
+			GameManagerNode.GameCompleted += () =>
+			{
+				_isNight = false;
+				ResetAttack();
+				VictoryScreenNode?.ShowVictoryTally(GridManagerNode, GameManagerNode);
+			};
 		}
-
-		_stingerPlayer = new AudioStreamPlayer { Name = "WarningStinger" };
-		AddChild(_stingerPlayer);
-
-		SetStalkingStage(StalkingStage.Hidden);
+		ResetAttack();
 	}
 
 	public override void _Process(double delta)
 	{
-		if ((GameManagerNode != null && GameManagerNode.IsGameFinished) || !_isNight)
-			return;
-
+		if (GameManagerNode?.IsGameFinished == true || !_isNight) return;
 		float dt = (float)delta;
 
 		if (EnableOutdoorLoss && PlayerNode != null && !PlayerNode.IsIndoors)
@@ -90,29 +99,28 @@ public partial class BreachManager : Node
 		{
 			AttackCountdown -= dt;
 			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - MONITOR CAM {(int)CurrentApproachDir + 1}!");
-
-			if (AttackCountdown <= 0.0f)
-				ResolveMonsterAttack();
+			if (AttackCountdown <= 0f) ResolveMonsterAttack();
 			return;
 		}
 
 		_nextAttackTimer -= dt;
-
-		// Progressive CCTV Stalking Stages
-		if (_nextAttackTimer <= 16.0f && CurrentStage == StalkingStage.Hidden)
+		if (_nextAttackTimer <= 16f && CurrentStage == StalkingStage.Hidden)
 		{
 			CurrentApproachDir = (AttackDirection)_rng.Next(0, 4);
 			SetStalkingStage(StalkingStage.Distant);
 		}
-		else if (_nextAttackTimer <= 8.0f && CurrentStage == StalkingStage.Distant)
+		else if (_nextAttackTimer <= 8f && CurrentStage == StalkingStage.Distant)
 		{
 			SetStalkingStage(StalkingStage.Approaching);
 		}
 
-		if (_nextAttackTimer <= 0.0f)
-		{
-			StartMonsterAttack();
-		}
+		if (_nextAttackTimer <= 0f) StartMonsterAttack();
+	}
+
+	private void ResetAttack()
+	{
+		IsMonsterAttacking = false;
+		SetStalkingStage(StalkingStage.Hidden);
 	}
 
 	private void SetStalkingStage(StalkingStage stage)
@@ -122,65 +130,37 @@ public partial class BreachManager : Node
 		EmitSignal(SignalName.StalkingStageChanged, (int)CurrentApproachDir, (int)CurrentStage);
 	}
 
-	private void OnPhaseChanged(bool isDay, int currentDay)
-	{
-		_isNight = !isDay;
-		IsMonsterAttacking = false;
-		SetStalkingStage(StalkingStage.Hidden);
-
-		if (_isNight)
-		{
-			_nextAttackTimer = FirstAttackDelay;
-		}
-		else
-		{
-			HUDNode?.ClearInteractionPrompt();
-		}
-	}
-
-	private void OnGameCompleted()
-	{
-		_isNight = false;
-		IsMonsterAttacking = false;
-		SetStalkingStage(StalkingStage.Hidden);
-		VictoryScreenNode?.ShowVictoryTally(GridManagerNode, GameManagerNode);
-	}
-
 	public void StartMonsterAttack()
 	{
 		if (!_isNight || IsMonsterAttacking) return;
-
 		IsMonsterAttacking = true;
 		AttackCountdown = ReactionWindow;
 		SetStalkingStage(StalkingStage.Imminent);
 		string dirName = CurrentApproachDir.ToString().ToUpper();
-
-		PlayWarningStinger();
+		AudioManager.Sfx("warning_stinger");
 		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, ReactionWindow);
 	}
 
 	public void ResolveMonsterAttack()
 	{
 		IsMonsterAttacking = false;
-		string dirName = CurrentApproachDir.ToString().ToUpper();
+		string dir = CurrentApproachDir.ToString().ToUpper();
 
 		if (IsAnyEntranceOpen())
 		{
-			TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured door or window on the {dirName} perimeter!");
+			TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
 		}
 		else if (IsPlayerNotLooking(CurrentApproachDir))
 		{
-			TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dirName} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
+			TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
 		}
 		else
 		{
-			EmitSignal(SignalName.MonsterRepelled, (int)CurrentApproachDir, dirName);
-			HUDNode?.SetInteractionPrompt($"[✓] ANI-ANI REPELLED FROM {dirName}!");
+			EmitSignal(SignalName.MonsterRepelled, (int)CurrentApproachDir, dir);
+			HUDNode?.SetInteractionPrompt($"[✓] ANI-ANI REPELLED FROM {dir}!");
 			SaveManager.RecordAttackRepelled();
-
 			CurrentStage = StalkingStage.Hidden;
 			MonsterNode?.PlayRepelEffect();
-
 			_nextAttackTimer = AttackInterval;
 		}
 	}
@@ -188,34 +168,14 @@ public partial class BreachManager : Node
 	public void TriggerBreach(string reason)
 	{
 		_isNight = false;
-		IsMonsterAttacking = false;
-		SetStalkingStage(StalkingStage.Hidden);
+		ResetAttack();
 		EmitSignal(SignalName.BreachOccurred, reason);
 		JumpScareScreenNode?.TriggerJumpScare(reason, GameManagerNode?.CurrentDay ?? 1, GameManagerNode?.Coins ?? 0);
 	}
 
 	public bool IsAnyEntranceOpen() =>
-		GetTree().GetNodesInGroup("Doors").Any(n => n is InteractableDoor { IsOpen: true }) ||
-		GetTree().GetNodesInGroup("Windows").Any(n => n is InteractableWindow { IsOpen: true });
+		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen);
 
 	public bool IsPlayerNotLooking(AttackDirection direction) =>
 		NightCameraNode == null || !NightCameraNode.IsNightMode || NightCameraNode.CurrentNightIndex != (int)direction;
-
-	private void PlayWarningStinger()
-	{
-		try
-		{
-			int rate = 22050;
-			byte[] data = new byte[(int)(rate * 0.8f)];
-			for (int i = 0; i < data.Length; i++)
-			{
-				float t = (float)i / rate;
-				float s = (Mathf.Sin(t * Mathf.Tau * 110f) * 0.6f + Mathf.Sin(t * Mathf.Tau * 440f) * 0.3f) * (1f - t / 0.8f);
-				data[i] = (byte)(sbyte)(s * 110f);
-			}
-			_stingerPlayer.Stream = new AudioStreamWav { Format = AudioStreamWav.FormatEnum.Format8Bits, MixRate = rate, Data = data };
-			_stingerPlayer.Play();
-		}
-		catch { }
-	}
 }
