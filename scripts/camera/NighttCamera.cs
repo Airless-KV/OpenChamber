@@ -93,7 +93,7 @@ public partial class NighttCamera : Node3D
 
 		if (_hud != null)
 		{
-			_hud.SetHUDVisible(!night);
+			_hud.Visible = !night;
 		}
 
 		if (IsNightMode)

@@ -18,7 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 SaveManager="*res://scripts/save/SaveManager.cs"
-AudioManager="*res://scripts/audio/AudioManager.cs"
+AudioManager="*uid://b2sjurarxmbjx"
 MCPRuntimeServer="*res://addons/godot_mcp_toolkit/runtime/mcp_runtime_server.gd"
 
 [display]
@@ -32,7 +32,7 @@ project/assembly_name="IllusionOfChoice"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_mcp_toolkit/plugin.cfg")
+enabled=PackedStringArray()
 
 [physics]
 

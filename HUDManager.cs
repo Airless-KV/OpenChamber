@@ -1,13 +1,5 @@
-// =========================================================================================
-// Original Author : anjivv (Anj Ferrer) - Oct 22, 2026
-// Responsibilities: - Persistent Daytime/Nighttime HUD (timer, coin balance, day counter)
-//                   - UI signal listener updates for coins, seeds, timer, and phase
-// -----------------------------------------------------------------------------------------
-// Change Log:
-// - Oct 23, 2026 | air : Added InteractionPromptLabel and SetInteractionPrompt / ClearInteractionPrompt methods
-// - Oct 23, 2026 | air : Added GameManagerNode auto-lookup fallback in _Ready()
-// - Oct 30, 2026 | air : Added SetHUDVisible method for CCTV surveillance feed toggling
-// =========================================================================================
+//anj - Oct 22 - Initial Implement
+//Updated: Flower Shop buttons for Plank / Barrier / Axe + inventory label
 
 using Godot;
 
@@ -23,6 +15,16 @@ public partial class HUDManager : CanvasLayer
 	[Export] public Label SeedLabel;
 	[Export] public Button BuySeedButton;
 	[Export] public Label InteractionPromptLabel;
+
+	[ExportGroup("Shop UI (optional)")]
+	[Export] public Button BuyPlankButton;
+	[Export] public Button BuyBarrierButton;
+	[Export] public Button BuyAxeButton;
+	[Export] public Label InventoryLabel;
+	[Export] public Control ShopPanel; // optional: a container holding all the shop controls
+	[Export] public bool EnableDebugShopKey = true; // TEMPORARY: press B to open/close the shop for testing
+
+	public bool IsShopOpen { get; private set; } = false;
 
 	public override void _Ready()
 	{
@@ -45,9 +47,14 @@ public partial class HUDManager : CanvasLayer
 		GameManagerNode.CoinsChanged += OnCoinsChanged;
 		GameManagerNode.SeedsChanged += OnSeedsChanged;
 		GameManagerNode.GameCompleted += OnGameCompleted;
+		GameManagerNode.InventoryChanged += RefreshInventory;
 
 		if (BuySeedButton != null)
 			BuySeedButton.Pressed += OnBuySeedButtonPressed;
+
+		WireShopButton(BuyPlankButton, ShopCatalog.PlankId);
+		WireShopButton(BuyBarrierButton, ShopCatalog.BarrierId);
+		WireShopButton(BuyAxeButton, ShopCatalog.AxeId);
 
 		// Initialize the HUD.
 		OnTimeUpdated(GameManagerNode.TimeRemaining);
@@ -59,11 +66,53 @@ public partial class HUDManager : CanvasLayer
 
 		OnCoinsChanged(GameManagerNode.Coins);
 		OnSeedsChanged(GameManagerNode.Level1Seeds);
+		RefreshInventory();
+		SetShopVisible(false);
 
 		ClearInteractionPrompt();
 
 		if (GameManagerNode.IsGameFinished)
 			OnGameCompleted();
+	}
+
+	// ---------- Shop open / close ----------
+
+	public void OpenShop() => SetShopVisible(true);
+	public void CloseShop() => SetShopVisible(false);
+	public void ToggleShop() => SetShopVisible(!IsShopOpen);
+
+	private void SetShopVisible(bool open)
+	{
+		IsShopOpen = open;
+
+		if (ShopPanel != null)
+		{
+			ShopPanel.Visible = open;
+			return;
+		}
+
+		// No panel assigned: show/hide each shop control individually.
+		if (BuySeedButton != null) BuySeedButton.Visible = open;
+		if (BuyPlankButton != null) BuyPlankButton.Visible = open;
+		if (BuyBarrierButton != null) BuyBarrierButton.Visible = open;
+		if (BuyAxeButton != null) BuyAxeButton.Visible = open;
+		if (InventoryLabel != null) InventoryLabel.Visible = open;
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event is InputEventKey key && key.Pressed && !key.Echo)
+		{
+			if (IsShopOpen && key.Keycode == Key.Escape)
+			{
+				CloseShop();
+				GetViewport().SetInputAsHandled();
+			}
+			else if (EnableDebugShopKey && key.Keycode == Key.B)
+			{
+				ToggleShop();
+			}
+		}
 	}
 
 	public void SetInteractionPrompt(string text)
@@ -82,11 +131,6 @@ public partial class HUDManager : CanvasLayer
 			InteractionPromptLabel.Text = "";
 			InteractionPromptLabel.Visible = false;
 		}
-	}
-
-	public void SetHUDVisible(bool isVisible)
-	{
-		Visible = isVisible;
 	}
 
 	private void OnTimeUpdated(float timeRemaining)
@@ -142,6 +186,35 @@ public partial class HUDManager : CanvasLayer
 			GD.Print("Not enough coins to buy a seed!");
 	}
 
+	private void WireShopButton(Button btn, string id)
+	{
+		if (btn == null)
+			return;
+
+		var item = ShopCatalog.Get(id);
+		btn.Text = $"{item.DisplayName} ({item.Price}c)";
+		btn.TooltipText = item.Description;
+		btn.Pressed += () =>
+		{
+			if (!GameManagerNode.TryBuyItem(id))
+				GD.Print($"Can't buy {item.DisplayName} (not enough coins or already owned).");
+		};
+	}
+
+	private void RefreshInventory()
+	{
+		if (GameManagerNode == null)
+			return;
+
+		var gm = GameManagerNode;
+
+		if (InventoryLabel != null)
+			InventoryLabel.Text = $"Planks: {gm.Planks}  Barriers: {gm.Barriers}  Axe: {(gm.HasAxe ? "Yes" : "No")}";
+
+		if (BuyAxeButton != null)
+			BuyAxeButton.Disabled = gm.HasAxe;
+	}
+
 	private void OnGameCompleted()
 	{
 		if (PhaseLabel != null)
@@ -155,5 +228,9 @@ public partial class HUDManager : CanvasLayer
 
 		if (BuySeedButton != null)
 			BuySeedButton.Disabled = true;
+
+		if (BuyPlankButton != null) BuyPlankButton.Disabled = true;
+		if (BuyBarrierButton != null) BuyBarrierButton.Disabled = true;
+		if (BuyAxeButton != null) BuyAxeButton.Disabled = true;
 	}
 }
