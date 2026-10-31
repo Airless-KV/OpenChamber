@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bp7pd1ta6t7w5" path="res://assets/models/chess_board.glb" id="1_chessboard"]
 [ext_resource type="Script" uid="uid://cicpbn73d8l1f" path="res://scripts/farming/Node3d.cs" id="2_gridmanager"]
-[ext_resource type="Script" uid="uid://b6qswqwvxq6t1" path="res://InteractableShop.cs" id="3_shop"]
+[ext_resource type="Script" uid="uid://b6qswqwvxq6t1" path="res://scripts/interaction/InteractableShop.cs" id="3_shop"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cs4l5"]
 

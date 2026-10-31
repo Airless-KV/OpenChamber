@@ -1,3 +1,12 @@
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 31, 2026
+// Responsibilities: - Global audio playback singleton for music, ambient, and SFX
+//                   - Procedural audio synthesis fallback for missing sound assets
+//                   - SFX polyphonic player pooling and audio bus management
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/audio/
+// =========================================================================================
 using Godot;
 using System;
 using System.Collections.Generic;

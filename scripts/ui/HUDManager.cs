@@ -1,6 +1,12 @@
-//anj - Oct 22 - Initial Implement
-//Updated: Flower Shop buttons for Plank / Barrier / Axe + inventory label
-
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 22, 2026
+// Responsibilities: - Persistent Daytime/Nighttime HUD (timer, coin balance, day counter)
+//                   - Shop UI buttons and purchase interactions for seeds, planks, and tools
+//                   - Interaction prompts and phase transitions display
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/ui/
+// =========================================================================================
 using Godot;
 
 public partial class HUDManager : CanvasLayer

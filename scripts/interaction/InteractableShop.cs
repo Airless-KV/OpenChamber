@@ -1,3 +1,11 @@
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 31, 2026
+// Responsibilities: - Flower Shop 3D world interaction prompt (press [E] to open/close)
+//                   - Interfaces player interaction with HUD ShopPanel
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/interaction/
+// =========================================================================================
 using Godot;
 
 // Flower Shop: pressing [E] opens / closes the shop menu on the HUD.
