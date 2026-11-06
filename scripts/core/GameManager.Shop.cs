@@ -13,7 +13,8 @@ public partial class GameManager
 	[Signal]
 	public delegate void InventoryChangedEventHandler();
 
-	public int Planks { get; private set; } = 0;
+	// TEMPORARY TEST: ibalik sa 0 bago mag-push!
+	public int Planks { get; private set; } = 5;
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
 
