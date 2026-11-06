@@ -1,3 +1,11 @@
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 31, 2026
+// Responsibilities: - Daytime survival celebration banner ("YOU SURVIVED DAY N")
+//                   - Animated coin particle flight to HUD CoinLabel target
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/ui/
+// =========================================================================================
 using Godot;
 using System;
 using System.Threading.Tasks;

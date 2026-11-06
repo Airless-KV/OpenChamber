@@ -1,3 +1,12 @@
+// =========================================================================================
+// Original Author : anjivv (Anj Ferrer) - Oct 31, 2026
+// Responsibilities: - Global audio playback singleton for music, ambient, and SFX
+//                   - Procedural audio synthesis fallback for missing sound assets
+//                   - SFX polyphonic player pooling and audio bus management
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/audio/
+// =========================================================================================
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -7,7 +16,9 @@ using System.Collections.Generic;
 // If a file is missing, a procedurally generated placeholder is used so the game is never silent/crashy.
 //
 // Sound keys:
-//   SFX:     window_rattle, door_thud, foliage_rustle, jumpscare_stinger, warning_stinger, coin_collect, banner_sting
+//   SFX:     window_rattle, door_thud, door_pound, monster_footsteps, foliage_rustle,
+//            jumpscare_stinger, warning_stinger, coin_collect, banner_sting,
+//            flower_merge, flower_plant
 //   Ambient: ambient_garden, ambient_wind
 //   Music:   music_day (generated placeholder tune), music_night (silent if the file is missing)
 public partial class AudioManager : Node
@@ -66,6 +77,8 @@ public partial class AudioManager : Node
 
 		for (int i = 0; i < SfxPoolSize; i++)
 			_sfxPool.Add(MakePlayer($"Sfx{i}", SfxBus));
+
+		GD.Print("[AudioManager] Ready (autoload is running).");
 	}
 
 	public override void _ExitTree()
@@ -75,6 +88,38 @@ public partial class AudioManager : Node
 	}
 
 	public override void _Process(double delta)
+	{
+		TryHookGameManager((float)delta);
+		UpdateRustle((float)delta);
+	}
+
+	// Finds the GameManager by itself and follows its day/night phase,
+	// so music works even if GameManager.cs never calls AudioManager directly.
+	private GameManager _gm;
+	private float _hookTimer;
+
+	private void TryHookGameManager(float dt)
+	{
+		if (IsInstanceValid(_gm))
+			return;
+
+		_hookTimer -= dt;
+		if (_hookTimer > 0f)
+			return;
+		_hookTimer = 0.5f;
+
+		_gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+		if (_gm == null)
+			return;
+
+		_gm.PhaseChanged += OnGamePhaseChanged;
+		GD.Print("[AudioManager] Hooked into GameManager.");
+		OnPhaseChanged(_gm.CurrentPhase == GameManager.GamePhase.Day);
+	}
+
+	private void OnGamePhaseChanged(bool isDay, int currentDay) => OnPhaseChanged(isDay);
+
+	private void UpdateRustle(float delta)
 	{
 		if (!_rustleEnabled)
 			return;
@@ -93,6 +138,25 @@ public partial class AudioManager : Node
 	public static void Sfx(string name, float volumeDb = 0f, float pitchVariance = 0f)
 	{
 		Instance?.PlaySfx(name, volumeDb, pitchVariance);
+	}
+
+	// Plays a sound at a fixed pitch (1.0 = normal), e.g. higher pitch for higher flower tiers.
+	public static void SfxPitch(string name, float pitchScale, float volumeDb = 0f)
+	{
+		Instance?.PlaySfxPitched(name, pitchScale, volumeDb);
+	}
+
+	public void PlaySfxPitched(string name, float pitchScale, float volumeDb = 0f)
+	{
+		var stream = LoadStream(name);
+		if (stream == null)
+			return;
+
+		var player = GetFreeSfxPlayer();
+		player.Stream = stream;
+		player.VolumeDb = volumeDb;
+		player.PitchScale = Mathf.Max(0.1f, pitchScale);
+		player.Play();
 	}
 
 	public void PlaySfx(string name, float volumeDb = 0f, float pitchVariance = 0f)
@@ -130,6 +194,7 @@ public partial class AudioManager : Node
 
 		MakeLooping(stream);
 		next.Stream = stream;
+		GD.Print($"[AudioManager] Playing music '{name}' ({stream.GetType().Name}, {stream.GetLength():0.0}s, {MusicVolumeDb} dB)");
 		next.VolumeDb = SilentDb;
 		next.Play();
 		FadeTo(next, MusicVolumeDb, fade);
@@ -186,6 +251,7 @@ public partial class AudioManager : Node
 	// Called by GameManager at the start of each phase.
 	public void OnPhaseChanged(bool isDay)
 	{
+		GD.Print($"[AudioManager] OnPhaseChanged(isDay: {isDay})");
 		_rustleEnabled = isDay ? EnableDayRustle : true;
 		_rustleInterval = isDay ? DayRustleInterval : NightRustleInterval;
 		_rustleVolumeDb = isDay ? -14f : -8f;
@@ -293,8 +359,16 @@ public partial class AudioManager : Node
 			string path = $"{AudioFolder}{name}.{ext}";
 			if (ResourceLoader.Exists(path))
 			{
-				stream = GD.Load<AudioStream>(path);
-				break;
+				var loaded = GD.Load<AudioStream>(path);
+				if (loaded != null)
+				{
+					stream = loaded;
+					GD.Print($"[AudioManager] Loaded '{name}' from {path}");
+					break;
+				}
+
+				// File is listed but could not be read (stale/broken import): try the next format.
+				GD.PushWarning($"[AudioManager] {path} exists but failed to load. Trying the next format...");
 			}
 		}
 
@@ -311,6 +385,30 @@ public partial class AudioManager : Node
 	// ---------- Procedural placeholders ----------
 
 	private static float Noise() => (float)GD.Randf() * 2f - 1f;
+
+	// One heavy footstep starting at t0: low thump + a short crunch of noise.
+	private static float Step(float t, float t0)
+	{
+		float d = t - t0;
+		if (d < 0f || d > 0.5f)
+			return 0f;
+
+		float thump = Mathf.Sin(d * Mathf.Tau * (60f - 30f * d)) * Mathf.Exp(-d * 9f);
+		float crunch = Noise() * Mathf.Exp(-d * 40f) * 0.35f;
+		return thump * 0.9f + crunch;
+	}
+
+	// One heavy door knock starting at t0.
+	private static float Knock(float t, float t0)
+	{
+		float d = t - t0;
+		if (d < 0f || d > 0.4f)
+			return 0f;
+
+		float boom = Mathf.Sin(d * Mathf.Tau * (90f - 40f * d)) * Mathf.Exp(-d * 12f);
+		float wood = Noise() * Mathf.Exp(-d * 45f) * 0.5f;
+		return boom * 0.9f + wood;
+	}
 
 	private static float Midi(int note) => 440f * Mathf.Pow(2f, (note - 69) / 12f);
 
@@ -392,6 +490,36 @@ public partial class AudioManager : Node
 					float env = 1f - t / 0.8f;
 					return (Mathf.Sin(t * Mathf.Tau * 110f) * 0.6f + Mathf.Sin(t * Mathf.Tau * 440f) * 0.3f) * env;
 				});
+
+			case "monster_footsteps":
+				return MakeWav(1.3f, t => (Step(t, 0f) + Step(t, 0.65f)) * 0.9f);
+
+			case "door_pound":
+				return MakeWav(1.2f, t => (Knock(t, 0f) + Knock(t, 0.35f) + Knock(t, 0.7f)) * 0.9f);
+
+			case "flower_merge":
+			{
+				// Rising sparkle chime with a soft pop at the start
+				float[] notes = { 1046.5f, 1318.5f, 1568f, 2093f };
+				return MakeWav(0.9f, t =>
+				{
+					float pop = Mathf.Sin(t * Mathf.Tau * (300f + 900f * t)) * Mathf.Exp(-t * 30f) * 0.4f;
+					float sum = 0f;
+					for (int i = 0; i < notes.Length; i++)
+					{
+						float d = t - 0.07f * i - 0.04f;
+						if (d < 0f)
+							continue;
+						sum += (Tone(t, notes[i]) + 0.25f * Tone(t, notes[i] * 2f)) * Mathf.Exp(-d * 6f) * 0.18f;
+					}
+					return pop + sum;
+				});
+			}
+
+			case "flower_plant":
+				return MakeWav(0.25f, t =>
+					Mathf.Sin(t * Mathf.Tau * (180f - 100f * t)) * Mathf.Exp(-t * 18f) * 0.7f
+					+ Noise() * Mathf.Exp(-t * 60f) * 0.2f);
 
 			case "coin_collect":
 				return MakeWav(0.25f, t =>
