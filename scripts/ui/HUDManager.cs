@@ -3,9 +3,11 @@
 // Responsibilities: - Persistent Daytime/Nighttime HUD (timer, coin balance, day counter)
 //                   - Shop UI buttons and purchase interactions for seeds, planks, and tools
 //                   - Interaction prompts and phase transitions display
+//                   - DayNightClock and Coin/Seed HUD art integration
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/ui/
+// - Nov 06, 2026 | air : Integrated Anj's Nov 6 HUD art, DayNightClock widget, and shopping freeze
 // =========================================================================================
 using Godot;
 
@@ -31,6 +33,15 @@ public partial class HUDManager : CanvasLayer
 	[Export] public bool EnableDebugShopKey = true; // TEMPORARY: press B to open/close the shop for testing
 
 	public bool IsShopOpen { get; private set; } = false;
+
+	[ExportGroup("HUD Art (leave empty to use the built-in pixel art)")]
+	[Export] public Texture2D CoinIconTexture;
+	[Export] public Texture2D SeedIconTexture;
+	[Export] public bool ShowClock = true;
+	[Export] public bool ShowSeedIcon = true;
+
+	private bool _coinIconActive = false;
+	private bool _seedIconActive = false;
 
 	public override void _Ready()
 	{
@@ -74,11 +85,63 @@ public partial class HUDManager : CanvasLayer
 		OnSeedsChanged(GameManagerNode.Level1Seeds);
 		RefreshInventory();
 		SetShopVisible(false);
+		Callable.From(SetupHudArt).CallDeferred();
 
 		ClearInteractionPrompt();
 
 		if (GameManagerNode.IsGameFinished)
 			OnGameCompleted();
+	}
+
+	// ---------- HUD art (icons + clock) ----------
+
+	private void SetupHudArt()
+	{
+		_coinIconActive = AddIcon(CoinLabel, CoinIconTexture ?? PixelArt.Coin());
+		_seedIconActive = ShowSeedIcon && AddIcon(SeedLabel, SeedIconTexture ?? PixelArt.SeedPouch());
+
+		if (GameManagerNode != null)
+		{
+			OnCoinsChanged(GameManagerNode.Coins);
+			OnSeedsChanged(GameManagerNode.Level1Seeds);
+		}
+
+		if (ShowClock && GameManagerNode != null)
+		{
+			var clock = new DayNightClock { Name = "DayNightClock" };
+			AddChild(clock);
+			clock.SetAnchorsPreset(Control.LayoutPreset.TopRight);
+			clock.OffsetLeft = -112f;
+			clock.OffsetRight = -16f;
+			clock.OffsetTop = 44f;
+			clock.OffsetBottom = 140f;
+			clock.Bind(GameManagerNode);
+		}
+	}
+
+	// Puts an icon to the left of a label and nudges the label right to make room.
+	private bool AddIcon(Label label, Texture2D texture)
+	{
+		if (label == null || texture == null)
+			return false;
+
+		const float iconSize = 28f;
+
+		var icon = new TextureRect
+		{
+			Texture = texture,
+			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			CustomMinimumSize = new Vector2(iconSize, iconSize),
+			Size = new Vector2(iconSize, iconSize),
+			MouseFilter = Control.MouseFilterEnum.Ignore
+		};
+
+		label.GetParent().AddChild(icon);
+		icon.Position = label.Position + new Vector2(0f, (label.Size.Y - iconSize) * 0.5f);
+		label.Position += new Vector2(iconSize + 6f, 0f);
+		return true;
 	}
 
 	// ---------- Shop open / close ----------
@@ -90,6 +153,10 @@ public partial class HUDManager : CanvasLayer
 	private void SetShopVisible(bool open)
 	{
 		IsShopOpen = open;
+
+		// Freeze the player while shopping
+		// (Pauses the player's physics so it stands still; works with any PlayerController version.)
+		GetTree().GetFirstNodeInGroup("Player")?.SetPhysicsProcess(!open);
 
 		if (ShopPanel != null)
 		{
@@ -172,13 +239,13 @@ public partial class HUDManager : CanvasLayer
 	private void OnCoinsChanged(int totalCoins)
 	{
 		if (CoinLabel != null)
-			CoinLabel.Text = $"Coins: {totalCoins}";
+			CoinLabel.Text = _coinIconActive ? $"x {totalCoins}" : $"Coins: {totalCoins}";
 	}
 
 	private void OnSeedsChanged(int totalSeeds)
 	{
 		if (SeedLabel != null)
-			SeedLabel.Text = $"Lvl 1 Seeds: {totalSeeds}";
+			SeedLabel.Text = _seedIconActive ? $"Lv1 x {totalSeeds}" : $"Lvl 1 Seeds: {totalSeeds}";
 	}
 
 	private void OnBuySeedButtonPressed()
@@ -238,5 +305,21 @@ public partial class HUDManager : CanvasLayer
 		if (BuyPlankButton != null) BuyPlankButton.Disabled = true;
 		if (BuyBarrierButton != null) BuyBarrierButton.Disabled = true;
 		if (BuyAxeButton != null) BuyAxeButton.Disabled = true;
+	}
+}
+
+// Built-in pixel art loader fallback for Anji's coin and seed icons
+internal static class PixelArt
+{
+	public static Texture2D Coin()
+	{
+		const string path = "res://assets/textures/coin_icon.png";
+		return ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+	}
+
+	public static Texture2D SeedPouch()
+	{
+		const string path = "res://assets/textures/icon_sheet.png";
+		return ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
 	}
 }
