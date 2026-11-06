@@ -14,6 +14,8 @@
 // - Oct 31, 2026 | air : Simplified entrance verification using unified InteractableEntrance group query
 // - Oct 31, 2026 | air : Consolidated state reset transitions and dependency resolution
 // - Nov 06, 2026 | air : Integrated Wooden Plank barricade breach absorption, manual locking delay, & Garden Barrier reaction slowdown
+// - Nov 06, 2026 | air : Implemented sequential plank shredding loop, random retreat cooldowns (15-75s), and floodlight repel integration
+// - Nov 06, 2026 | air : Integrated PvZ Lawnmower 1 HP entrance defense, 3-plank cap, and unified retreat dispatch
 // =========================================================================================
 using Godot;
 using System;
@@ -47,6 +49,15 @@ public partial class BreachManager : Node
 	[Export] public bool EnableOutdoorLoss = true;
 	[Export] public float BarricadeDelay = 6.0f;
 
+	[ExportGroup("Plank Shredding & Siege Settings")]
+	[Export(PropertyHint.Range, "0.3,5.0,0.1")] public float PlankTearInterval = 1.5f;
+	[Export(PropertyHint.Range, "1,3,1")] public int MinPlanksToTear = 1;
+	[Export(PropertyHint.Range, "1,3,1")] public int MaxPlanksToTear = 3;
+
+	[ExportGroup("Assault Cooldowns")]
+	[Export(PropertyHint.Range, "5.0,60.0,1.0")] public float MinRetreatCooldown = 15.0f;
+	[Export(PropertyHint.Range, "15.0,180.0,1.0")] public float MaxRetreatCooldown = 75.0f;
+
 	public bool IsMonsterAttacking { get; private set; }
 	public AttackDirection CurrentApproachDir { get; private set; }
 	public StalkingStage CurrentStage { get; private set; }
@@ -54,6 +65,10 @@ public partial class BreachManager : Node
 
 	private float _nextAttackTimer;
 	private bool _isNight;
+	private bool _isTearingPlanks;
+	private float _tearTimer;
+	private int _planksQuotaToTear;
+	private int _planksTornSoFar;
 	private readonly Random _rng = new();
 
 	private T Find<T>(string name) where T : class => GetTree().Root.FindChild(name, true, false) as T;
@@ -75,13 +90,22 @@ public partial class BreachManager : Node
 			{
 				_isNight = !isDay;
 				ResetAttack();
-				if (_isNight) _nextAttackTimer = FirstAttackDelay;
-				else HUDNode?.ClearInteractionPrompt();
+				if (_isNight)
+				{
+					_nextAttackTimer = FirstAttackDelay;
+					MonsterNode?.SetLurking(_rng.Next(0, 6));
+				}
+				else
+				{
+					MonsterNode?.Deactivate();
+					HUDNode?.ClearInteractionPrompt();
+				}
 			};
 			GameManagerNode.GameCompleted += () =>
 			{
 				_isNight = false;
 				ResetAttack();
+				MonsterNode?.Deactivate();
 				VictoryScreenNode?.ShowVictoryTally(GridManagerNode, GameManagerNode);
 			};
 		}
@@ -101,10 +125,73 @@ public partial class BreachManager : Node
 
 		if (IsMonsterAttacking)
 		{
+			if (_isTearingPlanks)
+			{
+				_tearTimer -= dt;
+				var lockable = GetOpeningForDirection(CurrentApproachDir);
+				string dirName = CurrentApproachDir.ToString().ToUpper();
+
+				if (lockable == null)
+				{
+					ResolveMonsterAttack();
+					return;
+				}
+
+				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SHREDDING {dirName}! ({lockable.PlanksPlaced} planks left) - Hold [G] (3s) to nail planks!");
+
+				if (_tearTimer <= 0f)
+				{
+					_tearTimer = PlankTearInterval;
+
+					if (lockable.PlanksPlaced > 0)
+					{
+						lockable.TearSinglePlank();
+						_planksTornSoFar++;
+					}
+
+					if (lockable.PlanksPlaced <= 0)
+					{
+						// All planks torn! Ani-Ani strikes the entrance itself (1 HP Lawnmower defense)!
+						_isTearingPlanks = false;
+						var result = lockable.TakeHitAndCheckLawnmower();
+
+						if (result == LockableOpening.DefenseResult.LawnmowerTriggered)
+						{
+							TriggerMonsterRetreat($"[!] LAWNMOWER DEFENSE! {dirName} entrance shattered repelling Ani-Ani! (0 HP - VULNERABLE!)");
+							return;
+						}
+						else
+						{
+							TriggerBreach($"SECURITY BREACH! The Ani-Ani tore down barricades and charged through the broken {dirName} entrance!");
+							return;
+						}
+					}
+
+					if (_planksTornSoFar >= _planksQuotaToTear && lockable.PlanksPlaced > 0)
+					{
+						// Monster reached tear quota and planks remain -> retreats into the woods!
+						TriggerMonsterRetreat($"[✓] ANI-ANI TORE {_planksTornSoFar} PLANKS AND RETREATED!");
+						return;
+					}
+				}
+				return;
+			}
+
 			AttackCountdown -= dt;
 			bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
 			string barrierBadge = hasBarrier ? " [BARRIER SLOW]" : "";
 			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s){barrierBadge} - MONITOR CAM {(int)CurrentApproachDir + 1}!");
+
+			var currentLockable = GetOpeningForDirection(CurrentApproachDir);
+			if (currentLockable != null && currentLockable.PlanksPlaced > 0)
+			{
+				_isTearingPlanks = true;
+				_planksQuotaToTear = _rng.Next(MinPlanksToTear, MaxPlanksToTear + 1);
+				_planksTornSoFar = 0;
+				_tearTimer = PlankTearInterval;
+				return;
+			}
+
 			if (AttackCountdown <= 0f) ResolveMonsterAttack();
 			return;
 		}
@@ -126,7 +213,18 @@ public partial class BreachManager : Node
 	private void ResetAttack()
 	{
 		IsMonsterAttacking = false;
-		SetStalkingStage(StalkingStage.Hidden);
+		_isTearingPlanks = false;
+		_planksTornSoFar = 0;
+		if (_isNight && MonsterNode != null)
+		{
+			int spot = _rng.Next(0, 6);
+			MonsterNode.SetLurking(spot);
+			CurrentStage = StalkingStage.Hidden;
+		}
+		else
+		{
+			SetStalkingStage(StalkingStage.Hidden);
+		}
 	}
 
 	private void SetStalkingStage(StalkingStage stage)
@@ -141,84 +239,91 @@ public partial class BreachManager : Node
 		if (!_isNight || IsMonsterAttacking) return;
 		IsMonsterAttacking = true;
 
-		bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
-		AttackCountdown = hasBarrier ? (ReactionWindow + BarrierExtraReactionTime) : ReactionWindow;
 		SetStalkingStage(StalkingStage.Imminent);
 
 		string dirName = CurrentApproachDir.ToString().ToUpper();
 		AudioManager.Sfx("warning_stinger");
+
+		var lockable = GetOpeningForDirection(CurrentApproachDir);
+		if (lockable != null && lockable.PlanksPlaced > 0)
+		{
+			_isTearingPlanks = true;
+			_planksQuotaToTear = _rng.Next(MinPlanksToTear, MaxPlanksToTear + 1);
+			_planksTornSoFar = 0;
+			_tearTimer = PlankTearInterval;
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName}! Shredding barricades ({lockable.PlanksPlaced} planks)! Hold [G] (3s) to reinforce!");
+			EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, PlankTearInterval * _planksQuotaToTear);
+			return;
+		}
+
+		_isTearingPlanks = false;
+		bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
+		AttackCountdown = hasBarrier ? (ReactionWindow + BarrierExtraReactionTime) : ReactionWindow;
 		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, AttackCountdown);
 	}
 
 	public void ResolveMonsterAttack()
 	{
 		IsMonsterAttacking = false;
+		_isTearingPlanks = false;
 		string dir = CurrentApproachDir.ToString().ToUpper();
 
 		bool entranceOpen = IsAnyEntranceOpen();
 		bool playerNotLooking = IsPlayerNotLooking(CurrentApproachDir);
 
-		if (entranceOpen || playerNotLooking)
+		if (!entranceOpen && !playerNotLooking)
 		{
-		if (entranceOpen)
-		{
-			TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
+			// Player actively monitored the CCTV feed! Ani-Ani repelled!
+			TriggerMonsterRetreat($"[✓] ANI-ANI REPELLED FROM {dir} BY CCTV MONITORING!");
 			return;
 		}
 
-		if (playerNotLooking)
+		// Bare entrance hit by monster: Lawnmower defense test!
+		var lockable = GetOpeningForDirection(CurrentApproachDir);
+		if (lockable != null)
 		{
-			if (TryDelayBreach(CurrentApproachDir))
+			var result = lockable.TakeHitAndCheckLawnmower();
+			if (result == LockableOpening.DefenseResult.LawnmowerTriggered)
 			{
-				HUDNode?.SetInteractionPrompt($"[!] BARRICADE/LOCK DELAYED ATTACK! Planks damaged on {dir} perimeter!");
+				TriggerMonsterRetreat($"[!] LAWNMOWER DEFENSE! {dir} entrance shattered repelling Ani-Ani! (0 HP - VULNERABLE!)");
 				return;
 			}
+		}
 
-			// Check if any entrance is fortified with wooden planks to absorb the breach
-			var barricade = GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().FirstOrDefault(e => e.IsBarricaded);
-			if (barricade != null)
-			{
-				barricade.AbsorbBreachWithBarricade();
-				HUDNode?.SetInteractionPrompt($"[!] BARRICADE SAVED YOU! Wooden planks shattered on {dir} perimeter!");
-				SaveManager.RecordAttackRepelled();
-				CurrentStage = StalkingStage.Hidden;
-				MonsterNode?.PlayRepelEffect();
-				_nextAttackTimer = AttackInterval;
-				return;
-			}
-
-			TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
-			return;
-		}
-		}
-		else
-		{
-			EmitSignal(SignalName.MonsterRepelled, (int)CurrentApproachDir, dir);
-			HUDNode?.SetInteractionPrompt($"[✓] ANI-ANI REPELLED FROM {dir}!");
-			SaveManager.RecordAttackRepelled();
-			CurrentStage = StalkingStage.Hidden;
-			MonsterNode?.PlayRepelEffect();
-			_nextAttackTimer = AttackInterval;
-		}
+		// No lawnmower defense remaining: fatal security breach!
+		TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through the undefended {dir} entrance!");
 	}
 
-	// Kapag may lock o plank ang pinakamahinang entrance sa direksyong inaatake,
-	// sisirain ng halimaw ang isa at maaantala ang breach.
-	private bool TryDelayBreach(AttackDirection dir)
+	public void TriggerMonsterRetreat(string reason)
 	{
-		var weakest = GetTree().GetNodesInGroup("Lockables")
+		IsMonsterAttacking = false;
+		_isTearingPlanks = false;
+		_planksTornSoFar = 0;
+
+		float cd = (float)_rng.NextDouble() * (MaxRetreatCooldown - MinRetreatCooldown) + MinRetreatCooldown;
+		_nextAttackTimer = cd;
+
+		HUDNode?.SetInteractionPrompt(reason + $" ({Mathf.CeilToInt(cd)}s cooldown)");
+		SaveManager.RecordAttackRepelled();
+		EmitSignal(SignalName.MonsterRepelled, (int)CurrentApproachDir, CurrentApproachDir.ToString().ToUpper());
+
+		MonsterNode?.PlayRepelEffect(() =>
+		{
+			SetStalkingStage(StalkingStage.Hidden);
+		});
+	}
+
+	public void RepelByFloodlight()
+	{
+		if (!IsMonsterAttacking) return;
+		TriggerMonsterRetreat($"[✓] FLOODLIGHT BLASTED ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()}! MONSTER REPELLED!");
+	}
+
+	private LockableOpening GetOpeningForDirection(AttackDirection dir)
+	{
+		return GetTree().GetNodesInGroup("Lockables")
 			.OfType<LockableOpening>()
-			.Where(o => o.AttackDirection == (int)dir)
-			.OrderBy(o => o.DefenseLevel)
-			.FirstOrDefault();
-
-		if (weakest == null || weakest.DefenseLevel <= 0)
-			return false;
-
-		weakest.TryBreach();
-		IsMonsterAttacking = true;
-		AttackCountdown = BarricadeDelay;
-		return true;
+			.FirstOrDefault(o => o.AttackDirection == (int)dir);
 	}
 
 	public void TriggerBreach(string reason)
@@ -229,11 +334,9 @@ public partial class BreachManager : Node
 		JumpScareScreenNode?.TriggerJumpScare(reason, GameManagerNode?.CurrentDay ?? 1, GameManagerNode?.Coins ?? 0);
 	}
 
-	// BAGO: ang bukas na entrance na may plank ay hindi na bibilangin bilang bukas.
 	public bool IsAnyEntranceOpen() =>
 		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen && !IsBarricaded(e));
 
-	// BAGO
 	private bool IsBarricaded(InteractableEntrance entrance) =>
 		GetTree().GetNodesInGroup("Lockables").OfType<LockableOpening>().Any(o => o.Entrance == entrance && o.PlanksPlaced > 0);
 

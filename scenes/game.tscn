@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/security/ani_ani_monster.tscn" id="13_anianimonster"]
 [ext_resource type="PackedScene" uid="uid://dpjht3t8bvxg1" path="res://scenes/security/cctv_overlay.tscn" id="14_cctvoverlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="15_pausemenu"]
+[ext_resource type="PackedScene" path="res://scenes/security/crop_devourer.tscn" id="16_cropdevourer"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
 sky_top_color = Color(0.35, 0.62, 0.95, 1)
@@ -73,6 +74,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [node name="AniAniMonster" parent="." unique_id=1984218731 instance=ExtResource("13_anianimonster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.3266516, 1.4833372, -2.0749178)
 
 [node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("MonsterNode")]
 script = ExtResource("3_breach")
@@ -105,3 +107,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4420223, 1.5545688, 0)
 [node name="CCTVOverlay" parent="." unique_id=1849172314 instance=ExtResource("14_cctvoverlay")]
 
 [node name="PauseMenu" parent="." unique_id=1928374650 instance=ExtResource("15_pausemenu")]
+
+[node name="CropDevourer" parent="." unique_id=741829201 node_paths=PackedStringArray("GridManagerNode", "GameManagerNode") instance=ExtResource("16_cropdevourer")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 1.4903667, 2)
+GridManagerNode = NodePath("../FarmPlot/GridManager")
+GameManagerNode = NodePath("../GameManager")

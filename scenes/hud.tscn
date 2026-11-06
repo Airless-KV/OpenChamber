@@ -192,33 +192,33 @@ layout_mode = 2
 [node name="BuySeedButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=804860427]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
-theme_override_font_sizes/font_size = 15
 text = "Level 1 Seed (1c)"
 
 [node name="BuyPlankButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361921]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
-theme_override_font_sizes/font_size = 15
 text = "Wooden Plank (2c)"
 
 [node name="BuyBarrierButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361922]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
-theme_override_font_sizes/font_size = 15
 text = "Garden Barrier (5c)"
 
 [node name="BuyAxeButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361923]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
-theme_override_font_sizes/font_size = 15
 text = "Woodcutter Axe (10c)"
 
 [node name="HSeparator2" type="HSeparator" parent="ShopPanel/Margin/VBox" unique_id=1629182742]

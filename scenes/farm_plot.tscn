@@ -4,24 +4,8 @@
 [ext_resource type="Script" uid="uid://cicpbn73d8l1f" path="res://scripts/farming/Node3d.cs" id="2_gridmanager"]
 [ext_resource type="Script" uid="uid://b6qswqwvxq6t1" path="res://scripts/interaction/InteractableShop.cs" id="3_shop"]
 [ext_resource type="PackedScene" path="res://scenes/flower.tscn" id="4_flower"]
-[ext_resource type="Script" path="res://scripts/interaction/InteractableBarrierSlot.cs" id="5_barrierslot"]
-[ext_resource type="Script" path="res://scripts/interaction/InteractableLumber.cs" id="6_lumber"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
-size = Vector3(2.6, 1.8, 0.8)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_log"]
-albedo_color = Color(0.38, 0.24, 0.12, 1)
-roughness = 0.85
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_log"]
-height = 2.2
-radius = 0.4
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_log"]
-top_radius = 0.35
-bottom_radius = 0.4
-height = 2.2
+[ext_resource type="Script" uid="uid://bh5nmvsdq02gq" path="res://scripts/interaction/InteractableBarrierSlot.cs" id="5_barrierslot"]
+[ext_resource type="Script" uid="uid://cmshb8vh8nnlm" path="res://scripts/interaction/InteractableLumber.cs" id="6_lumber"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cs4l5"]
 
@@ -67,6 +51,22 @@ roughness = 0.4
 
 [sub_resource type="BoxMesh" id="BoxMesh_shop_canopy"]
 size = Vector3(2.4, 0.15, 1.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
+size = Vector3(2.6, 1.8, 0.8)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_log"]
+height = 2.2
+radius = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_log"]
+albedo_color = Color(0.38, 0.24, 0.12, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_log"]
+top_radius = 0.35
+bottom_radius = 0.4
+height = 2.2
 
 [node name="FarmPlot" type="Node3D" unique_id=1169393307]
 
@@ -189,7 +189,6 @@ mesh = SubResource("BoxMesh_shop_canopy")
 [node name="BarrierSlot_North" type="StaticBody3D" parent="." unique_id=1847192801]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 0.4, -9)
 script = ExtResource("5_barrierslot")
-Direction = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BarrierSlot_North" unique_id=1847192802]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

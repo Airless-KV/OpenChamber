@@ -1,0 +1,130 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/security/CropDevourer.cs" id="1_devourer"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.08, 0.07, 0.1, 1)
+metallic = 0.1
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(1, 0.65, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spine"]
+albedo_color = Color(0.28, 0.24, 0.18, 1)
+roughness = 0.7
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spine"]
+top_radius = 0.02
+bottom_radius = 0.12
+height = 0.55
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+size = Vector3(0.55, 0.45, 0.65)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mandible"]
+albedo_color = Color(0.16, 0.13, 0.1, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mandible"]
+top_radius = 0.015
+bottom_radius = 0.07
+height = 0.45
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye"]
+albedo_color = Color(1, 0.75, 0.15, 1)
+emission_enabled = true
+emission = Color(1, 0.7, 0.12, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.055
+height = 0.08
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_leg"]
+radius = 0.1
+height = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tail"]
+top_radius = 0.04
+bottom_radius = 0.12
+height = 0.75
+
+[node name="CropDevourer" type="Node3D" unique_id=741829201]
+script = ExtResource("1_devourer")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=184918201]
+
+[node name="Torso" type="MeshInstance3D" parent="VisualRoot" unique_id=184918202]
+transform = Transform3D(1, 0, 0, 0, 0.9848077, -0.17364818, 0, 0.17364818, 0.9848077, 0, 0.55, 0)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("BoxMesh_body")
+
+[node name="Spine1" type="MeshInstance3D" parent="VisualRoot/Torso" unique_id=184918203]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 0.45, -0.3)
+material_override = SubResource("StandardMaterial3D_spine")
+mesh = SubResource("CylinderMesh_spine")
+
+[node name="Spine2" type="MeshInstance3D" parent="VisualRoot/Torso" unique_id=184918204]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 0.48, 0.15)
+material_override = SubResource("StandardMaterial3D_spine")
+mesh = SubResource("CylinderMesh_spine")
+
+[node name="HeadNode" type="Node3D" parent="VisualRoot" unique_id=184918205]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, -0.95)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=184918206]
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("BoxMesh_head")
+
+[node name="LeftMandible" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=184918207]
+transform = Transform3D(0.9396926, 0.34202015, 0, -0.3213938, 0.8830222, -0.34202015, -0.11697778, 0.3213938, 0.9396926, -0.22, -0.12, -0.35)
+material_override = SubResource("StandardMaterial3D_mandible")
+mesh = SubResource("CylinderMesh_mandible")
+
+[node name="RightMandible" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=184918208]
+transform = Transform3D(0.9396926, -0.34202015, 0, 0.3213938, 0.8830222, -0.34202015, 0.11697778, 0.3213938, 0.9396926, 0.22, -0.12, -0.35)
+material_override = SubResource("StandardMaterial3D_mandible")
+mesh = SubResource("CylinderMesh_mandible")
+
+[node name="LeftEye" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=184918209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.1, -0.32)
+material_override = SubResource("StandardMaterial3D_eye")
+mesh = SubResource("SphereMesh_eye")
+
+[node name="RightEye" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=184918210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.1, -0.32)
+material_override = SubResource("StandardMaterial3D_eye")
+mesh = SubResource("SphereMesh_eye")
+
+[node name="EyeLight" type="OmniLight3D" parent="VisualRoot/HeadNode" unique_id=184918211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.42)
+light_color = Color(1, 0.72, 0.15, 1)
+light_energy = 1.5
+omni_range = 5.0
+
+[node name="FrontLeftLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=184918212]
+transform = Transform3D(0.9659258, 0.25881904, 0, -0.25488698, 0.9512512, 0.17364818, 0.044943456, -0.16773126, 0.9848077, -0.55, 0.38, -0.55)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="FrontRightLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=184918213]
+transform = Transform3D(0.9659258, -0.25881904, 0, 0.25488698, 0.9512512, 0.17364818, -0.044943456, -0.16773126, 0.9848077, 0.55, 0.38, -0.55)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="BackLeftLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=184918214]
+transform = Transform3D(0.9659258, 0.25881904, 0, -0.25488698, 0.9512512, -0.17364818, -0.044943456, 0.16773126, 0.9848077, -0.58, 0.42, 0.55)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="BackRightLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=184918215]
+transform = Transform3D(0.9659258, -0.25881904, 0, 0.25488698, 0.9512512, -0.17364818, 0.044943456, 0.16773126, 0.9848077, 0.58, 0.42, 0.55)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("CapsuleMesh_leg")
+
+[node name="Tail" type="MeshInstance3D" parent="VisualRoot" unique_id=184918216]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0.45, 0.95)
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("CylinderMesh_tail")

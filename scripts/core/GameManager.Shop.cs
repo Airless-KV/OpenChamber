@@ -8,6 +8,7 @@
 // Change Log:
 // - Oct 31, 2026 | air : Added InventoryChanged signal, inventory tracking, and TryBuyItem
 // - Nov 06, 2026 | air : Added TryConsumeLevel1Seed, AddSeeds, starter seeds allotment, and defense usage methods
+// - Nov 06, 2026 | air : Enabled infinite wooden planks mode for defense and barricade testing
 // =========================================================================================
 using Godot;
 
@@ -16,7 +17,7 @@ public partial class GameManager
 	[Signal]
 	public delegate void InventoryChangedEventHandler();
 
-	public int Planks { get; private set; } = 0;
+	public int Planks { get; private set; } = 999;
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
 
@@ -27,6 +28,7 @@ public partial class GameManager
 		{
 			Level1Seeds = 3;
 		}
+		Planks = 999;
 	}
 
 	public bool TryConsumeLevel1Seed()
@@ -45,15 +47,15 @@ public partial class GameManager
 
 	public bool TryUsePlank()
 	{
-		if (Planks <= 0) return false;
-		Planks--;
+		// Infinite planks mode for testing
+		Planks = 999;
 		EmitSignal(SignalName.InventoryChanged);
 		return true;
 	}
 
 	public void AddPlanks(int amount)
 	{
-		Planks += amount;
+		Planks = 999;
 		EmitSignal(SignalName.InventoryChanged);
 	}
 

@@ -363,4 +363,30 @@ public partial class Node3d : Node3D
 				counts[t.Tier]++;
 		return counts;
 	}
+
+	public Vector2I? GetHighestTierPlantedCell()
+	{
+		return _tiles
+			.Where(kvp => kvp.Value.State == TileState.Planted && kvp.Value.Tier >= 1)
+			.OrderByDescending(kvp => kvp.Value.Tier)
+			.Select(kvp => (Vector2I?)kvp.Key)
+			.FirstOrDefault();
+	}
+
+	public int GetCropTier(Vector2I cell)
+	{
+		var t = GetTile(cell);
+		return (t?.State == TileState.Planted) ? t.Tier : 0;
+	}
+
+	public bool DestroyCropAt(Vector2I cell)
+	{
+		var tile = GetTile(cell);
+		if (tile?.State != TileState.Planted) return false;
+
+		tile.Visual?.QueueFree();
+		_tiles[cell] = new Tile { State = TileState.Empty };
+		AudioManager.Sfx("foliage_rustle");
+		return true;
+	}
 }

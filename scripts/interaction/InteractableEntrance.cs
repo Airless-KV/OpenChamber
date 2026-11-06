@@ -8,8 +8,10 @@
 // Change Log:
 // - Oct 31, 2026 | air : Created common entrance base class to unify door and window security logic
 // - Nov 06, 2026 | air : Added wooden plank barricading ([F]), visual plank generation, and breach absorption
+// - Nov 06, 2026 | air : Unified prompts and actions with LockableOpening 3s hold barricade/unbarricade mechanics
 // =========================================================================================
 using Godot;
+using System.Linq;
 
 public abstract partial class InteractableEntrance : InteractableBase
 {
@@ -37,21 +39,28 @@ public abstract partial class InteractableEntrance : InteractableBase
 
 	public override string GetPrompt()
 	{
+		var lockable = GetChildren().OfType<LockableOpening>().FirstOrDefault();
+		if (lockable != null)
+		{
+			if (lockable.PlanksPlaced > 0)
+				return $"[Barricaded: {lockable.PlanksPlaced}/{lockable.MaxPlanks}] {EntranceTypeName} | [F] hold (3s): remove | [G] hold (3s): add";
+
+			if (IsLocked)
+				return $"[Locked] {EntranceTypeName} | Hold [F] (3s) to Unlock";
+
+			if (IsOpen)
+				return $"Press [E] to Close {EntranceTypeName} | [G] hold (3s): Barricade";
+
+			return $"Press [E] to Open {EntranceTypeName} | [F] hold (3s): Lock | [G] hold (3s): Barricade";
+		}
+
 		if (IsLocked)
 			return $"[Locked] {EntranceTypeName} cannot be opened";
-
-		if (IsBarricaded)
-			return $"[Barricaded] {EntranceTypeName} reinforced with Wooden Planks | [E] Toggle";
 
 		if (IsOpen)
 			return $"Press [E] to Close {EntranceTypeName}";
 
-		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
-		int planks = gm?.Planks ?? 0;
-		if (planks > 0)
-			return $"Press [E] to Open {EntranceTypeName} | Press [F] to Barricade (1 Plank)";
-
-		return $"Press [E] to Open {EntranceTypeName} | [F] Barricade (Need Plank)";
+		return $"Press [E] to Open {EntranceTypeName}";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -65,34 +74,7 @@ public abstract partial class InteractableEntrance : InteractableBase
 
 	protected override void OnInteractSecondary(PlayerController player)
 	{
-		if (IsLocked) return;
-
-		var hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
-		if (IsOpen)
-		{
-			hud?.SetInteractionPrompt($"[!] Close the {EntranceTypeName} before barricading!");
-			return;
-		}
-
-		if (IsBarricaded)
-		{
-			hud?.SetInteractionPrompt($"[✓] {EntranceTypeName} is already fortified with Wooden Planks!");
-			return;
-		}
-
-		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
-		if (gm != null && gm.TryUsePlank())
-		{
-			IsBarricaded = true;
-			if (BarricadeVisual != null) BarricadeVisual.Visible = true;
-			AudioManager.Sfx("door_thud");
-			hud?.SetInteractionPrompt($"[✓] {EntranceTypeName} Fortified with Wooden Plank! ({gm.Planks} Planks remaining)");
-			EmitSignal(SignalName.BarricadeStateChanged, true);
-		}
-		else
-		{
-			hud?.SetInteractionPrompt($"[!] Need a Wooden Plank from the Flower Shop [E] to barricade {EntranceTypeName}!");
-		}
+		// Handled via LockableOpening hold timers ([F] hold, [G] hold)
 	}
 
 	public bool AbsorbBreachWithBarricade()

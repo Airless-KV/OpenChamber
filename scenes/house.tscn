@@ -3,7 +3,8 @@
 [ext_resource type="Script" uid="uid://bpv64k377sniq" path="res://scripts/interaction/InteractableDoor.cs" id="1_door"]
 [ext_resource type="Script" uid="uid://ovj60x5oho4f" path="res://scripts/interaction/LockableOpening.cs" id="2_se78b"]
 [ext_resource type="Script" uid="uid://b4m786s4xupt" path="res://scripts/interaction/InteractableWindow.cs" id="2_window"]
-[ext_resource type="Script" uid="uid://dj5clu12852ye" path="res://scripts/interaction/InteractableCCTVStation.cs" id="3_cctv"]
+[ext_resource type="PackedScene" path="res://scenes/interaction/cctv_station.tscn" id="3_cctv_scene"]
+[ext_resource type="PackedScene" path="res://scenes/interaction/floodlight_stand.tscn" id="4_flood_scene"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
 size = Vector3(5.6, 0.2, 5.6)
@@ -15,24 +16,22 @@ roughness = 0.6
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(5.6, 0.2, 5.6)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_wall_long"]
-size = Vector3(5.6, 3, 0.2)
+[sub_resource type="BoxShape3D" id="BoxShape3D_roof"]
+size = Vector3(5.8, 0.2, 5.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_roof"]
+albedo_color = Color(0.35, 0.22, 0.12, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_roof"]
+size = Vector3(5.8, 0.2, 5.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
+size = Vector3(0.2, 3, 2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
 albedo_color = Color(0.62, 0.82, 0.62, 1)
 roughness = 0.5
-
-[sub_resource type="BoxMesh" id="BoxMesh_wall_long"]
-size = Vector3(5.6, 3, 0.2)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_wall_side"]
-size = Vector3(0.2, 3, 5.6)
-
-[sub_resource type="BoxMesh" id="BoxMesh_wall_side"]
-size = Vector3(0.2, 3, 5.6)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
-size = Vector3(0.2, 3, 2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall_short"]
 size = Vector3(0.2, 3, 2)
@@ -72,7 +71,22 @@ subdivide_depth = 1
 [sub_resource type="BoxMesh" id="BoxMesh_gxh46"]
 size = Vector3(0.8, 0.12, 0.04)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_window"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns_side"]
+size = Vector3(2, 3, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns_side"]
+size = Vector3(2, 3, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns_lintel"]
+size = Vector3(1.6, 0.8, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns_sill"]
+size = Vector3(1.6, 1, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns_sill"]
+size = Vector3(1.6, 1, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_window_ns"]
 size = Vector3(1.6, 1.2, 0.2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_window"]
@@ -80,37 +94,20 @@ transparency = 1
 albedo_color = Color(0.45, 0.8, 0.95, 0.45)
 roughness = 0.1
 
-[sub_resource type="BoxMesh" id="BoxMesh_window"]
+[sub_resource type="BoxMesh" id="BoxMesh_window_ns"]
 size = Vector3(1.6, 1.2, 0.08)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_desk"]
-size = Vector3(1.6, 0.8, 0.8)
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ew_sill"]
+size = Vector3(0.2, 1, 1.6)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_desk"]
-albedo_color = Color(0.32, 0.2, 0.1, 1)
-roughness = 0.6
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ew_sill"]
+size = Vector3(0.2, 1, 1.6)
 
-[sub_resource type="BoxMesh" id="BoxMesh_desk"]
-size = Vector3(1.6, 0.8, 0.8)
+[sub_resource type="BoxShape3D" id="BoxShape3D_window_ew"]
+size = Vector3(0.2, 1.2, 1.6)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_screen"]
-albedo_color = Color(0.1, 0.85, 0.65, 1)
-emission_enabled = true
-emission = Color(0.1, 0.85, 0.65, 1)
-emission_energy_multiplier = 1.5
-
-[sub_resource type="BoxMesh" id="BoxMesh_monitor"]
-size = Vector3(0.6, 0.5, 0.1)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_bed"]
-size = Vector3(1.5, 0.5, 2.2)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bed"]
-albedo_color = Color(0.25, 0.45, 0.78, 1)
-roughness = 0.7
-
-[sub_resource type="BoxMesh" id="BoxMesh_bed"]
-size = Vector3(1.5, 0.5, 2.2)
+[sub_resource type="BoxMesh" id="BoxMesh_window_ew"]
+size = Vector3(0.08, 1.2, 1.6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ramp"]
 size = Vector3(2.4, 0.2, 1.6)
@@ -131,35 +128,15 @@ shape = SubResource("BoxShape3D_floor")
 material_override = SubResource("StandardMaterial3D_floor")
 mesh = SubResource("BoxMesh_floor")
 
-[node name="WallNorth" type="StaticBody3D" parent="." unique_id=879169850]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -2.75)
+[node name="Roof" type="StaticBody3D" parent="." unique_id=741829301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth" unique_id=1353886787]
-shape = SubResource("BoxShape3D_wall_long")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Roof" unique_id=741829302]
+shape = SubResource("BoxShape3D_roof")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="WallNorth" unique_id=1236121432]
-material_override = SubResource("StandardMaterial3D_wall")
-mesh = SubResource("BoxMesh_wall_long")
-
-[node name="WallSouth" type="StaticBody3D" parent="." unique_id=1560520496]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 2.75)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth" unique_id=1171676717]
-shape = SubResource("BoxShape3D_wall_long")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="WallSouth" unique_id=3868125]
-material_override = SubResource("StandardMaterial3D_wall")
-mesh = SubResource("BoxMesh_wall_long")
-
-[node name="WallWest" type="StaticBody3D" parent="." unique_id=1732175441]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 1.5, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="WallWest" unique_id=265974011]
-shape = SubResource("BoxShape3D_wall_side")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="WallWest" unique_id=591733601]
-material_override = SubResource("StandardMaterial3D_wall")
-mesh = SubResource("BoxMesh_wall_side")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Roof" unique_id=741829303]
+material_override = SubResource("StandardMaterial3D_roof")
+mesh = SubResource("BoxMesh_roof")
 
 [node name="WallEast_Left" type="StaticBody3D" parent="." unique_id=325107282]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 1.5, -1.8)
@@ -213,6 +190,7 @@ mesh = SubResource("SphereMesh_handle")
 [node name="LockableOpening" type="Node3D" parent="FrontDoor" unique_id=2101918986 node_paths=PackedStringArray("LockVisual", "PlankVisuals", "StatusLabel")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.016300082, 0, 0)
 script = ExtResource("2_se78b")
+AttackDirection = 1
 LockVisual = NodePath("Lockindecator")
 PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
 StatusLabel = NodePath("Label3D")
@@ -226,7 +204,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17483449, 0.012639284, 0.8
 billboard = 1
 modulate = Color(0.9660402, 0.88067514, 0.4846871, 1)
 outline_modulate = Color(0.0078745745, 0.00018107114, 9.184199e-05, 0.39215687)
-text = "Test"
+text = "Door"
 font_size = 10
 outline_size = 2
 
@@ -242,43 +220,242 @@ mesh = SubResource("BoxMesh_gxh46")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5452974, 0.63542056, 0)
 mesh = SubResource("BoxMesh_gxh46")
 
+[node name="WallNorth_Left" type="StaticBody3D" parent="." unique_id=879169850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 1.5, -2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth_Left" unique_id=1353886787]
+shape = SubResource("BoxShape3D_wall_ns_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallNorth_Left" unique_id=1236121432]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_side")
+
+[node name="WallNorth_Right" type="StaticBody3D" parent="." unique_id=879169851]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 1.5, -2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth_Right" unique_id=1353886788]
+shape = SubResource("BoxShape3D_wall_ns_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallNorth_Right" unique_id=1236121433]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_side")
+
+[node name="WallNorth_Top" type="MeshInstance3D" parent="." unique_id=879169852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, -2.75)
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_lintel")
+
+[node name="WallNorth_Bottom" type="StaticBody3D" parent="." unique_id=879169853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth_Bottom" unique_id=879169854]
+shape = SubResource("BoxShape3D_wall_ns_sill")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallNorth_Bottom" unique_id=879169855]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_sill")
+
 [node name="NorthWindow" type="StaticBody3D" parent="." unique_id=26727595 node_paths=PackedStringArray("WindowMesh")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -2.65)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.75)
 script = ExtResource("2_window")
 WindowMesh = NodePath("WindowMesh")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NorthWindow" unique_id=61612415]
-shape = SubResource("BoxShape3D_window")
+shape = SubResource("BoxShape3D_window_ns")
 
 [node name="WindowMesh" type="MeshInstance3D" parent="NorthWindow" unique_id=2128243718]
 material_override = SubResource("StandardMaterial3D_window")
-mesh = SubResource("BoxMesh_window")
+mesh = SubResource("BoxMesh_window_ns")
 
-[node name="CCTVStation" type="StaticBody3D" parent="." unique_id=944499830]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.4, -1.8)
-script = ExtResource("3_cctv")
+[node name="LockableOpening" type="Node3D" parent="NorthWindow" unique_id=26727596 node_paths=PackedStringArray("LockVisual", "PlankVisuals", "StatusLabel")]
+script = ExtResource("2_se78b")
+AttackDirection = 0
+LockVisual = NodePath("Lockindecator")
+PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
+StatusLabel = NodePath("Label3D")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CCTVStation" unique_id=590120705]
-shape = SubResource("BoxShape3D_desk")
+[node name="Lockindecator" type="MeshInstance3D" parent="NorthWindow/LockableOpening" unique_id=26727597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0.08)
+mesh = SubResource("BoxMesh_k0vqr")
 
-[node name="DeskMesh" type="MeshInstance3D" parent="CCTVStation" unique_id=1682279589]
-material_override = SubResource("StandardMaterial3D_desk")
-mesh = SubResource("BoxMesh_desk")
+[node name="Label3D" type="Label3D" parent="NorthWindow/LockableOpening" unique_id=26727598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0.08)
+billboard = 1
+modulate = Color(0.9660402, 0.88067514, 0.4846871, 1)
+text = "North Window"
+font_size = 10
+outline_size = 2
 
-[node name="MonitorMesh" type="MeshInstance3D" parent="CCTVStation" unique_id=1531479667]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
-material_override = SubResource("StandardMaterial3D_screen")
-mesh = SubResource("BoxMesh_monitor")
+[node name="Plank1" type="MeshInstance3D" parent="NorthWindow/LockableOpening" unique_id=26727599]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0.05)
+mesh = SubResource("BoxMesh_gxh46")
 
-[node name="BedCot" type="StaticBody3D" parent="." unique_id=1517192105]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.25, 1.5)
+[node name="Plank2" type="MeshInstance3D" parent="NorthWindow/LockableOpening" unique_id=26727600]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.05)
+mesh = SubResource("BoxMesh_gxh46")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BedCot" unique_id=1444287531]
-shape = SubResource("BoxShape3D_bed")
+[node name="Plank3" type="MeshInstance3D" parent="NorthWindow/LockableOpening" unique_id=26727601]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0.05)
+mesh = SubResource("BoxMesh_gxh46")
 
-[node name="BedMesh" type="MeshInstance3D" parent="BedCot" unique_id=1275528159]
-material_override = SubResource("StandardMaterial3D_bed")
-mesh = SubResource("BoxMesh_bed")
+[node name="WallSouth_Left" type="StaticBody3D" parent="." unique_id=1560520496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 1.5, 2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth_Left" unique_id=1171676717]
+shape = SubResource("BoxShape3D_wall_ns_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallSouth_Left" unique_id=3868125]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_side")
+
+[node name="WallSouth_Right" type="StaticBody3D" parent="." unique_id=1560520497]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 1.5, 2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth_Right" unique_id=1171676718]
+shape = SubResource("BoxShape3D_wall_ns_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallSouth_Right" unique_id=3868126]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_side")
+
+[node name="WallSouth_Top" type="MeshInstance3D" parent="." unique_id=1560520498]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 2.75)
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_lintel")
+
+[node name="WallSouth_Bottom" type="StaticBody3D" parent="." unique_id=1560520499]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 2.75)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth_Bottom" unique_id=1560520500]
+shape = SubResource("BoxShape3D_wall_ns_sill")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallSouth_Bottom" unique_id=1560520501]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ns_sill")
+
+[node name="SouthWindow" type="StaticBody3D" parent="." unique_id=1560520502 node_paths=PackedStringArray("WindowMesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 2.75)
+script = ExtResource("2_window")
+WindowMesh = NodePath("WindowMesh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SouthWindow" unique_id=1560520503]
+shape = SubResource("BoxShape3D_window_ns")
+
+[node name="WindowMesh" type="MeshInstance3D" parent="SouthWindow" unique_id=1560520504]
+material_override = SubResource("StandardMaterial3D_window")
+mesh = SubResource("BoxMesh_window_ns")
+
+[node name="LockableOpening" type="Node3D" parent="SouthWindow" unique_id=1560520505 node_paths=PackedStringArray("LockVisual", "PlankVisuals", "StatusLabel")]
+script = ExtResource("2_se78b")
+AttackDirection = 2
+LockVisual = NodePath("Lockindecator")
+PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
+StatusLabel = NodePath("Label3D")
+
+[node name="Lockindecator" type="MeshInstance3D" parent="SouthWindow/LockableOpening" unique_id=1560520506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, -0.08)
+mesh = SubResource("BoxMesh_k0vqr")
+
+[node name="Label3D" type="Label3D" parent="SouthWindow/LockableOpening" unique_id=1560520507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -0.08)
+billboard = 1
+modulate = Color(0.9660402, 0.88067514, 0.4846871, 1)
+text = "South Window"
+font_size = 10
+outline_size = 2
+
+[node name="Plank1" type="MeshInstance3D" parent="SouthWindow/LockableOpening" unique_id=1560520508]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, -0.05)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank2" type="MeshInstance3D" parent="SouthWindow/LockableOpening" unique_id=1560520509]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank3" type="MeshInstance3D" parent="SouthWindow/LockableOpening" unique_id=1560520510]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -0.05)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="WallWest_Left" type="StaticBody3D" parent="." unique_id=1732175441]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 1.5, -1.8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallWest_Left" unique_id=265974011]
+shape = SubResource("BoxShape3D_wall_short")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallWest_Left" unique_id=591733601]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_short")
+
+[node name="WallWest_Right" type="StaticBody3D" parent="." unique_id=1732175442]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 1.5, 1.8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallWest_Right" unique_id=265974012]
+shape = SubResource("BoxShape3D_wall_short")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallWest_Right" unique_id=591733602]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_short")
+
+[node name="WallWest_Top" type="MeshInstance3D" parent="." unique_id=1732175443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 2.6, 0)
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_lintel")
+
+[node name="WallWest_Bottom" type="StaticBody3D" parent="." unique_id=1732175444]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallWest_Bottom" unique_id=1732175445]
+shape = SubResource("BoxShape3D_wall_ew_sill")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WallWest_Bottom" unique_id=1732175446]
+material_override = SubResource("StandardMaterial3D_wall")
+mesh = SubResource("BoxMesh_wall_ew_sill")
+
+[node name="WestWindow" type="StaticBody3D" parent="." unique_id=1732175447 node_paths=PackedStringArray("WindowMesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 1.6, 0)
+script = ExtResource("2_window")
+WindowMesh = NodePath("WindowMesh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WestWindow" unique_id=1732175448]
+shape = SubResource("BoxShape3D_window_ew")
+
+[node name="WindowMesh" type="MeshInstance3D" parent="WestWindow" unique_id=1732175449]
+material_override = SubResource("StandardMaterial3D_window")
+mesh = SubResource("BoxMesh_window_ew")
+
+[node name="LockableOpening" type="Node3D" parent="WestWindow" unique_id=1732175450 node_paths=PackedStringArray("LockVisual", "PlankVisuals", "StatusLabel")]
+script = ExtResource("2_se78b")
+AttackDirection = 3
+LockVisual = NodePath("Lockindecator")
+PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
+StatusLabel = NodePath("Label3D")
+
+[node name="Lockindecator" type="MeshInstance3D" parent="WestWindow/LockableOpening" unique_id=1732175451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.08, -0.45, 0)
+mesh = SubResource("BoxMesh_k0vqr")
+
+[node name="Label3D" type="Label3D" parent="WestWindow/LockableOpening" unique_id=1732175452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.08, 0.45, 0)
+billboard = 1
+modulate = Color(0.9660402, 0.88067514, 0.4846871, 1)
+text = "West Window"
+font_size = 10
+outline_size = 2
+
+[node name="Plank1" type="MeshInstance3D" parent="WestWindow/LockableOpening" unique_id=1732175453]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.05, -0.25, 0)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank2" type="MeshInstance3D" parent="WestWindow/LockableOpening" unique_id=1732175454]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.05, 0, 0)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank3" type="MeshInstance3D" parent="WestWindow/LockableOpening" unique_id=1732175455]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.05, 0.25, 0)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="CCTVStation" parent="." unique_id=944499830 instance=ExtResource("3_cctv_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 
 [node name="Ramp" type="StaticBody3D" parent="." unique_id=948232157]
 transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, 3.8, -0.5, 0)
@@ -292,5 +469,24 @@ material_override = SubResource("StandardMaterial3D_door")
 mesh = SubResource("BoxMesh_ramp")
 
 [node name="CeilingLight" type="OmniLight3D" parent="." unique_id=1211396729]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
 light_color = Color(1, 0.88, 0.7, 1)
+
+[node name="EastFloodlightStand" parent="." unique_id=741829101 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("4_flood_scene")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 1.1, 0.39999998, 0)
+RequiredEntrance = NodePath("../FrontDoor")
+
+[node name="NorthFloodlightStand" parent="." unique_id=741829111 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("4_flood_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1223724, -2.4)
+RequiredEntrance = NodePath("../NorthWindow")
+Direction = 0
+
+[node name="SouthFloodlightStand" parent="." unique_id=741829121 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("4_flood_scene")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1.1371562, 2.4)
+RequiredEntrance = NodePath("../SouthWindow")
+Direction = 2
+
+[node name="WestFloodlightStand" parent="." unique_id=741829131 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("4_flood_scene")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -2.4, 1.142761, 0)
+RequiredEntrance = NodePath("../WestWindow")
+Direction = 3

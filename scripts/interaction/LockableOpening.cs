@@ -1,27 +1,41 @@
+// =========================================================================================
+// Original Author : Robin Velasco (0325-1150@lspu.edu.ph) - Nov 2026
+// Responsibilities: - Door & window locking and barricade mechanics
+//                   - Automatic plank alignment and sizing across openings
+//                   - PvZ Lawnmower entrance sacrifice defense (1 HP)
+// -----------------------------------------------------------------------------------------
+// Change Log:
+// - Nov 06, 2026 | air : Integrated with BreachManager and standardized headers
+// - Nov 06, 2026 | air : Added 3s hold placement/removal sliders, MaxPlanks 5, and TearSinglePlank
+// - Nov 06, 2026 | air : Restricted MaxPlanks to 3, implemented Lawnmower 1 HP defense and daytime repair
+// =========================================================================================
 using Godot;
 
-// Ikabit bilang DIREKTANG ANAK ng FrontDoor / NorthWindow
-// (yung may InteractableDoor / InteractableWindow script).
-//
-// F (hawakan):
-//   - may plank    = tanggalin ang mga plank (ibabalik sa inventory)
-//   - walang plank = i-lock / i-unlock (kailangang sarado)
-// G = maglagay ng plank (puwede kahit bukas o sarado ang pinto)
-//
-// Awtomatikong inilalagay ang mga plank sa bukana, ayon sa laki ng DoorMesh / WindowMesh.
 public partial class LockableOpening : Node3D
 {
+	[ExportGroup("Interaction Range")]
 	[Export] public float InteractRange = 4.0f;
 	[Export] public float LookDot = 0.7f;
-	[Export] public float HoldSeconds = 1.2f;
+
+	[ExportGroup("Barricade Timers & Sliders")]
+	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float PlacePlankSeconds = 3.0f;
+	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float RemovePlankSeconds = 3.0f;
 	[Export] public int MaxPlanks = 3;
 	[Export(PropertyHint.Enum, "North,East,South,West")] public int AttackDirection = 0;
 
-	// Kung nasa maling gilid ang mga kahoy, palitan ang PlankSide ng -1.
+	[ExportGroup("Entrance Health (Lawnmower Defense)")]
+	[Export] public int MaxHealth = 1;
+	public int Health { get; set; } = 1;
+	public bool IsBroken => Health <= 0;
+
+	public enum DefenseResult { PlankAbsorbed, LawnmowerTriggered, FatalBreach }
+
+	[ExportGroup("Plank Placement Offsets")]
 	[Export] public float PlankSide = 1.0f;
 	[Export] public float PlankGap = 0.05f;
 	[Export] public Vector3 BlockerSize = new Vector3(1.4f, 2.2f, 0.5f);
 
+	[ExportGroup("Visual Bindings")]
 	[Export] public Node3D LockVisual;
 	[Export] public Node3D[] PlankVisuals;
 	[Export] public Label3D StatusLabel;
@@ -35,6 +49,8 @@ public partial class LockableOpening : Node3D
 	private GameManager _gm;
 	private float _held;
 	private bool _toggled;
+	private float _placeHeld;
+	private bool _placeToggled;
 	private float _msgTimer;
 
 	private bool _setupDone;
@@ -51,6 +67,14 @@ public partial class LockableOpening : Node3D
 
 		AddToGroup("Lockables");
 		_gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+
+		if (_gm != null)
+		{
+			_gm.PhaseChanged += (isDay, _) =>
+			{
+				if (isDay) RepairEntrance();
+			};
+		}
 
 		CallDeferred(MethodName.SetupPlanks);
 	}
@@ -82,7 +106,6 @@ public partial class LockableOpening : Node3D
 
 		bool hasPlanks = PlankVisuals != null && PlankVisuals.Length > 0;
 
-		// Ilipat ang mga plank sa labas ng pinto para hindi umikot kapag binuksan.
 		if (hasPlanks && newParent != null)
 		{
 			foreach (Node3D p in PlankVisuals)
@@ -128,15 +151,13 @@ public partial class LockableOpening : Node3D
 				thickness = sizeX;
 			}
 
-			float height = sizeY;
-			Vector3 up = Vector3.Up;
-			Vector3 xAxis = widthAxis.Normalized();
-			Vector3 zAxis = xAxis.Cross(up).Normalized();
-			blockBasis = new Basis(xAxis, up, zAxis);
-			blockSize = new Vector3(width, height, 0.5f);
+			Vector3 yAxis = ob.Y;
+			Vector3 zAxis = widthAxis.Cross(yAxis).Normalized();
+			if (zAxis.LengthSquared() < 0.5f)
+				zAxis = ob.Z;
 
 			int n = PlankVisuals.Length;
-			float bottom = center.Y - height / 2f;
+			float usableH = sizeY * 0.75f;
 			Vector3 depthOffset = zAxis * PlankSide * (thickness / 2f + PlankGap);
 
 			for (int i = 0; i < n; i++)
@@ -145,19 +166,16 @@ public partial class LockableOpening : Node3D
 				if (p == null)
 					continue;
 
-				float y = bottom + height * (i + 1) / (n + 1);
-				Vector3 pos = new Vector3(center.X, y, center.Z) + depthOffset;
-				p.GlobalTransform = new Transform3D(blockBasis, pos);
+				float t = (n == 1) ? 0.5f : ((float)i / (n - 1));
+				float yOff = (t - 0.5f) * usableH;
+				Vector3 pos = center + yAxis * yOff + depthOffset;
 
-				float meshW = 1.0f;
-				MeshInstance3D pm = p as MeshInstance3D;
-				if (pm != null && pm.Mesh != null)
-					meshW = pm.Mesh.GetAabb().Size.X;
-				if (meshW < 0.01f)
-					meshW = 1.0f;
-
-				p.Scale = new Vector3(width * 1.1f / meshW, 1.0f, 1.0f);
+				Basis b = new Basis(widthAxis, yAxis, zAxis);
+				p.GlobalTransform = new Transform3D(b, pos);
 			}
+
+			blockBasis = new Basis(widthAxis, yAxis, zAxis);
+			blockSize = new Vector3(width, sizeY, thickness + 0.3f);
 		}
 
 		if (hasPlanks)
@@ -170,64 +188,97 @@ public partial class LockableOpening : Node3D
 				else
 					_plankScales[i] = Vector3.One;
 			}
-
-			if (newParent != null)
-				CreateBlocker(center, blockBasis, blockSize, newParent);
 		}
 
+		CreateBlocker(center, blockBasis, blockSize);
 		_setupDone = true;
 		UpdateVisuals();
 	}
 
-	private void CreateBlocker(Vector3 center, Basis basis, Vector3 size, Node parent)
+	private void CreateBlocker(Vector3 center, Basis basis, Vector3 size)
 	{
 		StaticBody3D body = new StaticBody3D();
 		body.Name = "BarricadeBlocker";
 
+		_blockerShape = new CollisionShape3D();
 		BoxShape3D box = new BoxShape3D();
 		box.Size = size;
-
-		_blockerShape = new CollisionShape3D();
 		_blockerShape.Shape = box;
-		_blockerShape.Disabled = true;
 
 		body.AddChild(_blockerShape);
-		parent.AddChild(body);
+
+		Node p = (_entrance != null) ? _entrance.GetParent() : GetParent();
+		if (p != null)
+			p.AddChild(body);
+		else
+			AddChild(body);
+
 		body.GlobalTransform = new Transform3D(basis, center);
+		_blockerShape.Disabled = true;
 	}
 
 	public override void _Process(double delta)
 	{
 		if (_msgTimer > 0f)
+		{
 			_msgTimer -= (float)delta;
+			if (_msgTimer <= 0f)
+				SetStatus(null);
+		}
 
 		UpdateVisuals();
 
-		if (_entrance == null || !IsPlayerLooking())
+		if (_entrance == null)
+			return;
+
+		Camera3D cam = GetViewport().GetCamera3D();
+		if (cam == null)
+			return;
+
+		Vector3 toEntrance = GlobalPosition - cam.GlobalPosition;
+		float dist = toEntrance.Length();
+		if (dist > InteractRange)
 		{
 			_held = 0f;
 			_toggled = false;
-			SetStatus("");
+			_placeHeld = 0f;
+			_placeToggled = false;
 			return;
 		}
 
-		HandleLockHold(delta);
-		HandleBarricade();
+		Vector3 forward = -cam.GlobalTransform.Basis.Z.Normalized();
+		float dot = forward.Dot(toEntrance.Normalized());
+		if (dot < LookDot)
+		{
+			_held = 0f;
+			_toggled = false;
+			_placeHeld = 0f;
+			_placeToggled = false;
+			return;
+		}
+
+		HandleHold(delta);
+		HandleBarricade(delta);
 	}
 
-	private void HandleLockHold(double delta)
+	private void HandleHold(double delta)
 	{
 		if (!Input.IsActionPressed("lock_hold"))
 		{
 			_held = 0f;
 			_toggled = false;
 
-			if (PlanksPlaced > 0)
-				SetStatus("BARRICADED (" + PlanksPlaced + "/" + MaxPlanks + ")   [F] hold: remove planks   [G]: add plank");
-			else if (IsLocked)
-				SetStatus("LOCKED");
-			else
-				SetStatus("[F] hold: lock   [G]: barricade");
+			if (_placeHeld <= 0f)
+			{
+				if (PlanksPlaced > 0)
+					SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | [F] hold (3s): remove | [G] hold (3s): add plank");
+				else if (IsBroken)
+					SetStatus($"[BROKEN - 0 HP (LAWNMOWER USED)] | [G] hold (3s): Barricade opening!");
+				else if (IsLocked)
+					SetStatus("LOCKED | [F] hold (3s): unlock | [G] hold (3s): barricade");
+				else
+					SetStatus("[F] hold (3s): lock | [G] hold (3s): barricade");
+			}
 			return;
 		}
 
@@ -248,10 +299,10 @@ public partial class LockableOpening : Node3D
 		else if (IsLocked)
 			verb = "Unlocking";
 
-		int percent = Mathf.Min(100, (int)(_held / HoldSeconds * 100));
+		int percent = Mathf.Min(100, (int)(_held / RemovePlankSeconds * 100));
 		SetStatus(verb + "... " + percent + "%");
 
-		if (_held < HoldSeconds)
+		if (_held < RemovePlankSeconds)
 			return;
 
 		_toggled = true;
@@ -279,9 +330,16 @@ public partial class LockableOpening : Node3D
 		}
 	}
 
-	private void HandleBarricade()
+	private void HandleBarricade(double delta)
 	{
-		if (!Input.IsActionJustPressed("place_barricade"))
+		if (!Input.IsActionPressed("place_barricade"))
+		{
+			_placeHeld = 0f;
+			_placeToggled = false;
+			return;
+		}
+
+		if (_placeToggled)
 			return;
 
 		if (PlanksPlaced >= MaxPlanks)
@@ -289,6 +347,16 @@ public partial class LockableOpening : Node3D
 			ShowMessage("Barricade full");
 			return;
 		}
+
+		_placeHeld += (float)delta;
+		int percent = Mathf.Min(100, (int)(_placeHeld / PlacePlankSeconds * 100));
+		SetStatus($"Placing plank... {percent}%");
+
+		if (_placeHeld < PlacePlankSeconds)
+			return;
+
+		_placeToggled = true;
+		_placeHeld = 0f;
 
 		if (_gm != null && _gm.TryUsePlank())
 		{
@@ -301,7 +369,7 @@ public partial class LockableOpening : Node3D
 			}
 
 			AudioManager.Sfx("door_thud", -4f);
-			ShowMessage("Plank placed (" + PlanksPlaced + "/" + MaxPlanks + ")");
+			ShowMessage($"Plank placed ({PlanksPlaced}/{MaxPlanks})");
 		}
 		else
 		{
@@ -309,7 +377,65 @@ public partial class LockableOpening : Node3D
 		}
 	}
 
-	// Para sa BreachManager. False = naantala ang halimaw. True = nakapasok na.
+	// Plants vs Zombies Lawnmower defense:
+	// If planks exist -> tear 1 plank (absorbed)
+	// If 0 planks & Health > 0 (1 HP) -> Lawnmower triggers! Entrance shatters, sacrificing itself to repel Ani-Ani.
+	// If 0 planks & Health <= 0 -> Entrance is already broken! Fatal breach!
+	public DefenseResult TakeHitAndCheckLawnmower()
+	{
+		if (PlanksPlaced > 0)
+		{
+			TearSinglePlank();
+			return DefenseResult.PlankAbsorbed;
+		}
+
+		if (Health > 0)
+		{
+			// 1 HP Lawnmower consumed! Entrance shatters to repel Ani-Ani!
+			Health = 0;
+			if (_entrance != null)
+			{
+				_entrance.IsLocked = false;
+				_entrance.IsOpen = true;
+			}
+			AudioManager.Sfx("window_rattle", 4f);
+			AudioManager.Sfx("door_pound", 3f);
+			AudioManager.Sfx("banner_sting");
+			ShowMessage("[!] LAWNMOWER DEFENSE! Entrance shattered repelling Ani-Ani! (0 HP - BROKEN!)", 3.0f);
+			UpdateVisuals();
+			return DefenseResult.LawnmowerTriggered;
+		}
+
+		// Already 0 HP and 0 planks: fatal breach!
+		return DefenseResult.FatalBreach;
+	}
+
+	public void RepairEntrance()
+	{
+		Health = MaxHealth;
+		if (_entrance != null)
+		{
+			_entrance.IsOpen = false;
+			_entrance.IsLocked = true;
+		}
+		UpdateVisuals();
+	}
+
+	// Tears a single plank sequentially during Ani-Ani's assault
+	public bool TearSinglePlank()
+	{
+		if (PlanksPlaced > 0)
+		{
+			PlanksPlaced--;
+			AudioManager.Sfx("window_rattle", 2f);
+			AudioManager.Sfx("door_pound", -2f);
+			UpdateVisuals();
+			return true;
+		}
+		return false;
+	}
+
+	// Legacy breach check for BreachManager
 	public bool TryBreach()
 	{
 		if (PlanksPlaced > 0)
@@ -330,27 +456,26 @@ public partial class LockableOpening : Node3D
 		return true;
 	}
 
-	private bool IsPlayerLooking()
+	public void TryBreakAll()
 	{
-		Camera3D cam = GetViewport().GetCamera3D();
-		if (cam == null)
-			return false;
-
-		Vector3 toMe = GlobalPosition - cam.GlobalPosition;
-		if (toMe.Length() > InteractRange)
-			return false;
-
-		Vector3 forward = -cam.GlobalTransform.Basis.Z;
-		return forward.Dot(toMe.Normalized()) >= LookDot;
+		PlanksPlaced = 0;
+		if (_entrance != null)
+			_entrance.IsLocked = false;
+		_autoLocked = false;
+		UpdateVisuals();
 	}
 
 	private void UpdateVisuals()
 	{
-		if (LockVisual != null)
-			LockVisual.Visible = IsLocked;
-
 		if (!_setupDone)
 			return;
+
+		if (LockVisual != null)
+		{
+			bool showLock = IsLocked && PlanksPlaced == 0;
+			if (LockVisual.Visible != showLock)
+				LockVisual.Visible = showLock;
+		}
 
 		if (PlankVisuals != null)
 		{
@@ -374,14 +499,13 @@ public partial class LockableOpening : Node3D
 		}
 
 		bool wantBlock = PlanksPlaced > 0;
-		if (_blockerShape != null && wantBlock != _blockerOn)
+		if (_blockerShape != null && _blockerOn != wantBlock)
 		{
+			_blockerShape.Disabled = !wantBlock;
 			_blockerOn = wantBlock;
-			_blockerShape.SetDeferred("disabled", !wantBlock);
 		}
 	}
 
-	// Maliit na animation para makita mong nilalagay ang kahoy.
 	private void PopIn(Node3D plank, int index)
 	{
 		Vector3 target = Vector3.One;
@@ -398,17 +522,22 @@ public partial class LockableOpening : Node3D
 
 	private void SetStatus(string text)
 	{
-		if (_msgTimer > 0f)
+		if (StatusLabel == null)
 			return;
 
-		if (StatusLabel != null)
-			StatusLabel.Text = text;
+		if (string.IsNullOrEmpty(text))
+		{
+			StatusLabel.Visible = false;
+			return;
+		}
+
+		StatusLabel.Text = text;
+		StatusLabel.Visible = true;
 	}
 
-	private void ShowMessage(string text)
+	private void ShowMessage(string text, float duration = 1.6f)
 	{
-		_msgTimer = 1.5f;
-		if (StatusLabel != null)
-			StatusLabel.Text = text;
+		SetStatus(text);
+		_msgTimer = duration;
 	}
 }

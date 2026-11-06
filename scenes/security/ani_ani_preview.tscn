@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c_ani_ani_preview_01"]
+[gd_scene format=3 uid="uid://bo6s30d7obihr"]
 
 [ext_resource type="PackedScene" path="res://scenes/security/ani_ani_monster.tscn" id="1_monster"]
 
@@ -28,30 +28,31 @@ roughness = 0.85
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
 size = Vector2(25, 25)
 
-[node name="AniAniPreview" type="Node3D"]
+[node name="AniAniPreview" type="Node3D" unique_id=1716800922]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=829902310]
 environment = SubResource("Environment_prev")
 
-[node name="KeyLight" type="DirectionalLight3D" parent="."]
+[node name="KeyLight" type="DirectionalLight3D" parent="." unique_id=824023433]
 transform = Transform3D(0.819152, 0.3289899, -0.4698463, 0, 0.819152, 0.5735764, 0.5735764, -0.4698463, 0.6710101, 0, 5, 0)
 light_color = Color(0.9, 0.92, 1, 1)
 light_energy = 1.3
 shadow_enabled = true
 
-[node name="RimBacklight" type="DirectionalLight3D" parent="."]
+[node name="RimBacklight" type="DirectionalLight3D" parent="." unique_id=166899577]
 transform = Transform3D(-0.819152, -0.3289899, 0.4698463, 0, 0.819152, 0.5735764, -0.5735764, 0.4698463, -0.6710101, 0, 5, 0)
 light_color = Color(1, 0.25, 0.25, 1)
 light_energy = 2.4
 
-[node name="Floor" type="MeshInstance3D" parent="."]
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=980347437]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28652346, 0, 0)
 material_override = SubResource("StandardMaterial3D_floor")
 mesh = SubResource("PlaneMesh_floor")
 
-[node name="AniAniMonster" parent="." instance=ExtResource("1_monster")]
+[node name="AniAniMonster" parent="." unique_id=2102493931 instance=ExtResource("1_monster")]
 AutoHideOnReady = false
 
-[node name="ShowcaseCamera" type="Camera3D" parent="."]
-transform = Transform3D(0.9925462, -0.0163901, 0.1207869, 0, 0.9909923, 0.1339178, -0.1218933, -0.1329199, 0.9836056, 0.55, 2.05, 3.8)
+[node name="ShowcaseCamera" type="Camera3D" parent="." unique_id=952255758]
+transform = Transform3D(0.9925433, -0.016324693, 0.12079485, 0.012763333, 0.9994625, 0.030197939, -0.12122289, -0.028431017, 0.9922181, 0.45139557, 2.1071432, 3.9061477)
 current = true
 fov = 50.0
