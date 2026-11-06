@@ -29,7 +29,7 @@ size = Vector3(5.6, 3, 0.2)
 size = Vector3(0.2, 3, 5.6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall_side"]
-size = Vector3(0.001, 3, 5.6)
+size = Vector3(0.001, 3.1923828, 5.783252)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
 size = Vector3(0.2, 3, 2)
@@ -158,7 +158,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 1.5, 0)
 shape = SubResource("BoxShape3D_wall_side")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="WallWest" unique_id=591733601]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09950018, -6.2586923, -7.771543)
+transform = Transform3D(0.99998975, 0.004271025, 0.0015109094, -0.0042828824, 0.9999595, 0.007913757, -0.0014770554, -0.007920143, 0.99996746, -0.008416176, -0.09694123, 0.090185344)
 material_override = SubResource("StandardMaterial3D_wall")
 mesh = SubResource("BoxMesh_wall_side")
 
