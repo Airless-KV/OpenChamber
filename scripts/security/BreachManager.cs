@@ -13,7 +13,7 @@
 // - Oct 31, 2026 | air : Routed monster attack stinger to AudioManager.Sfx, removing duplicate PCM audio synthesis
 // - Oct 31, 2026 | air : Simplified entrance verification using unified InteractableEntrance group query
 // - Oct 31, 2026 | air : Consolidated state reset transitions and dependency resolution
-// - Nov 06, 2026 | air : Integrated Wooden Plank barricade breach absorption & Garden Barrier reaction slowdown
+// - Nov 06, 2026 | air : Integrated Wooden Plank barricade breach absorption, manual locking delay, & Garden Barrier reaction slowdown
 // =========================================================================================
 using Godot;
 using System;
@@ -45,6 +45,7 @@ public partial class BreachManager : Node
 	[Export] public float ReactionWindow = 7.0f;
 	[Export] public float BarrierExtraReactionTime = 5.0f;
 	[Export] public bool EnableOutdoorLoss = true;
+	[Export] public float BarricadeDelay = 6.0f;
 
 	public bool IsMonsterAttacking { get; private set; }
 	public AttackDirection CurrentApproachDir { get; private set; }
@@ -159,6 +160,20 @@ public partial class BreachManager : Node
 
 		if (entranceOpen || playerNotLooking)
 		{
+		if (entranceOpen)
+		{
+			TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
+			return;
+		}
+
+		if (playerNotLooking)
+		{
+			if (TryDelayBreach(CurrentApproachDir))
+			{
+				HUDNode?.SetInteractionPrompt($"[!] BARRICADE/LOCK DELAYED ATTACK! Planks damaged on {dir} perimeter!");
+				return;
+			}
+
 			// Check if any entrance is fortified with wooden planks to absorb the breach
 			var barricade = GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().FirstOrDefault(e => e.IsBarricaded);
 			if (barricade != null)
@@ -172,10 +187,9 @@ public partial class BreachManager : Node
 				return;
 			}
 
-			if (entranceOpen)
-				TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
-			else
-				TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
+			TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
+			return;
+		}
 		}
 		else
 		{
@@ -188,6 +202,25 @@ public partial class BreachManager : Node
 		}
 	}
 
+	// Kapag may lock o plank ang pinakamahinang entrance sa direksyong inaatake,
+	// sisirain ng halimaw ang isa at maaantala ang breach.
+	private bool TryDelayBreach(AttackDirection dir)
+	{
+		var weakest = GetTree().GetNodesInGroup("Lockables")
+			.OfType<LockableOpening>()
+			.Where(o => o.AttackDirection == (int)dir)
+			.OrderBy(o => o.DefenseLevel)
+			.FirstOrDefault();
+
+		if (weakest == null || weakest.DefenseLevel <= 0)
+			return false;
+
+		weakest.TryBreach();
+		IsMonsterAttacking = true;
+		AttackCountdown = BarricadeDelay;
+		return true;
+	}
+
 	public void TriggerBreach(string reason)
 	{
 		_isNight = false;
@@ -196,8 +229,13 @@ public partial class BreachManager : Node
 		JumpScareScreenNode?.TriggerJumpScare(reason, GameManagerNode?.CurrentDay ?? 1, GameManagerNode?.Coins ?? 0);
 	}
 
+	// BAGO: ang bukas na entrance na may plank ay hindi na bibilangin bilang bukas.
 	public bool IsAnyEntranceOpen() =>
-		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen);
+		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen && !IsBarricaded(e));
+
+	// BAGO
+	private bool IsBarricaded(InteractableEntrance entrance) =>
+		GetTree().GetNodesInGroup("Lockables").OfType<LockableOpening>().Any(o => o.Entrance == entrance && o.PlanksPlaced > 0);
 
 	public bool IsPlayerNotLooking(AttackDirection direction) =>
 		NightCameraNode == null || !NightCameraNode.IsNightMode || NightCameraNode.CurrentNightIndex != (int)direction;

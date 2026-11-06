@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dht0npv3gkdtm"]
 
 [ext_resource type="Script" uid="uid://bpv64k377sniq" path="res://scripts/interaction/InteractableDoor.cs" id="1_door"]
+[ext_resource type="Script" uid="uid://ovj60x5oho4f" path="res://scripts/interaction/LockableOpening.cs" id="2_se78b"]
 [ext_resource type="Script" uid="uid://b4m786s4xupt" path="res://scripts/interaction/InteractableWindow.cs" id="2_window"]
 [ext_resource type="Script" uid="uid://dj5clu12852ye" path="res://scripts/interaction/InteractableCCTVStation.cs" id="3_cctv"]
 
@@ -57,6 +58,19 @@ roughness = 0.25
 [sub_resource type="SphereMesh" id="SphereMesh_handle"]
 radius = 0.06
 height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_se78b"]
+albedo_color = Color(0.70458657, 0.14967698, 0.16841206, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k0vqr"]
+material = SubResource("StandardMaterial3D_se78b")
+size = Vector3(0.15, 0.13999939, 0.05)
+subdivide_width = 1
+subdivide_height = 4
+subdivide_depth = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_gxh46"]
+size = Vector3(0.8, 0.12, 0.04)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_window"]
 size = Vector3(1.6, 1.2, 0.2)
@@ -195,6 +209,38 @@ mesh = SubResource("SphereMesh_handle")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08, 0, 1.45)
 material_override = SubResource("StandardMaterial3D_handle")
 mesh = SubResource("SphereMesh_handle")
+
+[node name="LockableOpening" type="Node3D" parent="FrontDoor" unique_id=2101918986 node_paths=PackedStringArray("LockVisual", "PlankVisuals", "StatusLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.016300082, 0, 0)
+script = ExtResource("2_se78b")
+LockVisual = NodePath("Lockindecator")
+PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
+StatusLabel = NodePath("Label3D")
+
+[node name="Lockindecator" type="MeshInstance3D" parent="FrontDoor/LockableOpening" unique_id=2082453115]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.007217288, 0.017070055, 1.5758344)
+mesh = SubResource("BoxMesh_k0vqr")
+
+[node name="Label3D" type="Label3D" parent="FrontDoor/LockableOpening" unique_id=629448100]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17483449, 0.012639284, 0.8009222)
+billboard = 1
+modulate = Color(0.9660402, 0.88067514, 0.4846871, 1)
+outline_modulate = Color(0.0078745745, 0.00018107114, 9.184199e-05, 0.39215687)
+text = "Test"
+font_size = 10
+outline_size = 2
+
+[node name="Plank1" type="MeshInstance3D" parent="FrontDoor/LockableOpening" unique_id=1772789981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5452974, -0.21464467, 0)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank2" type="MeshInstance3D" parent="FrontDoor/LockableOpening" unique_id=1935196854]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5452974, 0.22559714, 0)
+mesh = SubResource("BoxMesh_gxh46")
+
+[node name="Plank3" type="MeshInstance3D" parent="FrontDoor/LockableOpening" unique_id=89188772]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5452974, 0.63542056, 0)
+mesh = SubResource("BoxMesh_gxh46")
 
 [node name="NorthWindow" type="StaticBody3D" parent="." unique_id=26727595 node_paths=PackedStringArray("WindowMesh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -2.65)
