@@ -3,6 +3,7 @@
 // Responsibilities: - Night horror attack state machine and Ani-Ani breach management
 //                   - Directional monster approach alerts and CCTV stalking stages (Distant, Approaching, Imminent)
 //                   - Entrance security checks (doors/windows) & CCTV monitoring verification
+//                   - Barricade fortification absorption and Garden Barrier perimeter slowdown
 //                   - Audio warning stinger generation & defeat trigger
 // -----------------------------------------------------------------------------------------
 // Change Log:
@@ -12,6 +13,7 @@
 // - Oct 31, 2026 | air : Routed monster attack stinger to AudioManager.Sfx, removing duplicate PCM audio synthesis
 // - Oct 31, 2026 | air : Simplified entrance verification using unified InteractableEntrance group query
 // - Oct 31, 2026 | air : Consolidated state reset transitions and dependency resolution
+// - Nov 06, 2026 | air : Integrated Wooden Plank barricade breach absorption & Garden Barrier reaction slowdown
 // =========================================================================================
 using Godot;
 using System;
@@ -41,6 +43,7 @@ public partial class BreachManager : Node
 	[Export] public float FirstAttackDelay = 12.0f;
 	[Export] public float AttackInterval = 25.0f;
 	[Export] public float ReactionWindow = 7.0f;
+	[Export] public float BarrierExtraReactionTime = 5.0f;
 	[Export] public bool EnableOutdoorLoss = true;
 
 	public bool IsMonsterAttacking { get; private set; }
@@ -98,7 +101,9 @@ public partial class BreachManager : Node
 		if (IsMonsterAttacking)
 		{
 			AttackCountdown -= dt;
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - MONITOR CAM {(int)CurrentApproachDir + 1}!");
+			bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
+			string barrierBadge = hasBarrier ? " [BARRIER SLOW]" : "";
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s){barrierBadge} - MONITOR CAM {(int)CurrentApproachDir + 1}!");
 			if (AttackCountdown <= 0f) ResolveMonsterAttack();
 			return;
 		}
@@ -134,11 +139,14 @@ public partial class BreachManager : Node
 	{
 		if (!_isNight || IsMonsterAttacking) return;
 		IsMonsterAttacking = true;
-		AttackCountdown = ReactionWindow;
+
+		bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
+		AttackCountdown = hasBarrier ? (ReactionWindow + BarrierExtraReactionTime) : ReactionWindow;
 		SetStalkingStage(StalkingStage.Imminent);
+
 		string dirName = CurrentApproachDir.ToString().ToUpper();
 		AudioManager.Sfx("warning_stinger");
-		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, ReactionWindow);
+		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, AttackCountdown);
 	}
 
 	public void ResolveMonsterAttack()
@@ -146,13 +154,28 @@ public partial class BreachManager : Node
 		IsMonsterAttacking = false;
 		string dir = CurrentApproachDir.ToString().ToUpper();
 
-		if (IsAnyEntranceOpen())
+		bool entranceOpen = IsAnyEntranceOpen();
+		bool playerNotLooking = IsPlayerNotLooking(CurrentApproachDir);
+
+		if (entranceOpen || playerNotLooking)
 		{
-			TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
-		}
-		else if (IsPlayerNotLooking(CurrentApproachDir))
-		{
-			TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
+			// Check if any entrance is fortified with wooden planks to absorb the breach
+			var barricade = GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().FirstOrDefault(e => e.IsBarricaded);
+			if (barricade != null)
+			{
+				barricade.AbsorbBreachWithBarricade();
+				HUDNode?.SetInteractionPrompt($"[!] BARRICADE SAVED YOU! Wooden planks shattered on {dir} perimeter!");
+				SaveManager.RecordAttackRepelled();
+				CurrentStage = StalkingStage.Hidden;
+				MonsterNode?.PlayRepelEffect();
+				_nextAttackTimer = AttackInterval;
+				return;
+			}
+
+			if (entranceOpen)
+				TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through an unsecured entrance on the {dir} perimeter!");
+			else
+				TriggerBreach($"UNNOTICED ATTACK! You were not watching the {dir} CCTV Camera (Cam {(int)CurrentApproachDir + 1}) when the Ani-Ani struck!");
 		}
 		else
 		{
@@ -178,4 +201,7 @@ public partial class BreachManager : Node
 
 	public bool IsPlayerNotLooking(AttackDirection direction) =>
 		NightCameraNode == null || !NightCameraNode.IsNightMode || NightCameraNode.CurrentNightIndex != (int)direction;
+
+	public bool IsDirectionFortifiedWithBarrier(AttackDirection direction) =>
+		GetTree().GetNodesInGroup("BarrierSlots").OfType<InteractableBarrierSlot>().Any(s => s.Direction == direction && s.IsDeployed);
 }

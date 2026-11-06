@@ -1,7 +1,7 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Oct 2026
 // Responsibilities: - Camera and player raycaster for identifying IInteractable targets
-//                   - HUD prompt integration and interaction input dispatching ([E] / Click)
+//                   - HUD prompt integration and interaction input dispatching ([E] / [F] / Click)
 //                   - Dynamic target selection and highlight management
 // -----------------------------------------------------------------------------------------
 // Change Log:
@@ -9,6 +9,7 @@
 // - Oct 24, 2026 | air : Streamlined raycasting queries and ancestor resolution for Alpha build
 // - Oct 30, 2026 | air : Adapted raycaster strictly for First-Person crosshair center-ray targeting
 // - Oct 31, 2026 | air : Optimized prompt dispatch to fire only on target transitions, preventing prompt flicker
+// - Nov 06, 2026 | air : Added [F] key secondary interaction dispatch for barricading and secondary actions
 // =========================================================================================
 using Godot;
 
@@ -37,12 +38,28 @@ public partial class InteractionRaycaster : Node3D
 			return;
 
 		bool interactE = @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.E };
+		bool interactF = @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F };
 		bool interactClick = @event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left };
 
 		if (interactE || interactClick)
 		{
 			CurrentInteractable.Interact(Player);
 			GetViewport().SetInputAsHandled();
+			UpdatePromptForCurrent();
+		}
+		else if (interactF)
+		{
+			CurrentInteractable.InteractSecondary(Player);
+			GetViewport().SetInputAsHandled();
+			UpdatePromptForCurrent();
+		}
+	}
+
+	private void UpdatePromptForCurrent()
+	{
+		if (HUD != null && CurrentInteractable != null && CurrentInteractable.CanInteract(Player))
+		{
+			HUD.SetInteractionPrompt(CurrentInteractable.GetPrompt());
 		}
 	}
 

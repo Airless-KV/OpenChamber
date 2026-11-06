@@ -2,53 +2,113 @@
 
 [ext_resource type="Script" uid="uid://dfmmr4ktrqhqd" path="res://scripts/ui/HUDManager.cs" id="1_hud"]
 
-[node name="HUD" type="CanvasLayer" unique_id=1873493561 node_paths=PackedStringArray("DayLabel", "PhaseLabel", "TimerLabel", "CoinLabel", "SeedLabel", "BuySeedButton", "InteractionPromptLabel")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shop_panel"]
+bg_color = Color(0.08, 0.07, 0.06, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.52, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shop_btn"]
+bg_color = Color(0.18, 0.15, 0.12, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.42, 0.22, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shop_btn_hover"]
+bg_color = Color(0.32, 0.24, 0.15, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.75, 0.35, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="HUD" type="CanvasLayer" unique_id=1873493561 node_paths=PackedStringArray("DayLabel", "PhaseLabel", "TimerLabel", "CoinLabel", "SeedLabel", "BuySeedButton", "InteractionPromptLabel", "BuyPlankButton", "BuyBarrierButton", "BuyAxeButton", "InventoryLabel", "ShopPanel")]
 script = ExtResource("1_hud")
 DayLabel = NodePath("DayLabel")
 PhaseLabel = NodePath("PhaseLabel")
 TimerLabel = NodePath("TimerLabel")
 CoinLabel = NodePath("CoinLabel")
 SeedLabel = NodePath("SeedLabel")
-BuySeedButton = NodePath("BuySeedButton")
+BuySeedButton = NodePath("ShopPanel/Margin/VBox/BuySeedButton")
 InteractionPromptLabel = NodePath("InteractionPrompt")
+BuyPlankButton = NodePath("ShopPanel/Margin/VBox/BuyPlankButton")
+BuyBarrierButton = NodePath("ShopPanel/Margin/VBox/BuyBarrierButton")
+BuyAxeButton = NodePath("ShopPanel/Margin/VBox/BuyAxeButton")
+InventoryLabel = NodePath("ShopPanel/Margin/VBox/InventoryLabel")
+ShopPanel = NodePath("ShopPanel")
 
 [node name="PhaseLabel" type="Label" parent="." unique_id=1222144881]
-offset_left = 1082.0
-offset_right = 1152.0
-offset_bottom = 49.0
-text = "DAYTIME
-"
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -160.0
+offset_top = 18.0
+offset_right = -30.0
+offset_bottom = 50.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 20
+text = "DAYTIME"
+horizontal_alignment = 2
 
 [node name="DayLabel" type="Label" parent="." unique_id=1446868532]
-offset_left = 542.5
-offset_right = 609.5
-offset_bottom = 23.0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 14.0
+offset_right = 100.0
+offset_bottom = 37.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
 text = "Day 1 / 7"
+horizontal_alignment = 1
 
 [node name="TimerLabel" type="Label" parent="." unique_id=49552151]
-offset_left = 542.5
-offset_top = 27.0
-offset_right = 609.5
-offset_bottom = 76.0
-text = "00:30
-"
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 38.0
+offset_right = 100.0
+offset_bottom = 75.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 28
+text = "00:30"
 horizontal_alignment = 1
 
 [node name="CoinLabel" type="Label" parent="." unique_id=1967310406]
-offset_top = 53.0
-offset_right = 102.0
-offset_bottom = 76.0
+offset_left = 28.0
+offset_top = 46.0
+offset_right = 180.0
+offset_bottom = 74.0
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 18
 text = "Coins: 0"
 
 [node name="SeedLabel" type="Label" parent="." unique_id=1451682645]
-offset_right = 102.0
-offset_bottom = 49.0
-text = "Lvl 1 Seeds: 0
-"
-
-[node name="BuySeedButton" type="Button" parent="." unique_id=804860427]
-offset_right = 8.0
-offset_bottom = 8.0
+offset_left = 28.0
+offset_top = 18.0
+offset_right = 180.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0.45, 0.92, 0.45, 1)
+theme_override_font_sizes/font_size = 18
+text = "Lvl 1 Seeds: 3"
 
 [node name="InteractionPrompt" type="Label" parent="." unique_id=2065331650]
 anchors_preset = 7
@@ -56,9 +116,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -300.0
+offset_left = -350.0
 offset_top = -80.0
-offset_right = 300.0
+offset_right = 350.0
 offset_bottom = -35.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -85,3 +145,95 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 1, 1, 0.75)
+
+[node name="ShopPanel" type="PanelContainer" parent="." unique_id=1588294711]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -225.0
+offset_top = -220.0
+offset_right = 225.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_shop_panel")
+
+[node name="Margin" type="MarginContainer" parent="ShopPanel" unique_id=1498172635]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="ShopPanel/Margin" unique_id=1728391823]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="ShopPanel/Margin/VBox" unique_id=1849172034]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 22
+text = "FLOWER & DEFENSE SHOP"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="ShopPanel/Margin/VBox" unique_id=1948172035]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.72, 0.65, 1)
+theme_override_font_sizes/font_size = 13
+text = "Spend coins on seeds & night fortifications"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="ShopPanel/Margin/VBox" unique_id=1629182741]
+layout_mode = 2
+
+[node name="BuySeedButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=804860427]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
+theme_override_font_sizes/font_size = 15
+text = "Level 1 Seed (1c)"
+
+[node name="BuyPlankButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361921]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
+theme_override_font_sizes/font_size = 15
+text = "Wooden Plank (2c)"
+
+[node name="BuyBarrierButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361922]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
+theme_override_font_sizes/font_size = 15
+text = "Garden Barrier (5c)"
+
+[node name="BuyAxeButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361923]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
+theme_override_font_sizes/font_size = 15
+text = "Woodcutter Axe (10c)"
+
+[node name="HSeparator2" type="HSeparator" parent="ShopPanel/Margin/VBox" unique_id=1629182742]
+layout_mode = 2
+
+[node name="InventoryLabel" type="Label" parent="ShopPanel/Margin/VBox" unique_id=1849182948]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.88, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "Planks: 0  Barriers: 0  Axe: No"
+horizontal_alignment = 1
+
+[node name="CloseHint" type="Label" parent="ShopPanel/Margin/VBox" unique_id=1948172036]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 12
+text = "[Esc] or [E] at stall to Close Shop"
+horizontal_alignment = 1

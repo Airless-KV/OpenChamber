@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/interaction/
+// - Nov 06, 2026 | air : Added dynamic open/close prompt state
 // =========================================================================================
 using Godot;
 
@@ -28,6 +29,8 @@ public partial class InteractableShop : InteractableBase
 
 	public override string GetPrompt()
 	{
+		if (HUDNode != null && HUDNode.IsShopOpen)
+			return "Press [E] to close the Flower Shop";
 		return "Press [E] to open the Flower Shop";
 	}
 

@@ -4,6 +4,7 @@
 //                   - Drag-and-drop crop merge formula (Tier N + Tier N = Tier N + 1)
 //                   - 5 flower tier materials (White/Yellow to Emerald Green) & scoring
 //                   - Raycasting mouse hover detection and TileSelector box
+//                   - Seed economy consumption & flower harvesting for coins
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 24, 2026 | air : Streamlined grid coordinate math, fallback mesh generation, and scoring queries for Alpha build
@@ -12,6 +13,7 @@
 // - Oct 31, 2026 | air : Consolidated tier attributes into FlowerTier struct, optimized procedural mesh instantiation
 // - Oct 31, 2026 | air : Unified grid state storage into single Tile class and streamlined drag-and-drop execution
 // - Oct 31, 2026 | air : Migrated procedural flower mesh construction to pure scene asset (res://scenes/flower.tscn)
+// - Nov 06, 2026 | air : Added seed requirement check on planting and flower harvesting for coins on RMB
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -33,6 +35,7 @@ public partial class Node3d : Node3D
 	};
 
 	public static readonly int[] TierPoints = { 5, 10, 15, 20, 25 };
+	public static readonly int[] HarvestCoins = { 2, 5, 10, 18, 30 };
 
 	[ExportGroup("Grid Dimensions")]
 	[Export] public int GridWidth = 8;
@@ -44,6 +47,7 @@ public partial class Node3d : Node3D
 	[Export] public Node3D TileSelector;
 	[Export] public PackedScene CropPrefab;
 	[Export] public HUDManager HUDNode;
+	[Export] public GameManager GameManagerNode;
 
 	private sealed class Tile
 	{
@@ -64,6 +68,7 @@ public partial class Node3d : Node3D
 		TileSelector ??= GetNodeOrNull<Node3D>("../TileSelector");
 		if (TileSelector != null) TileSelector.Visible = false;
 		HUDNode ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
+		GameManagerNode ??= GetTree().Root.FindChild("GameManager", true, false) as GameManager;
 	}
 
 	public override void _Process(double delta)
@@ -86,7 +91,7 @@ public partial class Node3d : Node3D
 		else if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
 		{
 			if (_heldCell.HasValue) CancelHold();
-			else if (_hoveredCell.HasValue) RemoveCrop(_hoveredCell.Value);
+			else if (_hoveredCell.HasValue) HarvestCrop(_hoveredCell.Value);
 		}
 	}
 
@@ -155,8 +160,17 @@ public partial class Node3d : Node3D
 
 		var state = tile?.State ?? TileState.Empty;
 		if (state == TileState.Empty) SetPrompt("[LMB] Till Soil");
-		else if (state == TileState.Tilled) SetPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
-		else SetPrompt($"[LMB] Grab Tier {tile.Tier} Flower ({TierPoints[tile.Tier - 1]} pts) to Drag & Merge | [RMB] Remove");
+		else if (state == TileState.Tilled)
+		{
+			int seeds = GameManagerNode?.Level1Seeds ?? 0;
+			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop [E]");
+		}
+		else
+		{
+			int tier = Mathf.Clamp(tile.Tier, 1, 5);
+			int harvestCoin = HarvestCoins[tier - 1];
+			SetPrompt($"[LMB] Drag & Merge Tier {tier} ({TierPoints[tier - 1]} pts) | [RMB] Harvest (+{harvestCoin} Coins)");
+		}
 	}
 
 	private void OnLeftClickPressed()
@@ -176,11 +190,21 @@ public partial class Node3d : Node3D
 		else if (tile == null || tile.State == TileState.Empty)
 		{
 			_tiles[cell] = new Tile { State = TileState.Tilled };
-			SetPrompt("[LMB] Plant Tier 1 Flower (Daisy)");
+			int seeds = GameManagerNode?.Level1Seeds ?? 0;
+			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop [E]");
 		}
 		else if (tile.State == TileState.Tilled)
 		{
-			PlantCropAt(cell, 1);
+			if (GameManagerNode != null && GameManagerNode.Level1Seeds <= 0)
+			{
+				SetPrompt("[!] Out of seeds! Buy more at the Flower Shop [E]");
+				return;
+			}
+
+			if (GameManagerNode == null || GameManagerNode.TryConsumeLevel1Seed())
+			{
+				PlantCropAt(cell, 1);
+			}
 		}
 	}
 
@@ -296,12 +320,23 @@ public partial class Node3d : Node3D
 		return flower;
 	}
 
-	private void RemoveCrop(Vector2I cell)
+	private void HarvestCrop(Vector2I cell)
 	{
-		if (_tiles.Remove(cell, out var tile))
+		var tile = GetTile(cell);
+		if (tile?.State == TileState.Planted)
 		{
+			int tier = Mathf.Clamp(tile.Tier, 1, 5);
+			int reward = HarvestCoins[tier - 1];
 			tile.Visual?.QueueFree();
-			SetPrompt("Removed crop.");
+			_tiles[cell] = new Tile { State = TileState.Tilled };
+			GameManagerNode?.AddCoins(reward);
+			AudioManager.Sfx("coin_collect");
+			SetPrompt($"[✓] Harvested Tier {tier} Flower! (+{reward} Coins)");
+		}
+		else if (_tiles.Remove(cell, out var emptyTile))
+		{
+			emptyTile.Visual?.QueueFree();
+			SetPrompt("Cleared soil.");
 		}
 	}
 
