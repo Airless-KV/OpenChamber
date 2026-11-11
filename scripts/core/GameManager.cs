@@ -5,7 +5,9 @@
 //                   - Flower Shop purchase logic (1 coin = 1 Level 1 seed)
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Oct 22, 2026 | anjivv : Implemented 7-day phase countdown loop, coin wallet rewards, and seed economy
 // - Oct 23, 2026 | air : Added FadeRect auto-lookup fallback for robust scene loading
+// - Nov 06, 2026 | air : Restored 300s Day 1 duration and verified phase dispatch for DayNightClock
 // =========================================================================================
 using Godot;
 

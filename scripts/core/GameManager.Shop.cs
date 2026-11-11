@@ -9,6 +9,7 @@
 // - Oct 31, 2026 | air : Added InventoryChanged signal, inventory tracking, and TryBuyItem
 // - Nov 06, 2026 | air : Added TryConsumeLevel1Seed, AddSeeds, starter seeds allotment, and defense usage methods
 // - Nov 06, 2026 | air : Enabled infinite wooden planks mode for defense and barricade testing
+// - Nov 11, 2026 | air : Simplified TryBuyItem following barrier and axe removal
 // =========================================================================================
 using Godot;
 
@@ -78,7 +79,6 @@ public partial class GameManager
 		var item = ShopCatalog.Get(id);
 		if (item == null) return false;
 		if (Coins < item.Price) return false;
-		if (id == ShopCatalog.AxeId && HasAxe) return false;
 
 		Coins -= item.Price;
 		EmitSignal(SignalName.CoinsChanged, Coins);
@@ -87,12 +87,6 @@ public partial class GameManager
 		{
 			case ShopCatalog.PlankId:
 				Planks++;
-				break;
-			case ShopCatalog.BarrierId:
-				Barriers++;
-				break;
-			case ShopCatalog.AxeId:
-				HasAxe = true;
 				break;
 		}
 

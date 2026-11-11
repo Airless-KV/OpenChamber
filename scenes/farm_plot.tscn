@@ -4,8 +4,7 @@
 [ext_resource type="Script" uid="uid://cicpbn73d8l1f" path="res://scripts/farming/Node3d.cs" id="2_gridmanager"]
 [ext_resource type="Script" uid="uid://b6qswqwvxq6t1" path="res://scripts/interaction/InteractableShop.cs" id="3_shop"]
 [ext_resource type="PackedScene" path="res://scenes/flower.tscn" id="4_flower"]
-[ext_resource type="Script" uid="uid://bh5nmvsdq02gq" path="res://scripts/interaction/InteractableBarrierSlot.cs" id="5_barrierslot"]
-[ext_resource type="Script" uid="uid://cmshb8vh8nnlm" path="res://scripts/interaction/InteractableLumber.cs" id="6_lumber"]
+[ext_resource type="PackedScene" path="res://scenes/interaction/hot_air_balloon_shop.tscn" id="7_balloon"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cs4l5"]
 
@@ -26,11 +25,20 @@ albedo_color = Color(0.043137256, 0.827451, 0.24705882, 1)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h8ybc"]
 albedo_color = Color(0.043137256, 0.827451, 0.24705882, 1)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(400, 4, 400)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns"]
+size = Vector3(400, 30, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ew"]
+size = Vector3(4, 30, 400)
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cx2dv"]
 transparency = 1
-albedo_color = Color(0.10980392, 0.47058824, 0, 0.54901963)
+albedo_color = Color(1, 0.88, 0.25, 0.5)
 emission_enabled = true
-emission = Color(0.10980392, 0.47058824, 0, 0.54901963)
+emission = Color(1, 0.88, 0.25, 0.6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_iowxr"]
 size = Vector3(6, 0.1, 6)
@@ -51,22 +59,6 @@ roughness = 0.4
 
 [sub_resource type="BoxMesh" id="BoxMesh_shop_canopy"]
 size = Vector3(2.4, 0.15, 1.5)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
-size = Vector3(2.6, 1.8, 0.8)
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_log"]
-height = 2.2
-radius = 0.4
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_log"]
-albedo_color = Color(0.38, 0.24, 0.12, 1)
-roughness = 0.85
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_log"]
-top_radius = 0.35
-bottom_radius = 0.4
-height = 2.2
 
 [node name="FarmPlot" type="Node3D" unique_id=1169393307]
 
@@ -159,6 +151,31 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.9564041, 0.12945974,
 material_override = SubResource("StandardMaterial3D_h8ybc")
 mesh = SubResource("BoxMesh_cs4l5")
 
+[node name="GroundCollision" type="StaticBody3D" parent="." unique_id=1847192820]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.135929, -1.5035381, 1.269474)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GroundCollision" unique_id=1847192821]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="BoundaryWalls" type="StaticBody3D" parent="." unique_id=1847192822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.135929, 0, 1.269474)
+
+[node name="Wall_North" type="CollisionShape3D" parent="BoundaryWalls" unique_id=1847192823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, -198)
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="Wall_South" type="CollisionShape3D" parent="BoundaryWalls" unique_id=1847192824]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 198)
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="Wall_East" type="CollisionShape3D" parent="BoundaryWalls" unique_id=1847192825]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 198, 15, 0)
+shape = SubResource("BoxShape3D_wall_ew")
+
+[node name="Wall_West" type="CollisionShape3D" parent="BoundaryWalls" unique_id=1847192826]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -198, 15, 0)
+shape = SubResource("BoxShape3D_wall_ew")
+
 [node name="TileSelector" type="MeshInstance3D" parent="." unique_id=826560478]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4406509, 1.0407858, -0.046191216)
 visible = false
@@ -170,79 +187,6 @@ script = ExtResource("2_gridmanager")
 TileSelector = NodePath("../TileSelector")
 CropPrefab = ExtResource("4_flower")
 
-[node name="FlowerShopStall" type="StaticBody3D" parent="." unique_id=257898360]
-transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 4.5, 1.7216101, 3.5)
-script = ExtResource("3_shop")
+[node name="HotAirBalloonShop" parent="." unique_id=257898360 instance=ExtResource("7_balloon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.7216101, 3.5)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="FlowerShopStall" unique_id=1010510784]
-shape = SubResource("BoxShape3D_shop")
-
-[node name="CounterMesh" type="MeshInstance3D" parent="FlowerShopStall" unique_id=1685043145]
-material_override = SubResource("StandardMaterial3D_shop")
-mesh = SubResource("BoxMesh_shop")
-
-[node name="CanopyMesh" type="MeshInstance3D" parent="FlowerShopStall" unique_id=1157068013]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
-material_override = SubResource("StandardMaterial3D_canopy")
-mesh = SubResource("BoxMesh_shop_canopy")
-
-[node name="BarrierSlot_North" type="StaticBody3D" parent="." unique_id=1847192801]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 0.4, -9)
-script = ExtResource("5_barrierslot")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BarrierSlot_North" unique_id=1847192802]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("BoxShape3D_barrier")
-
-[node name="BarrierSlot_East" type="StaticBody3D" parent="." unique_id=1847192803]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 9, 0.4, 0)
-script = ExtResource("5_barrierslot")
-Direction = 1
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BarrierSlot_East" unique_id=1847192804]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("BoxShape3D_barrier")
-
-[node name="BarrierSlot_South" type="StaticBody3D" parent="." unique_id=1847192805]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 0.4, 9)
-script = ExtResource("5_barrierslot")
-Direction = 2
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BarrierSlot_South" unique_id=1847192806]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("BoxShape3D_barrier")
-
-[node name="BarrierSlot_West" type="StaticBody3D" parent="." unique_id=1847192807]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11, 0.4, 0)
-script = ExtResource("5_barrierslot")
-Direction = 3
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BarrierSlot_West" unique_id=1847192808]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("BoxShape3D_barrier")
-
-[node name="FallenTimber_01" type="StaticBody3D" parent="." unique_id=1847192809]
-transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -8, 0.35, -7)
-script = ExtResource("6_lumber")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="FallenTimber_01" unique_id=1847192810]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.1, 0)
-shape = SubResource("CylinderShape3D_log")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="FallenTimber_01" unique_id=1847192811]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.1, 0)
-material_override = SubResource("StandardMaterial3D_log")
-mesh = SubResource("CylinderMesh_log")
-
-[node name="FallenTimber_02" type="StaticBody3D" parent="." unique_id=1847192812]
-transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 7.5, 0.35, 7.5)
-script = ExtResource("6_lumber")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="FallenTimber_02" unique_id=1847192813]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.1, 0)
-shape = SubResource("CylinderShape3D_log")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="FallenTimber_02" unique_id=1847192814]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.1, 0)
-material_override = SubResource("StandardMaterial3D_log")
-mesh = SubResource("CylinderMesh_log")

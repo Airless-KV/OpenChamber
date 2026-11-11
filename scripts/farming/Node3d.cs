@@ -5,6 +5,7 @@
 //                   - 5 flower tier materials (White/Yellow to Emerald Green) & scoring
 //                   - Raycasting mouse hover detection and TileSelector box
 //                   - Seed economy consumption & flower harvesting for coins
+//                   - Staged growth timer system (Tier 1: 30s -> Tier 5: 3 min) and scaled profit
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 24, 2026 | air : Streamlined grid coordinate math, fallback mesh generation, and scoring queries for Alpha build
@@ -14,6 +15,11 @@
 // - Oct 31, 2026 | air : Unified grid state storage into single Tile class and streamlined drag-and-drop execution
 // - Oct 31, 2026 | air : Migrated procedural flower mesh construction to pure scene asset (res://scenes/flower.tscn)
 // - Nov 06, 2026 | air : Added seed requirement check on planting and flower harvesting for coins on RMB
+// - Nov 10, 2026 | air : Integrated 2.5D billboard pixel-art flower sprites and audio feedback
+// - Nov 10, 2026 | air : Aligned grid to chessboard center, resolved floor clipping at Y=1.25, and added staged growth timer (30s to 3m) with scaled harvest profit
+// - Nov 10, 2026 | air : Shortened farming raycast range to 7m and restricted indoor hover and planting
+// - Nov 10, 2026 | air : Implemented closed bud seedling stage, dynamic bloom texture swap, and unharvestable closed state
+// - Nov 10, 2026 | air : Restricted flower merging to fully bloomed/mature flowers only, blocking closed buds
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -35,25 +41,32 @@ public partial class Node3d : Node3D
 	};
 
 	public static readonly int[] TierPoints = { 5, 10, 15, 20, 25 };
-	public static readonly int[] HarvestCoins = { 2, 5, 10, 18, 30 };
+	public static readonly float[] GrowthTimes = { 30.0f, 60.0f, 90.0f, 135.0f, 180.0f };
+	public static readonly int[] HarvestCoins = { 3, 8, 20, 45, 100 };
 
 	[ExportGroup("Grid Dimensions")]
 	[Export] public int GridWidth = 8;
 	[Export] public int GridHeight = 8;
 	[Export] public float CellSize = 6.0f;
-	[Export] public Vector3 GridOrigin = new(-23.97f, 0.0f, -23.97f);
+	[Export] public Vector3 GridOrigin = new(-25.6614f, 1.25f, -24.0f);
+	[Export] public float FarmingRaycastRange = 7.0f;
 
 	[ExportGroup("Scene References")]
 	[Export] public Node3D TileSelector;
 	[Export] public PackedScene CropPrefab;
 	[Export] public HUDManager HUDNode;
 	[Export] public GameManager GameManagerNode;
+	[Export] public PlayerController PlayerNode;
 
 	private sealed class Tile
 	{
 		public TileState State;
 		public int Tier;
 		public Node3D Visual;
+		public float GrowthTimer;
+		public float RequiredGrowthTime;
+		public bool IsMature => GrowthTimer >= RequiredGrowthTime;
+		public bool HasPlayedMatureTween;
 	}
 
 	private readonly Dictionary<Vector2I, Tile> _tiles = new();
@@ -65,6 +78,12 @@ public partial class Node3d : Node3D
 
 	public override void _Ready()
 	{
+		var board = GetNodeOrNull<Node3D>("../grassPlaceHolder");
+		if (board != null)
+		{
+			GridOrigin = new Vector3(board.GlobalPosition.X - 24.0f, 1.25f, board.GlobalPosition.Z - 24.0f);
+		}
+
 		TileSelector ??= GetNodeOrNull<Node3D>("../TileSelector");
 		if (TileSelector != null) TileSelector.Visible = false;
 		HUDNode ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
@@ -73,12 +92,65 @@ public partial class Node3d : Node3D
 
 	public override void _Process(double delta)
 	{
+		float dt = (float)delta;
+		UpdateGrowth(dt);
 		UpdateHover();
+
 		if (_heldCell.HasValue && GetTile(_heldCell.Value)?.Visual is { } held)
 		{
 			Vector3 target = GridToWorld(_hoveredCell ?? _heldCell.Value) + new Vector3(0, 1.8f, 0);
-			held.GlobalPosition = held.GlobalPosition.Lerp(target, 20f * (float)delta);
+			held.GlobalPosition = held.GlobalPosition.Lerp(target, 20f * dt);
 		}
+	}
+
+	private void UpdateGrowth(float dt)
+	{
+		foreach (var kvp in _tiles)
+		{
+			var tile = kvp.Value;
+			if (tile.State != TileState.Planted || tile.Visual == null)
+				continue;
+
+			if (tile.GrowthTimer < tile.RequiredGrowthTime)
+			{
+				tile.GrowthTimer += dt;
+				float progress = Mathf.Clamp(tile.GrowthTimer / tile.RequiredGrowthTime, 0f, 1f);
+				float tierScale = Tiers[Mathf.Clamp(tile.Tier - 1, 0, 4)].Scale;
+				float currentScale = Mathf.Lerp(tierScale * 0.7f, tierScale, progress);
+				tile.Visual.Scale = Vector3.One * currentScale;
+
+				if (tile.IsMature && !tile.HasPlayedMatureTween)
+				{
+					tile.HasPlayedMatureTween = true;
+
+					// Bloom! Swap visual texture from closed bud to bloomed tier texture
+					if (tile.Visual?.GetNodeOrNull<Sprite3D>("FlowerSprite") is { } sprite)
+					{
+						var tex = GetFlowerTexture(tile.Tier);
+						if (tex != null)
+							sprite.Texture = tex;
+
+						if (tile.Tier == 5)
+							sprite.Modulate = new Color(1.18f, 1.18f, 1.12f, 1.0f);
+						else
+							sprite.Modulate = Colors.White;
+					}
+
+					PlayMatureBounce(tile.Visual, tierScale);
+					AudioManager.Sfx("flower_merge", -2f, 0.1f);
+				}
+			}
+		}
+	}
+
+	private void PlayMatureBounce(Node3D visual, float targetScale)
+	{
+		if (visual == null) return;
+		Tween tw = CreateTween();
+		tw.TweenProperty(visual, "scale", Vector3.One * (targetScale * 1.25f), 0.15f);
+		tw.TweenProperty(visual, "scale", Vector3.One * targetScale, 0.2f)
+			.SetTrans(Tween.TransitionType.Bounce)
+			.SetEase(Tween.EaseType.Out);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -113,13 +185,23 @@ public partial class Node3d : Node3D
 
 	private void UpdateHover()
 	{
+		PlayerNode ??= GetTree().GetFirstNodeInGroup("Player") as PlayerController;
+		if (PlayerNode != null && PlayerNode.IsIndoors)
+		{
+			_hoveredCell = null;
+			if (TileSelector != null) TileSelector.Visible = false;
+			if (_heldCell.HasValue) SetPrompt("[RMB] Cancel Drag");
+			else ClearPrompt();
+			return;
+		}
+
 		Camera3D cam = GetViewport().GetCamera3D();
 		if (cam == null) return;
 
 		var hit = GetWorld3D().DirectSpaceState.IntersectRay(new PhysicsRayQueryParameters3D
 		{
 			From = cam.GlobalPosition,
-			To = cam.GlobalPosition - cam.GlobalTransform.Basis.Z * 50f
+			To = cam.GlobalPosition - cam.GlobalTransform.Basis.Z * FarmingRaycastRange
 		});
 
 		if (hit.Count > 0 && WorldToGrid((Vector3)hit["position"]) is var cell && IsInsideGrid(cell))
@@ -145,12 +227,19 @@ public partial class Node3d : Node3D
 		var tile = GetTile(cell);
 		if (_heldCell.HasValue)
 		{
-			int heldTier = GetTile(_heldCell.Value)?.Tier ?? 1;
+			var heldTile = GetTile(_heldCell.Value);
+			int heldTier = heldTile?.Tier ?? 1;
 			if (cell == _heldCell.Value) SetPrompt($"[LMB] Put down Tier {heldTier} Flower | [RMB] Cancel");
 			else if (tile?.State == TileState.Planted)
 			{
 				if (tile.Tier == heldTier && heldTier < 5)
-					SetPrompt($"[★ MERGE!] Tier {heldTier} + Tier {heldTier} -> Tier {heldTier + 1}! (+{TierPoints[heldTier]} pts)");
+				{
+					bool heldMature = heldTile?.IsMature ?? false;
+					if (heldMature && tile.IsMature)
+						SetPrompt($"[★ MERGE!] Tier {heldTier} + Tier {heldTier} -> Tier {heldTier + 1}! (+{TierPoints[heldTier]} pts)");
+					else
+						SetPrompt("[!] Both flowers must be fully bloomed to merge!");
+				}
 				else
 					SetPrompt($"[LMB] Swap with Tier {tile.Tier} Flower | [RMB] Cancel");
 			}
@@ -163,13 +252,22 @@ public partial class Node3d : Node3D
 		else if (state == TileState.Tilled)
 		{
 			int seeds = GameManagerNode?.Level1Seeds ?? 0;
-			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop [E]");
+			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop");
 		}
 		else
 		{
 			int tier = Mathf.Clamp(tile.Tier, 1, 5);
 			int harvestCoin = HarvestCoins[tier - 1];
-			SetPrompt($"[LMB] Drag & Merge Tier {tier} ({TierPoints[tier - 1]} pts) | [RMB] Harvest (+{harvestCoin} Coins)");
+
+			if (tile.IsMature)
+			{
+				SetPrompt($"[✓ BLOOMED & READY!] Tier {tier} Flower | [RMB] Harvest (+{harvestCoin} Coins) | [LMB] Drag & Merge");
+			}
+			else
+			{
+				float remaining = Mathf.Max(0f, tile.RequiredGrowthTime - tile.GrowthTimer);
+				SetPrompt($"[Growing closed bud... {Mathf.CeilToInt(remaining)}s] Tier {tier} Flower | [LMB] Move | Needs to bloom before merging & harvesting");
+			}
 		}
 	}
 
@@ -191,19 +289,20 @@ public partial class Node3d : Node3D
 		{
 			_tiles[cell] = new Tile { State = TileState.Tilled };
 			int seeds = GameManagerNode?.Level1Seeds ?? 0;
-			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop [E]");
+			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop");
 		}
 		else if (tile.State == TileState.Tilled)
 		{
 			if (GameManagerNode != null && GameManagerNode.Level1Seeds <= 0)
 			{
-				SetPrompt("[!] Out of seeds! Buy more at the Flower Shop [E]");
+				SetPrompt("[!] Out of seeds! Buy more at the Flower Shop");
 				return;
 			}
 
 			if (GameManagerNode == null || GameManagerNode.TryConsumeLevel1Seed())
 			{
 				PlantCropAt(cell, 1);
+				AudioManager.Sfx("flower_plant");
 			}
 		}
 	}
@@ -232,23 +331,42 @@ public partial class Node3d : Node3D
 		{
 			if (fromTile.Tier == targetTile.Tier && fromTile.Tier < 5)
 			{
+				if (!fromTile.IsMature || !targetTile.IsMature)
+				{
+					SetPrompt("[!] Only fully bloomed flowers can be merged! Wait for both to grow.");
+					ResetVisual(from);
+					_heldCell = null;
+					return;
+				}
+
 				int newTier = fromTile.Tier + 1;
 				fromTile.Visual?.QueueFree();
 				_tiles[from] = new Tile { State = TileState.Tilled };
 
 				targetTile.Visual?.QueueFree();
-				var flower = SpawnFlower(newTier);
+				var flower = SpawnFlower(newTier, isBloomed: false);
 				AddChild(flower);
 				flower.GlobalPosition = GridToWorld(target);
-				_tiles[target] = new Tile { State = TileState.Planted, Tier = newTier, Visual = flower };
+
+				float reqTime = GrowthTimes[newTier - 1];
+				_tiles[target] = new Tile
+				{
+					State = TileState.Planted,
+					Tier = newTier,
+					Visual = flower,
+					GrowthTimer = 0f,
+					RequiredGrowthTime = reqTime,
+					HasPlayedMatureTween = false
+				};
 
 				float s = Tiers[newTier - 1].Scale;
 				flower.Scale = Vector3.One * (s * 0.4f);
 				Tween tw = CreateTween();
 				tw.TweenProperty(flower, "scale", Vector3.One * (s * 1.35f), 0.12f);
-				tw.TweenProperty(flower, "scale", Vector3.One * s, 0.15f);
+				tw.TweenProperty(flower, "scale", Vector3.One * (s * 0.7f), 0.15f);
 
-				SetPrompt($"[★ MERGED!] Level {newTier} Flower created! (+{TierPoints[newTier - 1]} pts)");
+				AudioManager.Sfx("flower_merge");
+				SetPrompt($"[★ MERGED!] Level {newTier} Flower created! Growing closed bud... ({Mathf.CeilToInt(reqTime)}s until bloom)");
 				SaveManager.RecordMerge();
 			}
 			else
@@ -286,21 +404,80 @@ public partial class Node3d : Node3D
 	private void PlantCropAt(Vector2I cell, int level = 1)
 	{
 		level = Mathf.Clamp(level, 1, 5);
-		Node3D crop = SpawnFlower(level);
+		Node3D crop = SpawnFlower(level, isBloomed: false);
 		AddChild(crop);
 		crop.GlobalPosition = GridToWorld(cell);
-		_tiles[cell] = new Tile { State = TileState.Planted, Tier = level, Visual = crop };
-		SetPrompt($"Planted Tier {level} Flower! (+{TierPoints[level - 1]} pts)");
+
+		float reqTime = GrowthTimes[level - 1];
+		_tiles[cell] = new Tile
+		{
+			State = TileState.Planted,
+			Tier = level,
+			Visual = crop,
+			GrowthTimer = 0f,
+			RequiredGrowthTime = reqTime,
+			HasPlayedMatureTween = false
+		};
+
+		SetPrompt($"Planted Tier {level} Flower! Growing closed bud... ({Mathf.CeilToInt(reqTime)}s until bloom)");
 	}
 
-	private Node3D SpawnFlower(int level)
+	private static readonly string[] FlowerTexturePaths =
+	{
+		"res://assets/textures/flowers/flower_lvl1.png",
+		"res://assets/textures/flowers/flower_lvl2.png",
+		"res://assets/textures/flowers/flower_lvl3.png",
+		"res://assets/textures/flowers/flower_lvl4.png",
+		"res://assets/textures/flowers/flower_lvl5.png"
+	};
+
+	private static readonly Texture2D[] _cachedFlowerTextures = new Texture2D[5];
+	private static Texture2D _cachedClosedTexture;
+
+	public static Texture2D GetClosedFlowerTexture()
+	{
+		if (_cachedClosedTexture == null)
+		{
+			const string path = "res://assets/textures/flowers/flower_closed.png";
+			if (ResourceLoader.Exists(path))
+				_cachedClosedTexture = GD.Load<Texture2D>(path);
+		}
+		return _cachedClosedTexture;
+	}
+
+	public static Texture2D GetFlowerTexture(int level)
+	{
+		int idx = Mathf.Clamp(level - 1, 0, FlowerTexturePaths.Length - 1);
+		if (_cachedFlowerTextures[idx] == null)
+		{
+			string path = FlowerTexturePaths[idx];
+			if (ResourceLoader.Exists(path))
+				_cachedFlowerTextures[idx] = GD.Load<Texture2D>(path);
+		}
+		return _cachedFlowerTextures[idx];
+	}
+
+	private Node3D SpawnFlower(int level, bool isBloomed = false)
 	{
 		level = Mathf.Clamp(level, 1, 5);
 		var tier = Tiers[level - 1];
 		CropPrefab ??= GD.Load<PackedScene>("res://scenes/flower.tscn");
 		Node3D flower = CropPrefab?.Instantiate<Node3D>() ?? new Node3D();
 		flower.Name = $"Flower_T{level}";
-		flower.Scale = Vector3.One * tier.Scale;
+		flower.Scale = Vector3.One * (tier.Scale * (isBloomed ? 1.0f : 0.7f));
+
+		var sprite = flower.GetNodeOrNull<Sprite3D>("FlowerSprite") ?? flower.FindChild("FlowerSprite", true, false) as Sprite3D;
+		if (sprite != null)
+		{
+			var tex = isBloomed ? GetFlowerTexture(level) : GetClosedFlowerTexture();
+			if (tex != null)
+				sprite.Texture = tex;
+
+			if (isBloomed && level == 5)
+				sprite.Modulate = new Color(1.18f, 1.18f, 1.12f, 1.0f);
+			else
+				sprite.Modulate = Colors.White;
+		}
 
 		var blossomMat = new StandardMaterial3D
 		{
@@ -326,6 +503,13 @@ public partial class Node3d : Node3D
 		if (tile?.State == TileState.Planted)
 		{
 			int tier = Mathf.Clamp(tile.Tier, 1, 5);
+			if (!tile.IsMature)
+			{
+				float remaining = Mathf.Max(0f, tile.RequiredGrowthTime - tile.GrowthTimer);
+				SetPrompt($"[!] Flower is still a closed bud! ({Mathf.CeilToInt(remaining)}s left before bloom)");
+				return;
+			}
+
 			int reward = HarvestCoins[tier - 1];
 			tile.Visual?.QueueFree();
 			_tiles[cell] = new Tile { State = TileState.Tilled };

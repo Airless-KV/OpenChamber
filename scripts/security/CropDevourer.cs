@@ -10,6 +10,7 @@
 // - Nov 06, 2026 | air : Added binding for standalone 3D scene (res://scenes/security/crop_devourer.tscn)
 // - Nov 06, 2026 | air : Implemented persistent night loitering along garden perimeter and CCTV presence
 // - Nov 06, 2026 | air : Scaled model by 1.6x, added close perimeter waypoints (6-8m), enhanced amber glow, and continuous fence patrolling
+// - Nov 07, 2026 | air : Added AutoHideOnReady export and standalone preview support
 // =========================================================================================
 using Godot;
 using System;
@@ -23,6 +24,7 @@ public partial class CropDevourer : Node3D
 	[ExportGroup("Dependencies")]
 	[Export] public Node3d GridManagerNode;
 	[Export] public GameManager GameManagerNode;
+	[Export] public bool AutoHideOnReady = true;
 
 	[ExportGroup("Devourer Timers")]
 	[Export] public float FirstSpawnDelay = 18.0f;
@@ -70,6 +72,20 @@ public partial class CropDevourer : Node3D
 
 		Scale = new Vector3(1.6f, 1.6f, 1.6f);
 
+		if (!AutoHideOnReady || GameManagerNode == null)
+		{
+			// Preview / Showcase standalone mode: stay visible at placed transform
+			Visible = true;
+			CurrentState = State.Loitering;
+			if (_eyeLight != null)
+			{
+				_eyeLight.LightEnergy = 2.5f;
+				_eyeLight.OmniRange = 8.0f;
+				_eyeLight.LightColor = new Color(1.0f, 0.72f, 0.15f);
+			}
+			return;
+		}
+
 		if (GameManagerNode != null)
 		{
 			GameManagerNode.PhaseChanged += (isDay, _) =>
@@ -86,10 +102,6 @@ public partial class CropDevourer : Node3D
 			{
 				Visible = false;
 			}
-		}
-		else
-		{
-			Visible = false;
 		}
 	}
 
@@ -152,7 +164,8 @@ public partial class CropDevourer : Node3D
 
 	public override void _Process(double delta)
 	{
-		if (GameManagerNode?.CurrentPhase != GameManager.GamePhase.Night) return;
+		if (GameManagerNode != null && GameManagerNode.CurrentPhase != GameManager.GamePhase.Night) return;
+		if (!Visible) return;
 		float dt = (float)delta;
 		_animTime += delta;
 
@@ -180,7 +193,7 @@ public partial class CropDevourer : Node3D
 			if (_eyeLight != null)
 				_eyeLight.LightEnergy = 0.55f + Mathf.Sin((float)_animTime * 2.5f) * 0.18f;
 
-			if (_timer <= 0f)
+			if (_timer <= 0f && GameManagerNode != null)
 			{
 				TryStartStalking();
 			}

@@ -2,6 +2,8 @@
 // Original Author : air (Airless-KV) - Oct 2026
 // Responsibilities: - Interactive cabin CCTV security desk station
 //                   - Toggle CCTV monitoring mode on NighttCamera
+// Change Log:
+// - Nov 10, 2026 | air : Updated prompt to Left Click to access/exit CCTV
 // =========================================================================================
 using Godot;
 
@@ -22,9 +24,9 @@ public partial class InteractableCCTVStation : InteractableBase
 	{
 		if (NightCameraNode != null && NightCameraNode.IsNightMode)
 		{
-			return "Press [E] to Exit CCTV Monitor";
+			return "Left Click (or Right Click) to Exit CCTV Monitor";
 		}
-		return "Press [E] to Access CCTV Security Feeds";
+		return "Left Click to Access CCTV Security Feeds";
 	}
 
 	protected override void OnInteract(PlayerController player)

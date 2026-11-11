@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://dvym53fidtkja"]
+
+[ext_resource type="Script" uid="uid://iwpco2ygpwhu" path="res://scripts/interaction/InteractableEntrance.cs" id="1_entrance"]
+[ext_resource type="Script" uid="uid://ovj60x5oho4f" path="res://scripts/interaction/LockableOpening.cs" id="2_lockable"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_frame"]
+albedo_color = Color(0.24, 0.18, 0.14, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_jamb"]
+size = Vector3(0.08, 2, 0.14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_lintel"]
+size = Vector3(1.68, 0.08, 0.14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_plank"]
+albedo_color = Color(0.48, 0.35, 0.22, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_plank"]
+size = Vector3(1.6, 0.2, 0.08)
+
+[node name="BarricadeOpening" type="StaticBody3D" unique_id=741829001]
+script = ExtResource("1_entrance")
+
+[node name="FrameLeft" type="MeshInstance3D" parent="." unique_id=767151107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0, 0)
+material_override = SubResource("StandardMaterial3D_frame")
+mesh = SubResource("BoxMesh_jamb")
+
+[node name="FrameRight" type="MeshInstance3D" parent="." unique_id=1427365986]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0, 0)
+material_override = SubResource("StandardMaterial3D_frame")
+mesh = SubResource("BoxMesh_jamb")
+
+[node name="FrameTop" type="MeshInstance3D" parent="." unique_id=1130942388]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_frame")
+mesh = SubResource("BoxMesh_lintel")
+
+[node name="LockableOpening" type="Node3D" parent="." unique_id=1802272528 node_paths=PackedStringArray("PlankVisuals")]
+script = ExtResource("2_lockable")
+PlankVisuals = [NodePath("Plank1"), NodePath("Plank2"), NodePath("Plank3")]
+
+[node name="Plank1" type="MeshInstance3D" parent="LockableOpening" unique_id=1999857283]
+transform = Transform3D(0.9992043, -0.039885674, 0, 0.039885674, 0.9992043, 0, 0, 0, 1, 0, -0.32, 0)
+material_override = SubResource("StandardMaterial3D_plank")
+mesh = SubResource("BoxMesh_plank")
+
+[node name="Plank2" type="MeshInstance3D" parent="LockableOpening" unique_id=53398033]
+transform = Transform3D(0.9978132, 0.06609705, 0, -0.06609705, 0.9978132, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_plank")
+mesh = SubResource("BoxMesh_plank")
+
+[node name="Plank3" type="MeshInstance3D" parent="LockableOpening" unique_id=1762623101]
+transform = Transform3D(0.99527526, -0.09709345, 0, 0.09709345, 0.99527526, 0, 0, 0, 1, 0, 0.36189908, 0)
+material_override = SubResource("StandardMaterial3D_plank")
+mesh = SubResource("BoxMesh_plank")

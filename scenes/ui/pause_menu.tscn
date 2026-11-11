@@ -353,9 +353,9 @@ text = "NIGHTTIME: CCTV SURVEILLANCE & DEFENSE"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 13
-text = "• Cabin CCTV Desk: [E] or [N] toggles monitor.
-• Cycle feeds with [1 - 4] or [TAB] (North, East, South, West).
-• Close and seal doors/windows when Ani-Ani reaches Imminent stage!
+text = "• Cabin CCTV Desk: Left Click accesses monitor (Right Click exits).
+• Cycle feeds with Left Click (or [TAB] / [1 - 4]).
+• Barricade bare openings with wooden planks (Hold Left Click 3s; Hold Right Click to remove)!
 • Survive 7 days and nights to win."
 autowrap_mode = 2
 
@@ -363,13 +363,13 @@ autowrap_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 15
-text = "KEYBINDINGS"
+text = "CONTROLS CHEAT SHEET"
 
 [node name="ControlsInfo" type="Label" parent="Container/HowToPlayPanel/VBox/Scroll/Content"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 13
-text = "[W][A][S][D] Move | Mouse Look | [E] Interact | [1-4/TAB] CCTV | [ESC] Pause"
+text = "[WASD] Move | Mouse Look | Left Click: Interact / Nail Plank | Right Click: Remove Plank / Cancel | [ESC] Pause"
 autowrap_mode = 2
 
 [node name="CloseButton" type="Button" parent="Container/HowToPlayPanel/VBox"]

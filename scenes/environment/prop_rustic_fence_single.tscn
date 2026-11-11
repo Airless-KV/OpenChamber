@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/environment/prop_rustic_fence_single.png" id="1_tex"]
+
+[node name="prop_rustic_fence_single" type="Node3D"]
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9600, 0)
+billboard = 1
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+pixel_size = 0.005
+texture = ExtResource("1_tex")

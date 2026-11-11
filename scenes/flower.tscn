@@ -1,39 +1,14 @@
 [gd_scene format=3]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stem"]
-albedo_color = Color(0.15, 0.55, 0.18, 1)
-roughness = 0.6
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_stem"]
-top_radius = 0.15
-bottom_radius = 0.2
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blossom"]
-albedo_color = Color(0.96, 0.95, 0.86, 1)
-roughness = 0.35
-
-[sub_resource type="SphereMesh" id="SphereMesh_blossom"]
-radius = 0.65
-height = 1.0
-
-[sub_resource type="TorusMesh" id="TorusMesh_petals"]
-inner_radius = 0.25
-outer_radius = 0.8
+[ext_resource type="Texture2D" path="res://assets/textures/flowers/flower_lvl1.png" id="1_flower_tex"]
 
 [node name="Flower" type="Node3D"]
 
-[node name="Stem" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-material_override = SubResource("StandardMaterial3D_stem")
-mesh = SubResource("CylinderMesh_stem")
-
-[node name="Blossom" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, 0)
-material_override = SubResource("StandardMaterial3D_blossom")
-mesh = SubResource("SphereMesh_blossom")
-
-[node name="Petals" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 0)
-material_override = SubResource("StandardMaterial3D_blossom")
-mesh = SubResource("TorusMesh_petals")
+[node name="FlowerSprite" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+billboard = 1
+shaded = true
+alpha_cut = 1
+texture_filter = 2
+pixel_size = 0.0025
+texture = ExtResource("1_flower_tex")

@@ -1,40 +1,53 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Oct 2026
-// Responsibilities: - Base abstract class for cabin security entrances (Doors, Windows)
-//                   - Entrance state management (IsOpen, IsLocked) and perimeter tracking
+// Responsibilities: - Base class for cabin defense openings and barricades
+//                   - Opening state management (IsOpen, IsBarricaded) and perimeter tracking
 //                   - Wooden plank barricading system for absorbing night horror breaches
-//                   - Standardized interaction prompts and entrance animation dispatch
+//                   - Standardized interaction prompts for barricading
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 31, 2026 | air : Created common entrance base class to unify door and window security logic
 // - Nov 06, 2026 | air : Added wooden plank barricading ([F]), visual plank generation, and breach absorption
 // - Nov 06, 2026 | air : Unified prompts and actions with LockableOpening 3s hold barricade/unbarricade mechanics
+// - Nov 09, 2026 | air : Converted to concrete Bare Opening Barricade class with door and window removal
+// - Nov 10, 2026 | air : Added AttackDirection export and child LockableOpening synchronization
+// - Nov 10, 2026 | air : Updated prompts to reflect Left Click placement and Right Click removal
 // =========================================================================================
 using Godot;
 using System.Linq;
 
-public abstract partial class InteractableEntrance : InteractableBase
+public partial class InteractableEntrance : InteractableBase
 {
 	[Signal] public delegate void EntranceStateChangedEventHandler(bool isOpen);
 	[Signal] public delegate void BarricadeStateChangedEventHandler(bool isBarricaded);
 
 	[ExportGroup("Entrance Settings")]
-	[Export] public bool IsOpen { get; set; } = false;
+	[Export] public bool IsOpen { get; set; } = true;
 	[Export] public bool IsLocked { get; set; } = false;
 	[Export] public float AnimationDuration = 0.45f;
+	[Export] public string EntranceTypeName { get; set; } = "Opening";
+	[Export] public string SfxName { get; set; } = "door_thud";
+	[Export(PropertyHint.Enum, "North,East,South,West")] public int AttackDirection { get; set; } = 0;
 
 	[ExportGroup("Barricade Fortification")]
 	[Export] public bool IsBarricaded { get; set; } = false;
 	[Export] public Node3D BarricadeVisual;
-
-	protected abstract string EntranceTypeName { get; }
-	protected abstract string SfxName { get; }
 
 	public override void _Ready()
 	{
 		base._Ready();
 		AddToGroup("Entrances");
 		EnsureBarricadeVisual();
+		SyncAttackDirection();
+	}
+
+	public void SyncAttackDirection()
+	{
+		var lockable = GetChildren().OfType<LockableOpening>().FirstOrDefault();
+		if (lockable != null)
+		{
+			lockable.AttackDirection = AttackDirection;
+		}
 	}
 
 	public override string GetPrompt()
@@ -43,38 +56,34 @@ public abstract partial class InteractableEntrance : InteractableBase
 		if (lockable != null)
 		{
 			if (lockable.PlanksPlaced > 0)
-				return $"[Barricaded: {lockable.PlanksPlaced}/{lockable.MaxPlanks}] {EntranceTypeName} | [F] hold (3s): remove | [G] hold (3s): add";
+				return $"[Barricaded: {lockable.PlanksPlaced}/{lockable.MaxPlanks}] {EntranceTypeName} | Hold Left Click: Add | Hold Right Click: Remove";
 
-			if (IsLocked)
-				return $"[Locked] {EntranceTypeName} | Hold [F] (3s) to Unlock";
+			if (lockable.IsBroken)
+				return $"[BROKEN OPENING (0 HP)] {EntranceTypeName} | Hold Left Click (3s) to Barricade";
 
-			if (IsOpen)
-				return $"Press [E] to Close {EntranceTypeName} | [G] hold (3s): Barricade";
-
-			return $"Press [E] to Open {EntranceTypeName} | [F] hold (3s): Lock | [G] hold (3s): Barricade";
+			return $"[Bare {EntranceTypeName}] Hold Left Click (3s) to Place Plank (1 Plank)";
 		}
 
-		if (IsLocked)
-			return $"[Locked] {EntranceTypeName} cannot be opened";
-
-		if (IsOpen)
-			return $"Press [E] to Close {EntranceTypeName}";
-
-		return $"Press [E] to Open {EntranceTypeName}";
+		return $"[Bare {EntranceTypeName}]";
 	}
 
 	protected override void OnInteract(PlayerController player)
 	{
-		if (IsLocked) return;
-		IsOpen = !IsOpen;
-		AnimateEntrance();
-		if (!string.IsNullOrEmpty(SfxName)) AudioManager.Sfx(SfxName);
-		EmitSignal(SignalName.EntranceStateChanged, IsOpen);
+		var hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
+		var lockable = GetChildren().OfType<LockableOpening>().FirstOrDefault();
+		if (lockable != null && lockable.PlanksPlaced > 0)
+		{
+			hud?.SetInteractionPrompt($"[Barricaded {EntranceTypeName}] ({lockable.PlanksPlaced}/{lockable.MaxPlanks} Planks). Hold Left Click to add, or Right Click to remove.");
+		}
+		else
+		{
+			hud?.SetInteractionPrompt($"[Bare {EntranceTypeName}] Opening is unbarricaded. Hold Left Click (3s) to place a wooden plank!");
+		}
 	}
 
 	protected override void OnInteractSecondary(PlayerController player)
 	{
-		// Handled via LockableOpening hold timers ([F] hold, [G] hold)
+		// Handled via LockableOpening hold timers (Right Click hold, Left Click hold)
 	}
 
 	public bool AbsorbBreachWithBarricade()
@@ -96,30 +105,11 @@ public abstract partial class InteractableEntrance : InteractableBase
 		}
 
 		BarricadeVisual = GetNodeOrNull<Node3D>("BarricadeVisual");
-		if (BarricadeVisual == null)
+		if (BarricadeVisual != null)
 		{
-			var root = new Node3D { Name = "BarricadeVisual" };
-			var mat = new StandardMaterial3D { AlbedoColor = new Color(0.45f, 0.28f, 0.14f), Roughness = 0.85f };
-			
-			var p1 = new MeshInstance3D
-			{
-				Mesh = new BoxMesh { Size = new Vector3(0.08f, 0.18f, 1.6f) },
-				MaterialOverride = mat,
-				RotationDegrees = new Vector3(0, 0, 32)
-			};
-			var p2 = new MeshInstance3D
-			{
-				Mesh = new BoxMesh { Size = new Vector3(0.08f, 0.18f, 1.6f) },
-				MaterialOverride = mat,
-				RotationDegrees = new Vector3(0, 0, -32)
-			};
-			root.AddChild(p1);
-			root.AddChild(p2);
-			AddChild(root);
-			BarricadeVisual = root;
+			BarricadeVisual.Visible = IsBarricaded;
 		}
-		BarricadeVisual.Visible = IsBarricaded;
 	}
 
-	protected abstract void AnimateEntrance();
+	protected virtual void AnimateEntrance() { }
 }

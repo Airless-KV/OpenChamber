@@ -5,7 +5,9 @@
 //                   - SFX polyphonic player pooling and audio bus management
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Oct 31, 2026 | anjivv : Implemented global audio playback singleton, BGM crossfade, ambient loops, and procedural synthesis
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/audio/
+// - Nov 06, 2026 | anjivv : Added dynamic GameManager phase tracking, pitched SFX playback, and procedural synthesis for footsteps, door pounds, and flower audio
 // =========================================================================================
 using Godot;
 using System;

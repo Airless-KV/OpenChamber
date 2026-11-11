@@ -1,13 +1,18 @@
 // =========================================================================================
-// Original Author : Robin Velasco (0325-1150@lspu.edu.ph) - Nov 2026
-// Responsibilities: - Door & window locking and barricade mechanics
-//                   - Automatic plank alignment and sizing across openings
+// Original Author : rbn (Robin Velasco) - Nov 06, 2026
+// Responsibilities: - Bare opening barricade defense mechanics
+//                   - Wooden plank placement [G] and removal [F] (3s hold)
 //                   - PvZ Lawnmower entrance sacrifice defense (1 HP)
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Nov 06, 2026 | rbn : Implemented bare opening barricade defense mechanics and plank placement/removal
 // - Nov 06, 2026 | air : Integrated with BreachManager and standardized headers
 // - Nov 06, 2026 | air : Added 3s hold placement/removal sliders, MaxPlanks 5, and TearSinglePlank
 // - Nov 06, 2026 | air : Restricted MaxPlanks to 3, implemented Lawnmower 1 HP defense and daytime repair
+// - Nov 09, 2026 | air : Converted to pure bare opening defense without doors or windows
+// - Nov 10, 2026 | air : Synced AttackDirection with parent InteractableEntrance
+// - Nov 10, 2026 | air : Enabled Left Click hold to place planks and Right Click hold to remove planks
+// - Nov 10, 2026 | air : Routed barricade prompts and hold progress directly to 2D HUDManager
 // =========================================================================================
 using Godot;
 
@@ -33,7 +38,7 @@ public partial class LockableOpening : Node3D
 	[ExportGroup("Plank Placement Offsets")]
 	[Export] public float PlankSide = 1.0f;
 	[Export] public float PlankGap = 0.05f;
-	[Export] public Vector3 BlockerSize = new Vector3(1.4f, 2.2f, 0.5f);
+	[Export] public Vector3 BlockerSize = new Vector3(1.6f, 2.2f, 0.4f);
 
 	[ExportGroup("Visual Bindings")]
 	[Export] public Node3D LockVisual;
@@ -41,12 +46,13 @@ public partial class LockableOpening : Node3D
 	[Export] public Label3D StatusLabel;
 
 	public int PlanksPlaced { get; private set; }
-	public bool IsLocked => _entrance != null && _entrance.IsLocked;
-	public int DefenseLevel => PlanksPlaced + (IsLocked ? 1 : 0);
+	public bool IsLocked => false;
+	public int DefenseLevel => PlanksPlaced;
 	public InteractableEntrance Entrance => _entrance;
 
 	private InteractableEntrance _entrance;
 	private GameManager _gm;
+	private HUDManager _hud;
 	private float _held;
 	private bool _toggled;
 	private float _placeHeld;
@@ -54,7 +60,6 @@ public partial class LockableOpening : Node3D
 	private float _msgTimer;
 
 	private bool _setupDone;
-	private bool _autoLocked;
 	private bool _blockerOn;
 	private Vector3[] _plankScales;
 	private CollisionShape3D _blockerShape;
@@ -63,10 +68,17 @@ public partial class LockableOpening : Node3D
 	{
 		_entrance = GetParent() as InteractableEntrance;
 		if (_entrance == null)
-			GD.PushError("LockableOpening: dapat direktang anak ito ng node na may InteractableDoor o InteractableWindow script.");
+		{
+			GD.PushError("LockableOpening: must be a child of an InteractableEntrance node.");
+		}
+		else
+		{
+			AttackDirection = _entrance.AttackDirection;
+		}
 
 		AddToGroup("Lockables");
 		_gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+		_hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
 
 		if (_gm != null)
 		{
@@ -79,105 +91,9 @@ public partial class LockableOpening : Node3D
 		CallDeferred(MethodName.SetupPlanks);
 	}
 
-	private MeshInstance3D FindDoorMesh()
-	{
-		if (_entrance == null)
-			return null;
-
-		foreach (Node child in _entrance.GetChildren())
-		{
-			MeshInstance3D m = child as MeshInstance3D;
-			if (m == null)
-				continue;
-
-			string n = m.Name.ToString();
-			if (n == "DoorMesh" || n == "WindowMesh")
-				return m;
-		}
-
-		return null;
-	}
-
 	private void SetupPlanks()
 	{
-		Node newParent = null;
-		if (_entrance != null)
-			newParent = _entrance.GetParent();
-
 		bool hasPlanks = PlankVisuals != null && PlankVisuals.Length > 0;
-
-		if (hasPlanks && newParent != null)
-		{
-			foreach (Node3D p in PlankVisuals)
-			{
-				if (p != null && p.GetParent() != newParent)
-					p.Reparent(newParent, true);
-			}
-		}
-
-		Vector3 center = GlobalPosition;
-		Basis blockBasis = Basis.Identity;
-		Vector3 blockSize = BlockerSize;
-
-		MeshInstance3D doorMesh = FindDoorMesh();
-		bool autoLayout = hasPlanks && doorMesh != null && doorMesh.Mesh != null;
-
-		if (autoLayout)
-		{
-			Aabb box = doorMesh.Mesh.GetAabb();
-			Transform3D mt = doorMesh.GlobalTransform;
-			Vector3 sc = mt.Basis.Scale;
-			center = mt * box.GetCenter();
-
-			float sizeX = box.Size.X * Mathf.Abs(sc.X);
-			float sizeY = box.Size.Y * Mathf.Abs(sc.Y);
-			float sizeZ = box.Size.Z * Mathf.Abs(sc.Z);
-
-			Basis ob = mt.Basis.Orthonormalized();
-			Vector3 widthAxis;
-			float width;
-			float thickness;
-
-			if (sizeX >= sizeZ)
-			{
-				widthAxis = ob.X;
-				width = sizeX;
-				thickness = sizeZ;
-			}
-			else
-			{
-				widthAxis = ob.Z;
-				width = sizeZ;
-				thickness = sizeX;
-			}
-
-			Vector3 yAxis = ob.Y;
-			Vector3 zAxis = widthAxis.Cross(yAxis).Normalized();
-			if (zAxis.LengthSquared() < 0.5f)
-				zAxis = ob.Z;
-
-			int n = PlankVisuals.Length;
-			float usableH = sizeY * 0.75f;
-			Vector3 depthOffset = zAxis * PlankSide * (thickness / 2f + PlankGap);
-
-			for (int i = 0; i < n; i++)
-			{
-				Node3D p = PlankVisuals[i];
-				if (p == null)
-					continue;
-
-				float t = (n == 1) ? 0.5f : ((float)i / (n - 1));
-				float yOff = (t - 0.5f) * usableH;
-				Vector3 pos = center + yAxis * yOff + depthOffset;
-
-				Basis b = new Basis(widthAxis, yAxis, zAxis);
-				p.GlobalTransform = new Transform3D(b, pos);
-			}
-
-			blockBasis = new Basis(widthAxis, yAxis, zAxis);
-			blockSize = new Vector3(width, sizeY, thickness + 0.3f);
-		}
-
 		if (hasPlanks)
 		{
 			_plankScales = new Vector3[PlankVisuals.Length];
@@ -190,7 +106,7 @@ public partial class LockableOpening : Node3D
 			}
 		}
 
-		CreateBlocker(center, blockBasis, blockSize);
+		CreateBlocker(GlobalPosition, GlobalTransform.Basis, BlockerSize);
 		_setupDone = true;
 		UpdateVisuals();
 	}
@@ -239,6 +155,8 @@ public partial class LockableOpening : Node3D
 		float dist = toEntrance.Length();
 		if (dist > InteractRange)
 		{
+			if (_held > 0f || _placeHeld > 0f)
+				SetStatus(null);
 			_held = 0f;
 			_toggled = false;
 			_placeHeld = 0f;
@@ -250,6 +168,8 @@ public partial class LockableOpening : Node3D
 		float dot = forward.Dot(toEntrance.Normalized());
 		if (dot < LookDot)
 		{
+			if (_held > 0f || _placeHeld > 0f)
+				SetStatus(null);
 			_held = 0f;
 			_toggled = false;
 			_placeHeld = 0f;
@@ -263,7 +183,8 @@ public partial class LockableOpening : Node3D
 
 	private void HandleHold(double delta)
 	{
-		if (!Input.IsActionPressed("lock_hold"))
+		bool isRemovePressed = Input.IsActionPressed("lock_hold") || Input.IsMouseButtonPressed(MouseButton.Right);
+		if (!isRemovePressed)
 		{
 			_held = 0f;
 			_toggled = false;
@@ -271,13 +192,11 @@ public partial class LockableOpening : Node3D
 			if (_placeHeld <= 0f)
 			{
 				if (PlanksPlaced > 0)
-					SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | [F] hold (3s): remove | [G] hold (3s): add plank");
+					SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | Hold Left Click: Add | Hold Right Click: Remove");
 				else if (IsBroken)
-					SetStatus($"[BROKEN - 0 HP (LAWNMOWER USED)] | [G] hold (3s): Barricade opening!");
-				else if (IsLocked)
-					SetStatus("LOCKED | [F] hold (3s): unlock | [G] hold (3s): barricade");
+					SetStatus("[BROKEN - 0 HP (LAWNMOWER USED)] | Hold Left Click (3s) to Barricade!");
 				else
-					SetStatus("[F] hold (3s): lock | [G] hold (3s): barricade");
+					SetStatus("[BARE OPENING] | Hold Left Click (3s) to Place Plank");
 			}
 			return;
 		}
@@ -285,22 +204,15 @@ public partial class LockableOpening : Node3D
 		if (_toggled)
 			return;
 
-		if (PlanksPlaced == 0 && _entrance.IsOpen)
+		if (PlanksPlaced == 0)
 		{
-			ShowMessage("Close it first!");
+			ShowMessage("Opening is bare - hold Left Click (3s) to place a plank!");
 			return;
 		}
 
 		_held += (float)delta;
-
-		string verb = "Locking";
-		if (PlanksPlaced > 0)
-			verb = "Removing planks";
-		else if (IsLocked)
-			verb = "Unlocking";
-
 		int percent = Mathf.Min(100, (int)(_held / RemovePlankSeconds * 100));
-		SetStatus(verb + "... " + percent + "%");
+		SetStatus($"Removing planks... {percent}%");
 
 		if (_held < RemovePlankSeconds)
 			return;
@@ -313,26 +225,15 @@ public partial class LockableOpening : Node3D
 				_gm.RefundPlanks(PlanksPlaced);
 
 			PlanksPlaced = 0;
-
-			if (_autoLocked)
-			{
-				_entrance.IsLocked = false;
-				_autoLocked = false;
-			}
-
 			AudioManager.Sfx("door_thud", -4f);
-			ShowMessage("Planks removed");
-		}
-		else
-		{
-			_entrance.IsLocked = !_entrance.IsLocked;
-			AudioManager.Sfx("door_thud");
+			ShowMessage("Planks removed - opening is bare");
 		}
 	}
 
 	private void HandleBarricade(double delta)
 	{
-		if (!Input.IsActionPressed("place_barricade"))
+		bool isPlacePressed = Input.IsActionPressed("place_barricade") || Input.IsMouseButtonPressed(MouseButton.Left);
+		if (!isPlacePressed)
 		{
 			_placeHeld = 0f;
 			_placeToggled = false;
@@ -361,13 +262,6 @@ public partial class LockableOpening : Node3D
 		if (_gm != null && _gm.TryUsePlank())
 		{
 			PlanksPlaced++;
-
-			if (!_entrance.IsOpen && !_entrance.IsLocked)
-			{
-				_entrance.IsLocked = true;
-				_autoLocked = true;
-			}
-
 			AudioManager.Sfx("door_thud", -4f);
 			ShowMessage($"Plank placed ({PlanksPlaced}/{MaxPlanks})");
 		}
@@ -378,9 +272,6 @@ public partial class LockableOpening : Node3D
 	}
 
 	// Plants vs Zombies Lawnmower defense:
-	// If planks exist -> tear 1 plank (absorbed)
-	// If 0 planks & Health > 0 (1 HP) -> Lawnmower triggers! Entrance shatters, sacrificing itself to repel Ani-Ani.
-	// If 0 planks & Health <= 0 -> Entrance is already broken! Fatal breach!
 	public DefenseResult TakeHitAndCheckLawnmower()
 	{
 		if (PlanksPlaced > 0)
@@ -391,17 +282,12 @@ public partial class LockableOpening : Node3D
 
 		if (Health > 0)
 		{
-			// 1 HP Lawnmower consumed! Entrance shatters to repel Ani-Ani!
+			// 1 HP Lawnmower consumed! Frame shatters to repel Ani-Ani!
 			Health = 0;
-			if (_entrance != null)
-			{
-				_entrance.IsLocked = false;
-				_entrance.IsOpen = true;
-			}
 			AudioManager.Sfx("window_rattle", 4f);
 			AudioManager.Sfx("door_pound", 3f);
 			AudioManager.Sfx("banner_sting");
-			ShowMessage("[!] LAWNMOWER DEFENSE! Entrance shattered repelling Ani-Ani! (0 HP - BROKEN!)", 3.0f);
+			ShowMessage("[!] LAWNMOWER DEFENSE! Frame shattered repelling Ani-Ani! (0 HP - BROKEN!)", 3.0f);
 			UpdateVisuals();
 			return DefenseResult.LawnmowerTriggered;
 		}
@@ -413,11 +299,6 @@ public partial class LockableOpening : Node3D
 	public void RepairEntrance()
 	{
 		Health = MaxHealth;
-		if (_entrance != null)
-		{
-			_entrance.IsOpen = false;
-			_entrance.IsLocked = true;
-		}
 		UpdateVisuals();
 	}
 
@@ -435,7 +316,6 @@ public partial class LockableOpening : Node3D
 		return false;
 	}
 
-	// Legacy breach check for BreachManager
 	public bool TryBreach()
 	{
 		if (PlanksPlaced > 0)
@@ -445,23 +325,12 @@ public partial class LockableOpening : Node3D
 			return false;
 		}
 
-		if (_entrance != null && _entrance.IsLocked)
-		{
-			_entrance.IsLocked = false;
-			_autoLocked = false;
-			AudioManager.Sfx("door_thud");
-			return false;
-		}
-
 		return true;
 	}
 
 	public void TryBreakAll()
 	{
 		PlanksPlaced = 0;
-		if (_entrance != null)
-			_entrance.IsLocked = false;
-		_autoLocked = false;
 		UpdateVisuals();
 	}
 
@@ -471,11 +340,7 @@ public partial class LockableOpening : Node3D
 			return;
 
 		if (LockVisual != null)
-		{
-			bool showLock = IsLocked && PlanksPlaced == 0;
-			if (LockVisual.Visible != showLock)
-				LockVisual.Visible = showLock;
-		}
+			LockVisual.Visible = false;
 
 		if (PlankVisuals != null)
 		{
@@ -522,17 +387,25 @@ public partial class LockableOpening : Node3D
 
 	private void SetStatus(string text)
 	{
-		if (StatusLabel == null)
-			return;
-
-		if (string.IsNullOrEmpty(text))
+		_hud ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
+		if (_hud != null)
 		{
-			StatusLabel.Visible = false;
-			return;
+			if (string.IsNullOrEmpty(text))
+				_hud.ClearInteractionPrompt();
+			else
+				_hud.SetInteractionPrompt(text);
 		}
 
-		StatusLabel.Text = text;
-		StatusLabel.Visible = true;
+		if (StatusLabel != null)
+		{
+			if (string.IsNullOrEmpty(text))
+				StatusLabel.Visible = false;
+			else
+			{
+				StatusLabel.Text = text;
+				StatusLabel.Visible = true;
+			}
+		}
 	}
 
 	private void ShowMessage(string text, float duration = 1.6f)

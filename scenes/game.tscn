@@ -15,6 +15,9 @@
 [ext_resource type="PackedScene" uid="uid://dpjht3t8bvxg1" path="res://scenes/security/cctv_overlay.tscn" id="14_cctvoverlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="15_pausemenu"]
 [ext_resource type="PackedScene" path="res://scenes/security/crop_devourer.tscn" id="16_cropdevourer"]
+[ext_resource type="PackedScene" uid="uid://cow001" path="res://scenes/environment/spooky_cow.tscn" id="17_cow"]
+[ext_resource type="PackedScene" uid="uid://sheep001" path="res://scenes/environment/spooky_sheep.tscn" id="18_sheep"]
+[ext_resource type="PackedScene" uid="uid://d3epk37vmo5n5" path="res://scenes/environment/world_foliage.tscn" id="19_foliage"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
 sky_top_color = Color(0.35, 0.62, 0.95, 1)
@@ -74,7 +77,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [node name="AniAniMonster" parent="." unique_id=1984218731 instance=ExtResource("13_anianimonster")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.3266516, 1.4833372, -2.0749178)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6408641, 0.8125975, -3.6897805)
 
 [node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("MonsterNode")]
 script = ExtResource("3_breach")
@@ -89,14 +92,15 @@ Target = NodePath("../Player")
 current = true
 
 [node name="FarmPlot" parent="." unique_id=105765636 instance=ExtResource("4_farm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.024261951, 0.12504077, -0.043389797)
 
 [node name="NighttCamera" parent="." unique_id=1041632257 instance=ExtResource("5_cctv")]
 
 [node name="HouseInterior" parent="." unique_id=1018571243 instance=ExtResource("6_house")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.2080944, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 3.1323655, 0)
 
 [node name="Player" parent="." unique_id=36189929 instance=ExtResource("7_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4420223, 1.5545688, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.560114, 1.5545688, 0)
 
 [node name="HUD" parent="." unique_id=1251348134 instance=ExtResource("8_hud")]
 
@@ -112,3 +116,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4420223, 1.5545688, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 1.4903667, 2)
 GridManagerNode = NodePath("../FarmPlot/GridManager")
 GameManagerNode = NodePath("../GameManager")
+
+[node name="SpookyCow_01" parent="." unique_id=1398732285 instance=ExtResource("17_cow")]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 8, 1.25, -8)
+
+[node name="SpookyCow_02" parent="." unique_id=2012739987 instance=ExtResource("17_cow")]
+transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, 14, 1.25, 2)
+
+[node name="SpookySheep_01" parent="." unique_id=157839141 instance=ExtResource("18_sheep")]
+transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 8.5, 1.25, 7.5)
+
+[node name="SpookySheep_02" parent="." unique_id=1402110729 instance=ExtResource("18_sheep")]
+transform = Transform3D(-0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, -0.866025, 0, 1.25, 12)
+
+[node name="WorldFoliage" parent="." unique_id=1847192830 instance=ExtResource("19_foliage")]
+OuterTreeCount = 3000
+MidTreeCount = 500
+BushCount = 350
+FloraCount = 350
+RockCount = 200
+PropCount = 60

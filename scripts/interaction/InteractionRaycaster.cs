@@ -10,6 +10,7 @@
 // - Oct 30, 2026 | air : Adapted raycaster strictly for First-Person crosshair center-ray targeting
 // - Oct 31, 2026 | air : Optimized prompt dispatch to fire only on target transitions, preventing prompt flicker
 // - Nov 06, 2026 | air : Added [F] key secondary interaction dispatch for barricading and secondary actions
+// - Nov 10, 2026 | air : Unified primary and secondary interactions around Left Click and Right Click
 // =========================================================================================
 using Godot;
 
@@ -37,17 +38,19 @@ public partial class InteractionRaycaster : Node3D
 		if (CurrentInteractable == null || Player == null || !CurrentInteractable.CanInteract(Player))
 			return;
 
-		bool interactE = @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.E };
-		bool interactF = @event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F };
-		bool interactClick = @event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left };
+		bool interactPrimary = (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+			|| (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.E });
 
-		if (interactE || interactClick)
+		bool interactSecondary = (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right })
+			|| (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F });
+
+		if (interactPrimary)
 		{
 			CurrentInteractable.Interact(Player);
 			GetViewport().SetInputAsHandled();
 			UpdatePromptForCurrent();
 		}
-		else if (interactF)
+		else if (interactSecondary)
 		{
 			CurrentInteractable.InteractSecondary(Player);
 			GetViewport().SetInputAsHandled();

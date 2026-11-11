@@ -2,10 +2,12 @@
 // Original Author : air (Airless-KV) - Oct 2026
 // Responsibilities: - Day 7 victory tally screen with itemized flower score breakdown table
 //                   - Coin wallet bonus calculation and persistent leaderboard standings display
+//                   - Restart and Main Menu navigation with liberated mouse cursor
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 24, 2026 | air : Streamlined score calculation and breakdown string formatting for Alpha build
 // - Oct 30, 2026 | air : Integrated persistent SaveManager for recording victories and ranking leaderboard
+// - Nov 07, 2026 | air : Released mouse cursor, paused gameplay tree, and added MainMenuButton
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -19,17 +21,53 @@ public partial class VictoryScreen : CanvasLayer
 	[Export] public Label TotalScoreLabel;
 	[Export] public Label LeaderboardLabel;
 	[Export] public Button PlayAgainButton;
+	[Export] public Button MainMenuButton;
 
 	public override void _Ready()
 	{
+		ProcessMode = ProcessModeEnum.Always;
 		Visible = false;
 		Layer = 95;
-		if (PlayAgainButton != null) PlayAgainButton.Pressed += () => { GetTree().Paused = false; GetTree().ReloadCurrentScene(); };
+
+		if (PlayAgainButton != null)
+		{
+			PlayAgainButton.Pressed += () =>
+			{
+				GetTree().Paused = false;
+				Input.MouseMode = Input.MouseModeEnum.Captured;
+				GetTree().ReloadCurrentScene();
+			};
+		}
+
+		if (MainMenuButton != null)
+		{
+			MainMenuButton.Pressed += () =>
+			{
+				GetTree().Paused = false;
+				Input.MouseMode = Input.MouseModeEnum.Visible;
+				GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn");
+			};
+		}
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (!Visible) return;
+
+		if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
+		{
+			GetTree().Paused = false;
+			Input.MouseMode = Input.MouseModeEnum.Visible;
+			GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn");
+			GetViewport().SetInputAsHandled();
+		}
 	}
 
 	public void ShowVictoryTally(Node3d gridManager, GameManager gameManager)
 	{
 		Visible = true;
+		GetTree().Paused = true;
+		Input.MouseMode = Input.MouseModeEnum.Visible;
 		var tiers = gridManager?.GetFlowerTierCounts() ?? new Dictionary<int, int> { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 } };
 		int coins = gameManager?.Coins ?? 0;
 

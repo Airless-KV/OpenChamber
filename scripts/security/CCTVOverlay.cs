@@ -11,6 +11,7 @@
 // - Oct 30, 2026 | air : Aligned OSD layout with exact two-row specifications and corner viewfinder frame
 // - Oct 31, 2026 | air : Exposed ChannelNames as public static single source of truth for CCTV feeds
 // - Oct 31, 2026 | air : Compacted timer updates and node resolution
+// - Nov 10, 2026 | air : Updated OSD controls label for Left Click switch and Right Click exit
 // =========================================================================================
 using Godot;
 using System;
@@ -76,8 +77,8 @@ public partial class CCTVOverlay : CanvasLayer
 		_currentChannel = Mathf.Clamp(channelIndex, 0, ChannelNames.Length - 1);
 		if (ChannelLabel != null) ChannelLabel.Text = ChannelNames[_currentChannel];
 		if (StatusLabel != null) StatusLabel.Text = "SIGNAL: 98% | 30 FPS";
-		if (ControlsLabel != null) ControlsLabel.Text = "[1-4 / TAB] SWITCH CAMERA";
-		if (ExitLabel != null) ExitLabel.Text = "[E / N] EXIT DESK";
+		if (ControlsLabel != null) ControlsLabel.Text = "[L-CLICK / TAB] SWITCH CAMERA";
+		if (ExitLabel != null) ExitLabel.Text = "[R-CLICK / ESC] EXIT DESK";
 	}
 
 	private void UpdateTimestamp()

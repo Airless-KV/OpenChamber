@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://t0q5alh3i7ya" path="res://scripts/security/JumpScareScreen.cs" id="1_jumpscare"]
 [ext_resource type="Texture2D" uid="uid://c6pw62i7fuc6s" path="res://assets/textures/ani_ani_jumpscare.svg" id="2_ani_tex"]
 
-[node name="JumpScareScreen" type="CanvasLayer" unique_id=800368482 node_paths=PackedStringArray("JumpscareContainer", "MonsterImage", "RedFlashRect", "TitleLabel", "ReasonLabel", "StatsLabel", "RestartButton")]
+[node name="JumpScareScreen" type="CanvasLayer" unique_id=800368482 node_paths=PackedStringArray("JumpscareContainer", "MonsterImage", "RedFlashRect", "TitleLabel", "ReasonLabel", "StatsLabel", "RestartButton", "MainMenuButton")]
 script = ExtResource("1_jumpscare")
 JumpscareContainer = NodePath("Container")
 MonsterImage = NodePath("Container/MonsterImage")
@@ -12,6 +12,7 @@ TitleLabel = NodePath("Container/Panel/TitleLabel")
 ReasonLabel = NodePath("Container/Panel/ReasonLabel")
 StatsLabel = NodePath("Container/Panel/StatsLabel")
 RestartButton = NodePath("Container/Panel/RestartButton")
+MainMenuButton = NodePath("Container/Panel/MainMenuButton")
 
 [node name="Container" type="Control" parent="." unique_id=470463532]
 layout_mode = 3
@@ -92,11 +93,26 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -110.0
+offset_left = -190.0
 offset_top = -55.0
-offset_right = 110.0
+offset_right = -10.0
 offset_bottom = -15.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_font_sizes/font_size = 18
 text = "TRY AGAIN"
+
+[node name="MainMenuButton" type="Button" parent="Container/Panel" unique_id=1946017316]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -55.0
+offset_right = 190.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+text = "MAIN MENU"

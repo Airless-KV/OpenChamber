@@ -6,8 +6,9 @@
 //                   - DayNightClock and Coin/Seed HUD art integration
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Oct 22, 2026 | anjivv : Implemented persistent daytime/nighttime HUD, coin/seed counters, and flower shop interface
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/ui/
-// - Nov 06, 2026 | air : Integrated Anj's Nov 6 HUD art, DayNightClock widget, and shopping freeze
+// - Nov 06, 2026 | anjivv : Added HUD coin/seed pixel art, DayNightClock dial widget integration, and player physics freeze during shopping
 // =========================================================================================
 using Godot;
 

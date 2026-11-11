@@ -1,8 +1,9 @@
 // =========================================================================================
-// Original Author : Robin Velasco (rbn-wq) - Nov 2026
+// Original Author : rbn (Robin Velasco) - Nov 06, 2026
 // Responsibilities: - Plank barricade inventory refund handling
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Nov 06, 2026 | rbn : Implemented barricade plank refund handling
 // - Nov 06, 2026 | air : Consolidated TryUsePlank with GameManager.Shop.cs
 // =========================================================================================
 using Godot;

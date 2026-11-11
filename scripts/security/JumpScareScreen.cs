@@ -3,12 +3,13 @@
 // Responsibilities: - Ani-Ani jumpscare defeat screen with red flash and camera shake
 //                   - Defeat reason presentation and horror jumpscare audio triggering
 //                   - Persistent defeat statistics recording via SaveManager
-//                   - Restart loop handling
+//                   - Restart and Main Menu loop handling with accessible mouse cursor
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 24, 2026 | air : Streamlined audio synthesis and tween sequences for Alpha build
 // - Oct 30, 2026 | air : Integrated SaveManager to persist breach survival stats and lifetime attempts
 // - Oct 31, 2026 | air : Replaced redundant PCM audio synthesis with AudioManager.Sfx
+// - Nov 07, 2026 | air : Released mouse cursor, paused gameplay tree, added MainMenuButton and ESC shortcut
 // =========================================================================================
 using Godot;
 using System;
@@ -23,21 +24,54 @@ public partial class JumpScareScreen : CanvasLayer
 	[Export] public Label ReasonLabel;
 	[Export] public Label StatsLabel;
 	[Export] public Button RestartButton;
+	[Export] public Button MainMenuButton;
 
 	public override void _Ready()
 	{
+		ProcessMode = ProcessModeEnum.Always;
 		Visible = false;
 		Layer = 100;
 
 		if (RestartButton != null)
 		{
-			RestartButton.Pressed += () => { GetTree().Paused = false; GetTree().ReloadCurrentScene(); };
+			RestartButton.Pressed += () =>
+			{
+				GetTree().Paused = false;
+				Input.MouseMode = Input.MouseModeEnum.Captured;
+				GetTree().ReloadCurrentScene();
+			};
+		}
+
+		if (MainMenuButton != null)
+		{
+			MainMenuButton.Pressed += () =>
+			{
+				GetTree().Paused = false;
+				Input.MouseMode = Input.MouseModeEnum.Visible;
+				GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn");
+			};
+		}
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (!Visible) return;
+
+		if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
+		{
+			GetTree().Paused = false;
+			Input.MouseMode = Input.MouseModeEnum.Visible;
+			GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn");
+			GetViewport().SetInputAsHandled();
 		}
 	}
 
 	public void TriggerJumpScare(string reason, int currentDay, int coins)
 	{
 		Visible = true;
+		GetTree().Paused = true;
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+
 		if (TitleLabel != null) TitleLabel.Text = "BREACH DETECTED";
 		if (ReasonLabel != null) ReasonLabel.Text = reason;
 
@@ -62,7 +96,8 @@ public partial class JumpScareScreen : CanvasLayer
 		if (RedFlashRect != null)
 		{
 			RedFlashRect.Color = new Color(0.85f, 0.05f, 0.05f, 0.85f);
-			CreateTween().TweenProperty(RedFlashRect, "color:a", 0.35f, 0.8f);
+			CreateTween().SetPauseMode(Tween.TweenPauseMode.Process)
+				.TweenProperty(RedFlashRect, "color:a", 0.35f, 0.8f);
 		}
 
 		if (MonsterImage != null)
@@ -70,7 +105,7 @@ public partial class JumpScareScreen : CanvasLayer
 			MonsterImage.Scale = new Vector2(0.3f, 0.3f);
 			MonsterImage.PivotOffset = MonsterImage.Size * 0.5f;
 
-			Tween tw = CreateTween();
+			Tween tw = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
 			tw.TweenProperty(MonsterImage, "scale", new Vector2(1.15f, 1.15f), 0.25f).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
 			Vector2 orig = MonsterImage.Position;
 			for (int i = 0; i < 8; i++)

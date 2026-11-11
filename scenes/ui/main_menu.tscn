@@ -605,10 +605,10 @@ text = "2. NIGHTTIME: SURVEILLANCE & HORROR DEFENSE"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 14
-text = "• Enter your cabin and approach the security monitor desk. Press [E] (or hotkey [N]) to view CCTV feeds.
-• Switch camera channels with [1 - 4] or [TAB] to inspect North, East, South, and West perimeters.
-• The Ani-Ani entity stalks through 3 stages: Distant (far silhouette), Approaching (menacing glow), and Imminent (at your door/window!).
-• Rush to close and secure doors and windows before the entity breaches your cabin!
+text = "• Enter your cabin and approach the security monitor desk. Left Click to view CCTV feeds.
+• Switch camera channels with Left Click (or [TAB] / [1 - 4]) to inspect North, East, South, and West perimeters.
+• The Ani-Ani entity stalks through 3 stages: Distant (far silhouette), Approaching (menacing glow), and Imminent (at your cabin opening!).
+• Rush to barricade bare openings with wooden planks (Hold Left Click 3s) before the entity breaches!
 • Survive 7 days and 7 nights to claim victory and eternal ranking."
 autowrap_mode = 2
 
@@ -624,9 +624,11 @@ theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 14
 text = "• [W][A][S][D] : Move First-Person Player
 • Mouse : Look Around
-• [E] : Interact (Doors, Windows, Shop, CCTV Desk)
-• [1-4 / TAB] : Switch CCTV Channels (North, East, South, West)
-• [N / E] : Exit CCTV Desk
+• Left Click : Primary Interact (Shop, Floodlight, CCTV Desk, Locks)
+• Right Click : Secondary Action / Cancel Drag
+• Hold Left Click (3s) : Place Barricade Plank
+• Hold Right Click (3s) : Remove Barricade Plank
+• In CCTV : Left Click (Switch Cam) | Right Click (Exit Desk)
 • [ESC] : Pause Game (Freeze timers, adjust volume, or quit)"
 autowrap_mode = 2
 

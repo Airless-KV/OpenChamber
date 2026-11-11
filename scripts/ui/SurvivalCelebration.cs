@@ -4,6 +4,7 @@
 //                   - Animated coin particle flight to HUD CoinLabel target
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Oct 31, 2026 | anjivv : Implemented daytime survival celebration banner with animated coin flight particles and audio stingers
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/ui/
 // =========================================================================================
 using Godot;

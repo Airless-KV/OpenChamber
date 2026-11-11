@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ddrvciguawpig" path="res://scripts/security/VictoryScreen.cs" id="1_victory"]
 
-[node name="VictoryScreen" type="CanvasLayer" unique_id=681216280 node_paths=PackedStringArray("TitleLabel", "SubtitleLabel", "BreakdownLabel", "TotalScoreLabel", "LeaderboardLabel", "PlayAgainButton")]
+[node name="VictoryScreen" type="CanvasLayer" unique_id=681216280 node_paths=PackedStringArray("TitleLabel", "SubtitleLabel", "BreakdownLabel", "TotalScoreLabel", "LeaderboardLabel", "PlayAgainButton", "MainMenuButton")]
 script = ExtResource("1_victory")
 TitleLabel = NodePath("Container/TitleLabel")
 SubtitleLabel = NodePath("Container/SubtitleLabel")
@@ -10,6 +10,7 @@ BreakdownLabel = NodePath("Container/BreakdownLabel")
 TotalScoreLabel = NodePath("Container/TotalScoreLabel")
 LeaderboardLabel = NodePath("Container/LeaderboardLabel")
 PlayAgainButton = NodePath("Container/PlayAgainButton")
+MainMenuButton = NodePath("Container/MainMenuButton")
 
 [node name="Container" type="Control" parent="." unique_id=1066903179]
 layout_mode = 3
@@ -96,11 +97,26 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -120.0
+offset_left = -200.0
 offset_top = -70.0
-offset_right = 120.0
+offset_right = -15.0
 offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_font_sizes/font_size = 20
 text = "PLAY AGAIN"
+
+[node name="MainMenuButton" type="Button" parent="Container" unique_id=1541060077]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = -70.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "MAIN MENU"

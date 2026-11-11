@@ -64,7 +64,7 @@ public partial class PauseMenu : CanvasLayer
 		if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
 		{
 			if (GetTree().Root.FindChild("JumpScareScreen", true, false) is CanvasLayer { Visible: true } ||
-			    GetTree().Root.FindChild("VictoryScreen", true, false) is CanvasLayer { Visible: true }) return;
+				GetTree().Root.FindChild("VictoryScreen", true, false) is CanvasLayer { Visible: true }) return;
 
 			if (IsPaused)
 			{

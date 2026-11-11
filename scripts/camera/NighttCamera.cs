@@ -13,6 +13,7 @@
 // - Oct 31, 2026 | air : Removed legacy prototype timer code; restricted N/E hotkeys to exit feed mode
 // - Oct 31, 2026 | air : Consolidated channel names to reference CCTVOverlay.ChannelNames
 // - Oct 31, 2026 | air : Streamlined camera switching array logic and mode transitions
+// - Nov 10, 2026 | air : Added Left Click next camera feed and Right Click exit monitor
 // =========================================================================================
 using Godot;
 
@@ -43,14 +44,33 @@ public partial class NighttCamera : Node3D
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (!IsNightMode || @event is not InputEventKey { Pressed: true, Echo: false } k) return;
+		if (!IsNightMode) return;
 
-		if (k.Keycode is Key.N or Key.E) ApplyMode(false);
-		else if (k.Keycode is >= Key.Key1 and <= Key.Key4) SwitchNightCamera((int)k.Keycode - (int)Key.Key1);
-		else if (k.Keycode == Key.Tab) SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
-		else return;
+		if (@event is InputEventMouseButton { Pressed: true } mb)
+		{
+			if (mb.ButtonIndex == MouseButton.Left)
+			{
+				SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+			else if (mb.ButtonIndex == MouseButton.Right)
+			{
+				ApplyMode(false);
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+		}
 
-		GetViewport().SetInputAsHandled();
+		if (@event is InputEventKey { Pressed: true, Echo: false } k)
+		{
+			if (k.Keycode is Key.N or Key.E) ApplyMode(false);
+			else if (k.Keycode is >= Key.Key1 and <= Key.Key4) SwitchNightCamera((int)k.Keycode - (int)Key.Key1);
+			else if (k.Keycode == Key.Tab) SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
+			else return;
+
+			GetViewport().SetInputAsHandled();
+		}
 	}
 
 	public void ApplyMode(bool night)

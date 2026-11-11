@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://devourer_prev_01"]
+[gd_scene format=3 uid="uid://3xy32i14ffbs"]
 
 [ext_resource type="PackedScene" path="res://scenes/security/crop_devourer.tscn" id="1_devourer"]
 
@@ -45,14 +45,14 @@ light_color = Color(1, 0.65, 0.15, 1)
 light_energy = 2.4
 
 [node name="Floor" type="MeshInstance3D" parent="." unique_id=980347438]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_floor")
 mesh = SubResource("PlaneMesh_floor")
 
 [node name="CropDevourer" parent="." unique_id=741829201 instance=ExtResource("1_devourer")]
 transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 0, 0, 0)
+AutoHideOnReady = false
 
 [node name="ShowcaseCamera" type="Camera3D" parent="." unique_id=952255759]
-transform = Transform3D(0.9925433, -0.016324693, 0.12079485, 0.012763333, 0.9994625, 0.030197939, -0.12122289, -0.028431017, 0.9922181, 0.45, 1.6, 3.2)
+transform = Transform3D(-0.97825193, 0.006228258, 0.20732692, 0.012763335, 0.9994626, 0.030197943, -0.20702738, 0.032187376, -0.9778056, 0.45, 1.4134246, -4.7230625)
 current = true
 fov = 50.0

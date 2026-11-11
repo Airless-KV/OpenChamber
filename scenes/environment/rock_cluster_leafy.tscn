@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/environment/rock_cluster_leafy.png" id="1_tex"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_cluster"]
+radius = 0.65
+
+[node name="rock_cluster_leafy" type="Node3D"]
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7680, 0)
+billboard = 1
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+pixel_size = 0.006
+texture = ExtResource("1_tex")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+shape = SubResource("SphereShape3D_cluster")

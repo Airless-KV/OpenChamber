@@ -4,6 +4,7 @@
 //                   - Phase progress visualization based on GameManager TimeUpdated/PhaseChanged
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Nov 06, 2026 | anjivv : Created Day/Night clock dial widget with sweeping hand, dynamic phase arcs, and GameManager signal binding
 // - Nov 06, 2026 | air : Relocated to scripts/ui/ and applied standard header formatting
 // =========================================================================================
 using Godot;

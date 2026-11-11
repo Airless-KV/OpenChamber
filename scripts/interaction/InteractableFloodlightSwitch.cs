@@ -9,6 +9,7 @@
 // - Nov 06, 2026 | air : Implemented physical cabin switch, open-entrance check, and devourer repel
 // - Nov 06, 2026 | air : Added directional aiming, Ani-Ani repel check, and interior stand support
 // - Nov 06, 2026 | air : Gated floodlight beam on unbarricaded opening (0 planks) requiring player tactical trade-off
+// - Nov 10, 2026 | air : Updated prompt to Left Click to fire and Right Click to clear planks
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -77,9 +78,9 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 			return $"[!] {RequiredEntrance.Name} is CLOSED! Open it to cast floodlight beam outside!";
 
 		if (lockable != null && lockable.PlanksPlaced > 0)
-			return $"[!] {RequiredEntrance.Name} is BARRICADED ({lockable.PlanksPlaced} planks)! Clear opening (hold [F] 3s) to fire beam!";
+			return $"[!] {RequiredEntrance.Name} is BARRICADED ({lockable.PlanksPlaced} planks)! Clear opening (Hold Right Click 3s) to fire beam!";
 
-		return $"Press [E] to Fire Floodlight through {RequiredEntrance?.Name ?? "Entrance"}!";
+		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}!";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -95,7 +96,7 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 
 		if (lockable != null && lockable.PlanksPlaced > 0)
 		{
-			_hud?.SetInteractionPrompt($"[!] Barricaded! Remove planks from {RequiredEntrance.Name} (hold [F] 3s) to clear the floodlight beam!");
+			_hud?.SetInteractionPrompt($"[!] Barricaded! Remove planks from {RequiredEntrance.Name} (Hold Right Click 3s) to clear the floodlight beam!");
 			return;
 		}
 

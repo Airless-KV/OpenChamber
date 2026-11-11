@@ -4,12 +4,14 @@
 //                   - Interfaces player interaction with HUD ShopPanel
 // -----------------------------------------------------------------------------------------
 // Change Log:
+// - Oct 31, 2026 | anjivv : Implemented 3D Flower Shop interaction stand and HUD ShopPanel toggle
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/interaction/
 // - Nov 06, 2026 | air : Added dynamic open/close prompt state
+// - Nov 10, 2026 | air : Updated prompt to Left Click to open/close
 // =========================================================================================
 using Godot;
 
-// Flower Shop: pressing [E] opens / closes the shop menu on the HUD.
+// Flower Shop: Left Click (or [E]) opens / closes the shop menu on the HUD.
 // Seeds, planks, barriers and the axe are all bought from the menu buttons.
 public partial class InteractableShop : InteractableBase
 {
@@ -30,8 +32,8 @@ public partial class InteractableShop : InteractableBase
 	public override string GetPrompt()
 	{
 		if (HUDNode != null && HUDNode.IsShopOpen)
-			return "Press [E] to close the Flower Shop";
-		return "Press [E] to open the Flower Shop";
+			return "Left Click to close Flower Shop";
+		return "Left Click to open Flower Shop";
 	}
 
 	protected override void OnInteract(PlayerController player)

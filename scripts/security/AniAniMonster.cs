@@ -14,6 +14,8 @@
 // - Nov 06, 2026 | air : Added peripheral lurking vantage states and passive non-attack presence
 // - Nov 06, 2026 | air : Ensured persistent CCTV lurking visibility during night downtime and repel retreats
 // - Nov 06, 2026 | air : Added callback-driven 12m woods retreat sprint and tween protection
+// - Nov 10, 2026 | air : Deactivate on ready and suppress daytime lurking to prevent daytime visibility
+// - Nov 11, 2026 | air : Scaled imminent breach stage coordinates for elevated treehouse windows
 // =========================================================================================
 using Godot;
 using System;
@@ -38,10 +40,10 @@ public partial class AniAniMonster : Node3D
 
 	private readonly Vector3[,] _stagePositions =
 	{
-		{ new(-1.66f, -100f, 0), new(-1.66f, 0, -28f), new(-1.66f, 0, -14f), new(-1.66f, 0, -4.5f) },
-		{ new(-1.66f, -100f, 0), new(26f, 0, -0.8f), new(13f, 0, -0.8f), new(4.5f, 0, -0.8f) },
-		{ new(-1.66f, -100f, 0), new(-1.66f, 0, 28f), new(-1.66f, 0, 14f), new(-1.66f, 0, 4.5f) },
-		{ new(-1.66f, -100f, 0), new(-28f, 0, 0), new(-14f, 0, 0), new(-5f, 0, 0) }
+		{ new(-1.66f, -100f, 0), new(-1.66f, 0, -28f), new(-1.66f, 0, -14f), new(-1.66f, 0, -4.2f) },
+		{ new(-1.66f, -100f, 0), new(26f, 0, 0), new(13f, 0, 0), new(2.2f, 0, 0) },
+		{ new(-1.66f, -100f, 0), new(-1.66f, 0, 28f), new(-1.66f, 0, 14f), new(-1.66f, 0, 4.2f) },
+		{ new(-1.66f, -100f, 0), new(-28f, 0, 0), new(-14f, 0, 0), new(-5.4f, 0, 0) }
 	};
 
 	private readonly float[] _directionYaws = { 180f, -90f, 0f, 90f };
@@ -60,7 +62,7 @@ public partial class AniAniMonster : Node3D
 	public override void _Ready()
 	{
 		InitVisuals();
-		if (AutoHideOnReady) SetStage(0, 0);
+		if (AutoHideOnReady) Deactivate();
 		else { Visible = true; CurrentStage = 3; }
 	}
 
@@ -142,7 +144,14 @@ public partial class AniAniMonster : Node3D
 
 		if (CurrentStage == 0)
 		{
-			// Remain visible in peripheral CCTV vantages unless currently retreating
+			// If monster is currently deactivated (daytime), preserve invisible state
+			if (!Visible)
+			{
+				Deactivate();
+				return;
+			}
+
+			// Remain visible in peripheral CCTV vantages during night lurking unless currently retreating
 			if (_retreatTween == null || !_retreatTween.IsValid())
 				SetLurking(_rng.Next(0, _lurkingVantages.Length));
 			return;
@@ -194,7 +203,8 @@ public partial class AniAniMonster : Node3D
 		_retreatTween.Chain().TweenCallback(Callable.From(() =>
 		{
 			Scale = Vector3.One;
-			SetLurking(_rng.Next(0, _lurkingVantages.Length));
+			if (Visible)
+				SetLurking(_rng.Next(0, _lurkingVantages.Length));
 			onComplete?.Invoke();
 		}));
 	}

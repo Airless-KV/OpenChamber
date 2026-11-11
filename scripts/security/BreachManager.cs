@@ -3,7 +3,7 @@
 // Responsibilities: - Night horror attack state machine and Ani-Ani breach management
 //                   - Directional monster approach alerts and CCTV stalking stages (Distant, Approaching, Imminent)
 //                   - Entrance security checks (doors/windows) & CCTV monitoring verification
-//                   - Barricade fortification absorption and Garden Barrier perimeter slowdown
+//                   - Barricade fortification absorption and defense resolution
 //                   - Audio warning stinger generation & defeat trigger
 // -----------------------------------------------------------------------------------------
 // Change Log:
@@ -16,6 +16,8 @@
 // - Nov 06, 2026 | air : Integrated Wooden Plank barricade breach absorption, manual locking delay, & Garden Barrier reaction slowdown
 // - Nov 06, 2026 | air : Implemented sequential plank shredding loop, random retreat cooldowns (15-75s), and floodlight repel integration
 // - Nov 06, 2026 | air : Integrated PvZ Lawnmower 1 HP entrance defense, 3-plank cap, and unified retreat dispatch
+// - Nov 10, 2026 | air : Synchronized initial day phase in _Ready and ensured daytime ResetAttack deactivates monster
+// - Nov 11, 2026 | air : Streamlined breach state machine by removing unneeded outside barrier checks
 // =========================================================================================
 using Godot;
 using System;
@@ -45,7 +47,6 @@ public partial class BreachManager : Node
 	[Export] public float FirstAttackDelay = 12.0f;
 	[Export] public float AttackInterval = 25.0f;
 	[Export] public float ReactionWindow = 7.0f;
-	[Export] public float BarrierExtraReactionTime = 5.0f;
 	[Export] public bool EnableOutdoorLoss = true;
 	[Export] public float BarricadeDelay = 6.0f;
 
@@ -86,6 +87,7 @@ public partial class BreachManager : Node
 
 		if (GameManagerNode != null)
 		{
+			_isNight = GameManagerNode.CurrentPhase == GameManager.GamePhase.Night;
 			GameManagerNode.PhaseChanged += (isDay, _) =>
 			{
 				_isNight = !isDay;
@@ -110,6 +112,10 @@ public partial class BreachManager : Node
 			};
 		}
 		ResetAttack();
+		if (!_isNight)
+		{
+			MonsterNode?.Deactivate();
+		}
 	}
 
 	public override void _Process(double delta)
@@ -178,9 +184,7 @@ public partial class BreachManager : Node
 			}
 
 			AttackCountdown -= dt;
-			bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
-			string barrierBadge = hasBarrier ? " [BARRIER SLOW]" : "";
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s){barrierBadge} - MONITOR CAM {(int)CurrentApproachDir + 1}!");
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - MONITOR CAM {(int)CurrentApproachDir + 1}!");
 
 			var currentLockable = GetOpeningForDirection(CurrentApproachDir);
 			if (currentLockable != null && currentLockable.PlanksPlaced > 0)
@@ -223,7 +227,9 @@ public partial class BreachManager : Node
 		}
 		else
 		{
-			SetStalkingStage(StalkingStage.Hidden);
+			CurrentStage = StalkingStage.Hidden;
+			MonsterNode?.Deactivate();
+			EmitSignal(SignalName.StalkingStageChanged, (int)CurrentApproachDir, (int)CurrentStage);
 		}
 	}
 
@@ -257,8 +263,7 @@ public partial class BreachManager : Node
 		}
 
 		_isTearingPlanks = false;
-		bool hasBarrier = IsDirectionFortifiedWithBarrier(CurrentApproachDir);
-		AttackCountdown = hasBarrier ? (ReactionWindow + BarrierExtraReactionTime) : ReactionWindow;
+		AttackCountdown = ReactionWindow;
 		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, AttackCountdown);
 	}
 
@@ -342,7 +347,4 @@ public partial class BreachManager : Node
 
 	public bool IsPlayerNotLooking(AttackDirection direction) =>
 		NightCameraNode == null || !NightCameraNode.IsNightMode || NightCameraNode.CurrentNightIndex != (int)direction;
-
-	public bool IsDirectionFortifiedWithBarrier(AttackDirection direction) =>
-		GetTree().GetNodesInGroup("BarrierSlots").OfType<InteractableBarrierSlot>().Any(s => s.Direction == direction && s.IsDeployed);
 }

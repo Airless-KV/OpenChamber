@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://cdpnlkpq1e4xg"]
+
+[ext_resource type="Script" path="res://scripts/interaction/HotAirBalloonShop.cs" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/interaction/shop_hot_air_balloon.png" id="2_tex"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_basket"]
+size = Vector3(2.2, 2.0, 2.2)
+
+[node name="HotAirBalloonShop" type="StaticBody3D" node_paths=PackedStringArray("VisualRoot", "BasketCollider", "BurnerLight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.72, 3.5)
+script = ExtResource("1_script")
+VisualRoot = NodePath("Sprite3D")
+BasketCollider = NodePath("CollisionShape3D")
+BurnerLight = NodePath("BurnerLight")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("BoxShape3D_basket")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.0, 0)
+billboard = 1
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+pixel_size = 0.009
+texture = ExtResource("2_tex")
+
+[node name="BurnerLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+light_color = Color(1, 0.72, 0.35, 1)
+light_energy = 1.8
+omni_range = 7.5

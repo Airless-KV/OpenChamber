@@ -1,0 +1,5 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "Black_Square.010"
+albedo_color = Color(0.23, 0.47, 0.17, 1)

@@ -13,6 +13,7 @@
 // - Oct 31, 2026 | air : Removed duplicate Escape key intercept to prevent conflict with PauseMenu
 // - Oct 31, 2026 | air : Compacted mouse look and target follow interpolation
 // - Nov 06, 2026 | air : Added shop cursor synchronization to release mouse and pause look during shopping
+// - Nov 07, 2026 | air : Guarded _Input against cursor re-capture when end screens or pause are active
 // =========================================================================================
 using Godot;
 
@@ -68,7 +69,14 @@ public partial class CameraPivot : Node3D
 
 	public override void _Input(InputEvent @event)
 	{
-		if (_isCCTVActive || _isShopActive) return;
+		if (_isCCTVActive || _isShopActive || GetTree().Paused) return;
+
+		if (GetTree().Root.FindChild("JumpScareScreen", true, false) is CanvasLayer { Visible: true } ||
+			GetTree().Root.FindChild("VictoryScreen", true, false) is CanvasLayer { Visible: true } ||
+			GetTree().Root.FindChild("PauseMenu", true, false) is CanvasLayer { Visible: true })
+		{
+			return;
+		}
 
 		if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } && Input.MouseMode == Input.MouseModeEnum.Visible)
 		{
