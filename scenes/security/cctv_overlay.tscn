@@ -5,9 +5,17 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_scanlines"]
 shader = ExtResource("2_shader")
-shader_parameter/scanline_count = 320.0
+shader_parameter/night_vision_enabled = true
+shader_parameter/light_amplification = 2.6
+shader_parameter/contrast_gamma = 0.72
+shader_parameter/edge_sharpness = 0.35
+shader_parameter/grain_intensity = 0.06
+shader_parameter/nv_shadow_tint = Color(0.015, 0.055, 0.025, 1)
+shader_parameter/nv_mid_tint = Color(0.14, 0.88, 0.26, 1)
+shader_parameter/nv_highlight_tint = Color(0.85, 1, 0.88, 1)
+shader_parameter/scanline_count = 360.0
 shader_parameter/scanline_intensity = 0.16
-shader_parameter/vignette_intensity = 0.5
+shader_parameter/vignette_intensity = 0.55
 shader_parameter/osd_bar_opacity = 0.35
 
 [node name="CCTVOverlay" type="CanvasLayer" unique_id=1041679977 node_paths=PackedStringArray("ChannelLabel", "RecDot", "RecText", "TimestampLabel", "ControlsLabel", "StatusLabel", "ExitLabel", "ScanlinesRect")]

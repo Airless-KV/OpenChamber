@@ -10,6 +10,8 @@
 // - Oct 30, 2026 | air : Integrated SaveManager to persist breach survival stats and lifetime attempts
 // - Oct 31, 2026 | air : Replaced redundant PCM audio synthesis with AudioManager.Sfx
 // - Nov 07, 2026 | air : Released mouse cursor, paused gameplay tree, added MainMenuButton and ESC shortcut
+// - Nov 14, 2026 | air : Updated jumpscare texture to high-contrast analog horror face asset
+// - Nov 14, 2026 | air : Implemented full-screen edge-to-edge jumpscare scaling, centered pivot lunge, and F11 fullscreen toggle
 // =========================================================================================
 using Godot;
 using System;
@@ -20,6 +22,7 @@ public partial class JumpScareScreen : CanvasLayer
 	[Export] public Control JumpscareContainer;
 	[Export] public TextureRect MonsterImage;
 	[Export] public ColorRect RedFlashRect;
+	[Export] public Control DefeatPanel;
 	[Export] public Label TitleLabel;
 	[Export] public Label ReasonLabel;
 	[Export] public Label StatsLabel;
@@ -55,6 +58,16 @@ public partial class JumpScareScreen : CanvasLayer
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
+		if (@event is InputEventKey { Pressed: true, Echo: false } keyEvent)
+		{
+			if (keyEvent.Keycode == Key.F11 || (keyEvent.Keycode == Key.Enter && keyEvent.AltPressed))
+			{
+				ToggleFullscreen();
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+		}
+
 		if (!Visible) return;
 
 		if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
@@ -63,6 +76,19 @@ public partial class JumpScareScreen : CanvasLayer
 			Input.MouseMode = Input.MouseModeEnum.Visible;
 			GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn");
 			GetViewport().SetInputAsHandled();
+		}
+	}
+
+	public static void ToggleFullscreen()
+	{
+		var mode = DisplayServer.WindowGetMode();
+		if (mode == DisplayServer.WindowMode.Fullscreen || mode == DisplayServer.WindowMode.ExclusiveFullscreen)
+		{
+			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+		}
+		else
+		{
+			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
 		}
 	}
 
@@ -100,10 +126,21 @@ public partial class JumpScareScreen : CanvasLayer
 				.TweenProperty(RedFlashRect, "color:a", 0.35f, 0.8f);
 		}
 
+		if (DefeatPanel != null)
+		{
+			DefeatPanel.Modulate = new Color(1, 1, 1, 0);
+			CreateTween().SetPauseMode(Tween.TweenPauseMode.Process)
+				.TweenProperty(DefeatPanel, "modulate:a", 1.0f, 0.35f)
+				.SetDelay(0.2f);
+		}
+
 		if (MonsterImage != null)
 		{
-			MonsterImage.Scale = new Vector2(0.3f, 0.3f);
-			MonsterImage.PivotOffset = MonsterImage.Size * 0.5f;
+			MonsterImage.Scale = new Vector2(0.35f, 0.35f);
+			Vector2 center = MonsterImage.Size.X > 0 && MonsterImage.Size.Y > 0
+				? MonsterImage.Size * 0.5f
+				: GetViewport().GetVisibleRect().Size * 0.5f;
+			MonsterImage.PivotOffset = center;
 
 			Tween tw = CreateTween().SetPauseMode(Tween.TweenPauseMode.Process);
 			tw.TweenProperty(MonsterImage, "scale", new Vector2(1.15f, 1.15f), 0.25f).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);

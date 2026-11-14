@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://farm_boundary_zone"]
+
+[ext_resource type="Script" uid="uid://bmyp5l0oiuw4n" path="res://scripts/environment/FarmBoundaryZone.cs" id="1_fbz"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_red_eye"]
+resource_local_to_scene = true
+albedo_color = Color(1, 0.05, 0.05, 1)
+emission_enabled = true
+emission = Color(1, 0.05, 0.05, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_distant_eye"]
+radius = 0.18
+height = 0.36
+
+[node name="FarmBoundaryZone" type="Node3D" node_paths=PackedStringArray("StalkerEyesRoot", "LeftEyeMesh", "RightEyeMesh", "LeftEyeLight", "RightEyeLight", "EyeGlowOmni")]
+script = ExtResource("1_fbz")
+StalkerEyesRoot = NodePath("StalkerEyes")
+LeftEyeMesh = NodePath("StalkerEyes/LeftEye")
+RightEyeMesh = NodePath("StalkerEyes/RightEye")
+LeftEyeLight = NodePath("StalkerEyes/LeftSpot")
+RightEyeLight = NodePath("StalkerEyes/RightSpot")
+EyeGlowOmni = NodePath("StalkerEyes/EyeGlowOmni")
+
+[node name="StalkerEyes" type="Node3D" parent="."]
+visible = false
+
+[node name="LeftEye" type="MeshInstance3D" parent="StalkerEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0, 0)
+material_override = SubResource("StandardMaterial3D_red_eye")
+mesh = SubResource("SphereMesh_distant_eye")
+
+[node name="RightEye" type="MeshInstance3D" parent="StalkerEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0, 0)
+material_override = SubResource("StandardMaterial3D_red_eye")
+mesh = SubResource("SphereMesh_distant_eye")
+
+[node name="LeftSpot" type="SpotLight3D" parent="StalkerEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0, 0)
+light_color = Color(1, 0.08, 0.08, 1)
+light_energy = 0.0
+spot_range = 30.0
+spot_attenuation = 0.8
+spot_angle = 45.0
+
+[node name="RightSpot" type="SpotLight3D" parent="StalkerEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0, 0)
+light_color = Color(1, 0.08, 0.08, 1)
+light_energy = 0.0
+spot_range = 30.0
+spot_attenuation = 0.8
+spot_angle = 45.0
+
+[node name="EyeGlowOmni" type="OmniLight3D" parent="StalkerEyes"]
+light_color = Color(1, 0.05, 0.05, 1)
+light_energy = 0.0
+omni_range = 8.0
+omni_attenuation = 1.0

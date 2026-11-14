@@ -18,7 +18,7 @@ shape = SubResource("BoxShape3D_cow")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
-billboard = 1
+billboard = 2
 shaded = true
 alpha_cut = 1
 texture_filter = 0

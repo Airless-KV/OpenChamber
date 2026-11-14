@@ -1,11 +1,12 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Nov 2026
-// Responsibilities: - Interactive vertical ladder for treehouse entry and descent
+// Responsibilities: - Interactive vertical knot ladder for shed entry and descent
 //                   - Two-way climb transitions between ground level and elevated platform
 //                   - Context-sensitive prompt display based on player position
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 11, 2026 | air : Implemented two-way ladder climbing between ground and treehouse
+// - Nov 14, 2026 | air : Updated prompts and responsibilities for knotted rope ladder
 // =========================================================================================
 using Godot;
 
@@ -30,11 +31,11 @@ public partial class InteractableLadder : InteractableBase
 			float distHouse = player.GlobalPosition.DistanceSquaredTo(top);
 			if (distGround < distHouse)
 			{
-				return "Press [E] to Climb Up into Treehouse";
+				return "Press [E] to Climb Up Knot Ladder";
 			}
-			return "Press [E] to Climb Down to Ground";
+			return "Press [E] to Climb Down Knot Ladder";
 		}
-		return "Press [E] to Use Ladder";
+		return "Press [E] to Use Knot Ladder";
 	}
 
 	protected override void OnInteract(PlayerController player)

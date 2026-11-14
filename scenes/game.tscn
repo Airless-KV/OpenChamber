@@ -4,20 +4,21 @@
 [ext_resource type="Script" uid="uid://56uti3x0b7e5" path="res://scripts/camera/CameraPivot.cs" id="2_camerapivot"]
 [ext_resource type="Script" uid="uid://8u705w2hsmg2" path="res://scripts/security/BreachManager.cs" id="3_breach"]
 [ext_resource type="PackedScene" uid="uid://d4far8lqhyjx7" path="res://scenes/farm_plot.tscn" id="4_farm"]
-[ext_resource type="PackedScene" path="res://scenes/security/cctv_rig.tscn" id="5_cctv"]
+[ext_resource type="PackedScene" uid="uid://buppacoat8nt" path="res://scenes/security/cctv_rig.tscn" id="5_cctv"]
 [ext_resource type="PackedScene" uid="uid://dht0npv3gkdtm" path="res://scenes/house.tscn" id="6_house"]
 [ext_resource type="PackedScene" uid="uid://c32ge0cn8uw2m" path="res://scenes/player.tscn" id="7_player"]
 [ext_resource type="PackedScene" uid="uid://66su1fg3yq5o" path="res://scenes/hud.tscn" id="8_hud"]
 [ext_resource type="PackedScene" uid="uid://bwoxifln5d5re" path="res://scenes/ui/jumpscare_screen.tscn" id="9_jumpscare"]
 [ext_resource type="PackedScene" uid="uid://byopg1iqtcd6q" path="res://scenes/ui/victory_screen.tscn" id="10_victory"]
 [ext_resource type="Script" uid="uid://23mroof4squl" path="res://scripts/environment/AtmosphereManager.cs" id="11_atmosphere"]
-[ext_resource type="PackedScene" path="res://scenes/security/ani_ani_monster.tscn" id="13_anianimonster"]
+[ext_resource type="PackedScene" uid="uid://cqbhu3r5kl77e" path="res://scenes/security/ani_ani_monster.tscn" id="13_anianimonster"]
 [ext_resource type="PackedScene" uid="uid://dpjht3t8bvxg1" path="res://scenes/security/cctv_overlay.tscn" id="14_cctvoverlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="15_pausemenu"]
 [ext_resource type="PackedScene" path="res://scenes/security/crop_devourer.tscn" id="16_cropdevourer"]
 [ext_resource type="PackedScene" uid="uid://cow001" path="res://scenes/environment/spooky_cow.tscn" id="17_cow"]
 [ext_resource type="PackedScene" uid="uid://sheep001" path="res://scenes/environment/spooky_sheep.tscn" id="18_sheep"]
 [ext_resource type="PackedScene" uid="uid://d3epk37vmo5n5" path="res://scenes/environment/world_foliage.tscn" id="19_foliage"]
+[ext_resource type="PackedScene" path="res://scenes/environment/farm_boundary_zone.tscn" id="20_farmboundary"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
 sky_top_color = Color(0.35, 0.62, 0.95, 1)
@@ -77,7 +78,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [node name="AniAniMonster" parent="." unique_id=1984218731 instance=ExtResource("13_anianimonster")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6408641, 0.8125975, -3.6897805)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.25, -3.75)
 
 [node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("MonsterNode")]
 script = ExtResource("3_breach")
@@ -92,12 +93,12 @@ Target = NodePath("../Player")
 current = true
 
 [node name="FarmPlot" parent="." unique_id=105765636 instance=ExtResource("4_farm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.024261951, 0.12504077, -0.043389797)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010215282, 0.16609073, -0.04725027)
 
 [node name="NighttCamera" parent="." unique_id=1041632257 instance=ExtResource("5_cctv")]
 
 [node name="HouseInterior" parent="." unique_id=1018571243 instance=ExtResource("6_house")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 3.1323655, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 4.61005, 0)
 
 [node name="Player" parent="." unique_id=36189929 instance=ExtResource("7_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.560114, 1.5545688, 0)
@@ -130,9 +131,18 @@ transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 
 transform = Transform3D(-0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, -0.866025, 0, 1.25, 12)
 
 [node name="WorldFoliage" parent="." unique_id=1847192830 instance=ExtResource("19_foliage")]
+FarmBoundsMin = Vector2(-25.66068, -24.01839)
+FarmBoundsMax = Vector2(22.28932, 23.93161)
+FarmCenter = Vector3(-1.6856804, 0.604, -0.043390274)
 OuterTreeCount = 3000
 MidTreeCount = 500
 BushCount = 350
 FloraCount = 350
 RockCount = 200
 PropCount = 60
+
+[node name="FarmBoundaryZone" parent="." unique_id=2047182936 node_paths=PackedStringArray("PlayerNode", "CameraPivotNode", "AtmosphereNode", "BreachManagerNode") instance=ExtResource("20_farmboundary")]
+PlayerNode = NodePath("../Player")
+CameraPivotNode = NodePath("../CameraPivot")
+AtmosphereNode = NodePath("../AtmosphereManager")
+BreachManagerNode = NodePath("../BreachManager")

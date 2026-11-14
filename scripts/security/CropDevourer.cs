@@ -11,6 +11,7 @@
 // - Nov 06, 2026 | air : Implemented persistent night loitering along garden perimeter and CCTV presence
 // - Nov 06, 2026 | air : Scaled model by 1.6x, added close perimeter waypoints (6-8m), enhanced amber glow, and continuous fence patrolling
 // - Nov 07, 2026 | air : Added AutoHideOnReady export and standalone preview support
+// - Nov 14, 2026 | air : Added Tween lifecycle protection and guard against post-deactivation loitering callbacks
 // =========================================================================================
 using Godot;
 using System;
@@ -46,6 +47,7 @@ public partial class CropDevourer : Node3D
 	private double _animTime;
 	private readonly Random _rng = new();
 	private int _currentLoiterIndex;
+	private Tween _moveTween;
 
 	private readonly Vector3[] _loiterWaypoints =
 	{
@@ -244,8 +246,9 @@ public partial class CropDevourer : Node3D
 			// No crops planted to eat; pace along the perimeter fence visibly
 			_currentLoiterIndex = (_currentLoiterIndex + 1) % _loiterWaypoints.Length;
 			Vector3 nextWp = _loiterWaypoints[_currentLoiterIndex];
-			Tween tw = CreateTween();
-			tw.TweenProperty(this, "global_position", nextWp, 3.5f)
+			if (_moveTween != null && _moveTween.IsValid()) _moveTween.Kill();
+			_moveTween = CreateTween();
+			_moveTween.TweenProperty(this, "global_position", nextWp, 3.5f)
 				.SetTrans(Tween.TransitionType.Quad)
 				.SetEase(Tween.EaseType.InOut);
 			LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
@@ -308,10 +311,12 @@ public partial class CropDevourer : Node3D
 		_currentLoiterIndex = _rng.Next(0, _loiterWaypoints.Length);
 		Vector3 fleeTarget = _loiterWaypoints[_currentLoiterIndex];
 
-		Tween tw = CreateTween();
-		tw.TweenProperty(this, "global_position", fleeTarget, 1.2f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
-		tw.Chain().TweenCallback(Callable.From(() =>
+		if (_moveTween != null && _moveTween.IsValid()) _moveTween.Kill();
+		_moveTween = CreateTween();
+		_moveTween.TweenProperty(this, "global_position", fleeTarget, 1.2f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		_moveTween.Chain().TweenCallback(Callable.From(() =>
 		{
+			if (CurrentState == State.Inactive) return;
 			CurrentState = State.Loitering;
 			TargetCell = null;
 			_timer = SpawnInterval;
@@ -322,6 +327,9 @@ public partial class CropDevourer : Node3D
 
 	private void Deactivate()
 	{
+		if (_moveTween != null && _moveTween.IsValid())
+			_moveTween.Kill();
+
 		Visible = false;
 		Scale = Vector3.One;
 		CurrentState = State.Inactive;

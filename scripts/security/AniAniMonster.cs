@@ -16,6 +16,9 @@
 // - Nov 06, 2026 | air : Added callback-driven 12m woods retreat sprint and tween protection
 // - Nov 10, 2026 | air : Deactivate on ready and suppress daytime lurking to prevent daytime visibility
 // - Nov 11, 2026 | air : Scaled imminent breach stage coordinates for elevated treehouse windows
+// - Nov 13, 2026 | air : Preserved scene-configured BaseScale across stage/retreat tweens and aligned imminent stage Y with window frames
+// - Nov 13, 2026 | air : Enlarged monster proportions for elevated treehouse and grounded all stage positions at Y=1.25
+// - Nov 14, 2026 | air : Replaced sprint/scale morph with CRT camera glitch burst and instant disappearance
 // =========================================================================================
 using Godot;
 using System;
@@ -37,13 +40,14 @@ public partial class AniAniMonster : Node3D
 	private double _animTime;
 	private readonly Random _rng = new();
 	private float _nextTwitchTime;
+	private Vector3 _baseScale = Vector3.One;
 
 	private readonly Vector3[,] _stagePositions =
 	{
-		{ new(-1.66f, -100f, 0), new(-1.66f, 0, -28f), new(-1.66f, 0, -14f), new(-1.66f, 0, -4.2f) },
-		{ new(-1.66f, -100f, 0), new(26f, 0, 0), new(13f, 0, 0), new(2.2f, 0, 0) },
-		{ new(-1.66f, -100f, 0), new(-1.66f, 0, 28f), new(-1.66f, 0, 14f), new(-1.66f, 0, 4.2f) },
-		{ new(-1.66f, -100f, 0), new(-28f, 0, 0), new(-14f, 0, 0), new(-5.4f, 0, 0) }
+		{ new(-1.66f, -100f, 0), new(-1.66f, 1.25f, -28f), new(-1.66f, 1.25f, -14f), new(-1.66f, 1.25f, -3.75f) },
+		{ new(-1.66f, -100f, 0), new(26f, 1.25f, 0),       new(13f, 1.25f, 0),        new(2.09f, 1.25f, 0) },
+		{ new(-1.66f, -100f, 0), new(-1.66f, 1.25f, 28f),  new(-1.66f, 1.25f, 14f),  new(-1.66f, 1.25f, 3.75f) },
+		{ new(-1.66f, -100f, 0), new(-28f, 1.25f, 0),      new(-14f, 1.25f, 0),       new(-5.41f, 1.25f, 0) }
 	};
 
 	private readonly float[] _directionYaws = { 180f, -90f, 0f, 90f };
@@ -51,16 +55,17 @@ public partial class AniAniMonster : Node3D
 	// Peripheral lurking vantage points in the woods and ridges outside cardinal entrances
 	private readonly (Vector3 pos, float yaw)[] _lurkingVantages =
 	{
-		(new Vector3(18f, 0, -20f), -135f),   // North-East Tree Line (CAM 1 & 2)
-		(new Vector3(18f, 0, 20f), -45f),     // South-East Ridge (CAM 2 & 3)
-		(new Vector3(-20f, 0, 20f), 45f),     // South-West Hill (CAM 3 & 4)
-		(new Vector3(-20f, 0, -20f), 135f),   // North-West Thicket (CAM 4 & 1)
-		(new Vector3(-1.66f, 0, -32f), 180f), // Deep North Woods (CAM 1 background)
-		(new Vector3(-1.66f, 0, 32f), 0f)     // Deep South Woods (CAM 3 background)
+		(new Vector3(18f, 1.25f, -20f), -135f),   // North-East Tree Line (CAM 1 & 2)
+		(new Vector3(18f, 1.25f, 20f), -45f),     // South-East Ridge (CAM 2 & 3)
+		(new Vector3(-20f, 1.25f, 20f), 45f),     // South-West Hill (CAM 3 & 4)
+		(new Vector3(-20f, 1.25f, -20f), 135f),   // North-West Thicket (CAM 4 & 1)
+		(new Vector3(-1.66f, 1.25f, -32f), 180f), // Deep North Woods (CAM 1 background)
+		(new Vector3(-1.66f, 1.25f, 32f), 0f)     // Deep South Woods (CAM 3 background)
 	};
 
 	public override void _Ready()
 	{
+		_baseScale = Scale;
 		InitVisuals();
 		if (AutoHideOnReady) Deactivate();
 		else { Visible = true; CurrentStage = 3; }
@@ -162,11 +167,26 @@ public partial class AniAniMonster : Node3D
 
 		IsLurking = false;
 		Visible = true;
-		GlobalPosition = _stagePositions[CurrentDirection, CurrentStage];
-		RotationDegrees = new Vector3(0, _directionYaws[CurrentDirection], 0);
+		Scale = _baseScale;
 
-		Scale = Vector3.One * 0.85f;
-		CreateTween().TweenProperty(this, "scale", Vector3.One, 0.20f).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+		// Mask stage shift behind an analog static blip if player is watching this feed
+		var cctv = GetTree().Root.FindChild("CCTVOverlay", true, false) as CCTVOverlay;
+		var nightCam = GetTree().Root.FindChild("NighttCamera", true, false) as NighttCamera;
+		bool isWatchingFeed = cctv != null && cctv.Visible && nightCam != null && nightCam.IsNightMode && nightCam.CurrentNightIndex == CurrentDirection;
+
+		if (isWatchingFeed)
+		{
+			cctv.TriggerCameraGlitch(0.24f, onPeak: () =>
+			{
+				GlobalPosition = _stagePositions[CurrentDirection, CurrentStage];
+				RotationDegrees = new Vector3(0, _directionYaws[CurrentDirection], 0);
+			});
+		}
+		else
+		{
+			GlobalPosition = _stagePositions[CurrentDirection, CurrentStage];
+			RotationDegrees = new Vector3(0, _directionYaws[CurrentDirection], 0);
+		}
 
 		if (_eyeLight != null)
 		{
@@ -175,7 +195,9 @@ public partial class AniAniMonster : Node3D
 		}
 	}
 
-	public void PlayRepelEffect(Action onComplete = null)
+	public void PlayRepelEffect() => PlayRepelEffect(null);
+
+	public void PlayRepelEffect(Action onComplete)
 	{
 		CurrentStage = 0;
 		IsLurking = false;
@@ -189,24 +211,24 @@ public partial class AniAniMonster : Node3D
 		if (_retreatTween != null && _retreatTween.IsValid())
 			_retreatTween.Kill();
 
-		// Visibly sprint 12m away from cabin back into the dark tree line
-		Vector3 retreatDir = -GlobalTransform.Basis.Z;
-		Vector3 targetPos = GlobalPosition + retreatDir * 12.0f;
+		Scale = _baseScale;
 
-		_retreatTween = CreateTween();
-		_retreatTween.SetParallel(true);
-		_retreatTween.TweenProperty(this, "global_position", targetPos, 0.9f)
-			.SetTrans(Tween.TransitionType.Quad)
-			.SetEase(Tween.EaseType.In);
-		_retreatTween.TweenProperty(this, "scale", Vector3.One * 0.4f, 0.9f);
-
-		_retreatTween.Chain().TweenCallback(Callable.From(() =>
+		var overlay = GetTree().Root.FindChild("CCTVOverlay", true, false) as CCTVOverlay;
+		if (overlay != null && overlay.Visible)
 		{
-			Scale = Vector3.One;
-			if (Visible)
-				SetLurking(_rng.Next(0, _lurkingVantages.Length));
+			// Violent CRT camera glitch burst: Ani-Ani vanishes at peak static snow!
+			overlay.TriggerCameraGlitch(0.65f, onPeak: () =>
+			{
+				Visible = false;
+				onComplete?.Invoke();
+			});
+		}
+		else
+		{
+			// Direct vanish when not on CCTV
+			Visible = false;
 			onComplete?.Invoke();
-		}));
+		}
 	}
 
 	public void Deactivate()

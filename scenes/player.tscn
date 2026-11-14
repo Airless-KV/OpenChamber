@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dr8q7vsxgdaht" path="res://scripts/player/PlayerController.cs" id="1_player"]
 [ext_resource type="Script" uid="uid://bexbn6tydpu82" path="res://scripts/interaction/InteractionRaycaster.cs" id="2_raycaster"]
+[ext_resource type="Script" uid="uid://m91ka83tq09w7" path="res://scripts/player/CarriedInventory.cs" id="3_inventory"]
+[ext_resource type="Script" uid="uid://b7v2y9kx01pr5" path="res://scripts/ui/CarriedInventoryUI.cs" id="4_inventory_ui"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -59,3 +61,11 @@ mesh = SubResource("BoxMesh_eyes")
 [node name="InteractionRaycaster" type="Node3D" parent="." unique_id=423450345 node_paths=PackedStringArray("Player")]
 script = ExtResource("2_raycaster")
 Player = NodePath("..")
+
+[node name="CarriedInventory" type="Node" parent="." unique_id=748291034 node_paths=PackedStringArray("Player")]
+script = ExtResource("3_inventory")
+Player = NodePath("..")
+
+[node name="CarriedInventoryUI" type="CanvasLayer" parent="." unique_id=982341209 node_paths=PackedStringArray("Inventory")]
+script = ExtResource("4_inventory_ui")
+Inventory = NodePath("../CarriedInventory")

@@ -37,7 +37,7 @@ public partial class GameManager : Node
 
 	// Daytime and nighttime durations in seconds, from Day 1 to Day 7.
 	private readonly float[] DayDurations =
-		{ 30, 300, 240, 240, 180, 180, 120 };
+		{ 120, 300, 240, 240, 180, 180, 120 };
 
 	private readonly float[] NightDurations =
 		{ 180, 180, 240, 240, 300, 300, 600 };

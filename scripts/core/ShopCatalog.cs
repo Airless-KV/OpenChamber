@@ -7,6 +7,8 @@
 // - Oct 31, 2026 | air : Created ShopCatalog with Plank, Barrier, Axe, and Seed definitions
 // - Nov 10, 2026 | air : Updated plank description for bare cabin opening fortification
 // - Nov 11, 2026 | air : Removed unneeded Barrier and Axe items from active shop catalog
+// - Nov 13, 2026 | air : Added Car Battery item definition to shop catalog
+// - Nov 14, 2026 | air : Added Rusted Crowbar item definition to shop catalog
 // =========================================================================================
 using System.Collections.Generic;
 
@@ -24,11 +26,15 @@ public static class ShopCatalog
 	public const string BarrierId = "barrier";
 	public const string AxeId = "axe";
 	public const string SeedId = "seed";
+	public const string BatteryId = "battery";
+	public const string CrowbarId = "crowbar";
 
 	private static readonly Dictionary<string, ShopItem> _items = new()
 	{
 		{ PlankId, new ShopItem { Id = PlankId, DisplayName = "Wooden Plank", Price = 2, Description = "Fortify bare cabin openings against night breaches." } },
-		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 1, Description = "Plantable seed to cultivate valuable flowers." } }
+		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 1, Description = "Plantable seed to cultivate valuable flowers." } },
+		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 5, Description = "Powers cabin halogen floodlights to blind night monsters." } },
+		{ CrowbarId, new ShopItem { Id = CrowbarId, DisplayName = "Rusted Crowbar", Price = 4, Description = "Instantly pries off all barricade planks from a window or door." } }
 	};
 
 	public static ShopItem Get(string id)

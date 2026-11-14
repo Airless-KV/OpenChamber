@@ -10,6 +10,9 @@
 // - Nov 06, 2026 | air : Added TryConsumeLevel1Seed, AddSeeds, starter seeds allotment, and defense usage methods
 // - Nov 06, 2026 | air : Enabled infinite wooden planks mode for defense and barricade testing
 // - Nov 11, 2026 | air : Simplified TryBuyItem following barrier and axe removal
+// - Nov 13, 2026 | air : Integrated 3D entity item spawning and carried inventory synchronization on purchase
+// - Nov 13, 2026 | air : Added Car Battery purchase handling and 3D spawning
+// - Nov 14, 2026 | air : Removed infinite planks; added Rusted Crowbar shop purchasing and real-count tracking
 // =========================================================================================
 using Godot;
 
@@ -18,9 +21,11 @@ public partial class GameManager
 	[Signal]
 	public delegate void InventoryChangedEventHandler();
 
-	public int Planks { get; private set; } = 999;
+	public int Planks { get; private set; } = 0;
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
+
+	private int _lastObservedSeeds = -1;
 
 	public override void _EnterTree()
 	{
@@ -29,13 +34,45 @@ public partial class GameManager
 		{
 			Level1Seeds = 3;
 		}
-		Planks = 999;
+		_lastObservedSeeds = Level1Seeds;
+
+		SeedsChanged += OnSeedsChangedInventorySync;
+	}
+
+	private void OnSeedsChangedInventorySync(int totalSeeds)
+	{
+		if (_lastObservedSeeds >= 0 && totalSeeds > _lastObservedSeeds)
+		{
+			int diff = totalSeeds - _lastObservedSeeds;
+			for (int i = 0; i < diff; i++)
+			{
+				SpawnOrAddPurchasedItem(ItemType.Seed);
+			}
+		}
+		_lastObservedSeeds = totalSeeds;
+	}
+
+	public void SpawnOrAddPurchasedItem(ItemType type, int batteryHealth = 100)
+	{
+		var player = GetTree()?.GetFirstNodeInGroup("Player") as PlayerController;
+		var inv = player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+
+		if (inv != null && inv.AddItem(type, 1, batteryHealth))
+		{
+			return;
+		}
+
+		// Inventory full: spawn physical 3D entity near player / shop
+		Node sceneRoot = GetTree()?.CurrentScene ?? (Node)this;
+		Vector3 dropPos = player != null ? player.GlobalPosition + new Vector3(0.6f, 0.3f, 0.6f) : new Vector3(0, 1.5f, 0);
+		WorldItem.Spawn(sceneRoot, dropPos, type, 1, batteryHealth);
 	}
 
 	public bool TryConsumeLevel1Seed()
 	{
 		if (Level1Seeds <= 0) return false;
 		Level1Seeds--;
+		_lastObservedSeeds = Level1Seeds;
 		EmitSignal(SignalName.SeedsChanged, Level1Seeds);
 		return true;
 	}
@@ -43,20 +80,21 @@ public partial class GameManager
 	public void AddSeeds(int amount)
 	{
 		Level1Seeds += amount;
+		_lastObservedSeeds = Level1Seeds;
 		EmitSignal(SignalName.SeedsChanged, Level1Seeds);
 	}
 
 	public bool TryUsePlank()
 	{
-		// Infinite planks mode for testing
-		Planks = 999;
+		if (Planks <= 0) return false;
+		Planks--;
 		EmitSignal(SignalName.InventoryChanged);
 		return true;
 	}
 
 	public void AddPlanks(int amount)
 	{
-		Planks = 999;
+		Planks += amount;
 		EmitSignal(SignalName.InventoryChanged);
 	}
 
@@ -87,6 +125,16 @@ public partial class GameManager
 		{
 			case ShopCatalog.PlankId:
 				Planks++;
+				SpawnOrAddPurchasedItem(ItemType.Plank);
+				break;
+			case ShopCatalog.SeedId:
+				SpawnOrAddPurchasedItem(ItemType.Seed);
+				break;
+			case ShopCatalog.BatteryId:
+				SpawnOrAddPurchasedItem(ItemType.CarBattery, 100);
+				break;
+			case ShopCatalog.CrowbarId:
+				SpawnOrAddPurchasedItem(ItemType.Crowbar);
 				break;
 		}
 

@@ -10,6 +10,8 @@
 // - Nov 06, 2026 | air : Added directional aiming, Ani-Ani repel check, and interior stand support
 // - Nov 06, 2026 | air : Gated floodlight beam on unbarricaded opening (0 planks) requiring player tactical trade-off
 // - Nov 10, 2026 | air : Updated prompt to Left Click to fire and Right Click to clear planks
+// - Nov 13, 2026 | air : Gated spotlights on treehouse Car Battery power and integrated 25% health drain per activation
+// - Nov 14, 2026 | air : Synchronized Direction with RequiredEntrance.AttackDirection in _Ready
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -39,6 +41,11 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		AddToGroup("Floodlights");
 		_hud ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
 		if (ExteriorFloodlight != null) ExteriorFloodlight.Visible = false;
+
+		if (RequiredEntrance != null)
+		{
+			Direction = RequiredEntrance.AttackDirection;
+		}
 	}
 
 	public override void _Process(double delta)
@@ -65,10 +72,24 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 			?? GetTree().GetNodesInGroup("Lockables").OfType<LockableOpening>().FirstOrDefault(o => o.Entrance == RequiredEntrance);
 	}
 
+	private InteractableBatteryStation GetBatteryStation()
+	{
+		return InteractableBatteryStation.Instance 
+			?? GetTree()?.GetFirstNodeInGroup("BatteryStation") as InteractableBatteryStation
+			?? GetTree()?.Root.FindChild("BatteryStation", true, false) as InteractableBatteryStation;
+	}
+
 	public override string GetPrompt()
 	{
+		var station = GetBatteryStation();
+		if (station == null || !station.HasBattery)
+			return "[!] NO POWER! Insert Car Battery at Treehouse Power Station!";
+
+		if (station.BatteryHealth <= 0)
+			return "[!] BATTERY DEAD (0% HP)! Replace battery at Treehouse Power Station!";
+
 		if (IsActive)
-			return $"[Active] Floodlight beam active! ({Mathf.CeilToInt(_activeTimer)}s)";
+			return $"[Active] Floodlight beam active! ({Mathf.CeilToInt(_activeTimer)}s) [Battery: {station.BatteryHealth}%]";
 
 		if (IsOnCooldown)
 			return $"[Cooldown] Recharging floodlight capacitor ({Mathf.CeilToInt(_cooldownTimer)}s)...";
@@ -80,12 +101,23 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		if (lockable != null && lockable.PlanksPlaced > 0)
 			return $"[!] {RequiredEntrance.Name} is BARRICADED ({lockable.PlanksPlaced} planks)! Clear opening (Hold Right Click 3s) to fire beam!";
 
-		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}!";
+		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}! [Battery: {station.BatteryHealth}%]";
 	}
 
 	protected override void OnInteract(PlayerController player)
 	{
 		if (IsActive || IsOnCooldown) return;
+
+		var station = GetBatteryStation();
+		if (station == null || !station.HasPower)
+		{
+			AudioManager.Sfx("window_rattle", 1f);
+			if (station == null || !station.HasBattery)
+				_hud?.SetInteractionPrompt("[!] NO POWER! Floodlights offline - insert a Car Battery into the Treehouse Power Station!");
+			else
+				_hud?.SetInteractionPrompt("[!] NO POWER! Car Battery is dead (0% HP) - replace it at the Power Station!");
+			return;
+		}
 
 		var lockable = GetOpeningLockable();
 		if (RequiredEntrance != null && !RequiredEntrance.IsOpen)
@@ -107,6 +139,10 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 	{
 		IsActive = true;
 		_activeTimer = ActiveDuration;
+
+		// Consume 25% battery health from treehouse power station
+		var station = GetBatteryStation();
+		station?.ConsumePower(25);
 
 		if (ExteriorFloodlight != null)
 		{

@@ -9,6 +9,7 @@
 // - Oct 30, 2026 | air : Implemented dynamic Day/Night lighting and atmosphere system
 // - Oct 31, 2026 | air : Streamlined atmosphere profiles into encapsulated struct, eliminated
 //                        redundant lerp fields and multi-parameter target resolution
+// - Nov 13, 2026 | air : Added DangerDarkness 3D environment dimming, void sky, and dark fog roll
 // =========================================================================================
 using Godot;
 using System;
@@ -109,6 +110,9 @@ public partial class AtmosphereManager : Node3D
 	[Export] public float TransitionSpeed = 2.5f;
 	[Export] public bool EnableDynamicSunMovement = true;
 
+	[ExportGroup("Danger Zone Overrides")]
+	[Export(PropertyHint.Range, "0.0,1.0,0.01")] public float DangerDarkness { get; set; } = 0.0f;
+
 	private Godot.Environment _environment;
 	private ProceduralSkyMaterial _skyMaterial;
 	private AtmosphereProfile _current;
@@ -169,6 +173,19 @@ public partial class AtmosphereManager : Node3D
 	public override void _Process(double delta)
 	{
 		AtmosphereProfile target = GetTargetProfile();
+
+		if (DangerDarkness > 0.001f)
+		{
+			float d = Mathf.Clamp(DangerDarkness, 0.0f, 1.0f);
+			target.SunEnergy = Mathf.Lerp(target.SunEnergy, 0.0f, d);
+			target.AmbientEnergy = Mathf.Lerp(target.AmbientEnergy, 0.005f, d);
+			target.SkyTop = target.SkyTop.Lerp(new Color(0.01f, 0.01f, 0.02f), d);
+			target.SkyHorizon = target.SkyHorizon.Lerp(new Color(0.01f, 0.01f, 0.02f), d);
+			target.FogDensity = Mathf.Lerp(target.FogDensity, 0.065f, d);
+			target.FogColor = target.FogColor.Lerp(new Color(0.01f, 0.01f, 0.02f), d);
+			target.Saturation = Mathf.Lerp(target.Saturation, 0.25f, d);
+		}
+
 		float lerpFactor = Mathf.Clamp((float)delta * TransitionSpeed, 0.0f, 1.0f);
 		_current = AtmosphereProfile.Lerp(_current, target, lerpFactor);
 		ApplyAtmosphereImmediate();

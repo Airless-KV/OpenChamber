@@ -1,12 +1,13 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Nov 2026
-// Responsibilities: - SQLite database connection management (user://illusion_of_choice.db)
+// Responsibilities: - SQLite database connection management (user://open_chamber.db)
 //                   - Local database schema migration, table initialization, and seeding
 //                   - Local leaderboard queries, rank calculation, and persistent match history
 //                   - Player profile statistics and system settings persistence
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 06, 2026 | air : Created SQLite database layer with local leaderboards and profiles
+// - Nov 14, 2026 | air : Updated database filename to open_chamber.db with automatic migration from illusion_of_choice.db
 // =========================================================================================
 using Godot;
 using Microsoft.Data.Sqlite;
@@ -17,7 +18,8 @@ using System.Text.Json;
 
 public static class DatabaseManager
 {
-	private const string DatabaseRelativePath = "user://illusion_of_choice.db";
+	private const string DatabaseRelativePath = "user://open_chamber.db";
+	private const string LegacyDbPath = "user://illusion_of_choice.db";
 	private const string LegacySavePath = "user://save_data.json";
 	private static readonly object _dbLock = new();
 	private static bool _isInitialized = false;
@@ -38,6 +40,21 @@ public static class DatabaseManager
 			if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
 			{
 				Directory.CreateDirectory(directory);
+			}
+
+			// Seamless migration from legacy database filename if needed
+			string legacyDbFile = ProjectSettings.GlobalizePath(LegacyDbPath);
+			if (File.Exists(legacyDbFile) && !File.Exists(dbFile))
+			{
+				try
+				{
+					File.Copy(legacyDbFile, dbFile, false);
+					GD.Print("[DatabaseManager] Migrated existing save data from illusion_of_choice.db to open_chamber.db");
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DatabaseManager] Failed to copy legacy db: {ex.Message}");
+				}
 			}
 
 			using var conn = new SqliteConnection(GetConnectionString());

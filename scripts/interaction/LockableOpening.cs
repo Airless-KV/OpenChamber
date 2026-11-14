@@ -2,7 +2,7 @@
 // Original Author : rbn (Robin Velasco) - Nov 06, 2026
 // Responsibilities: - Bare opening barricade defense mechanics
 //                   - Wooden plank placement [G] and removal [F] (3s hold)
-//                   - PvZ Lawnmower entrance sacrifice defense (1 HP)
+//                   - Physical 3D plank consumption and ground drop refund
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 06, 2026 | rbn : Implemented bare opening barricade defense mechanics and plank placement/removal
@@ -13,6 +13,9 @@
 // - Nov 10, 2026 | air : Synced AttackDirection with parent InteractableEntrance
 // - Nov 10, 2026 | air : Enabled Left Click hold to place planks and Right Click hold to remove planks
 // - Nov 10, 2026 | air : Routed barricade prompts and hold progress directly to 2D HUDManager
+// - Nov 13, 2026 | air : Decommissioned Lawnmower defense; integrated physical 3D plank consumption & drops
+// - Nov 14, 2026 | air : Added Rusted Crowbar instant barricade dismantle (0s delay) and enforced strict active hand plank holding
+// - Nov 14, 2026 | air : Reduced plank placement duration to 1.5s (from 3.0s) and updated barricade prompts
 // =========================================================================================
 using Godot;
 
@@ -23,17 +26,10 @@ public partial class LockableOpening : Node3D
 	[Export] public float LookDot = 0.7f;
 
 	[ExportGroup("Barricade Timers & Sliders")]
-	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float PlacePlankSeconds = 3.0f;
+	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float PlacePlankSeconds = 1.5f;
 	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float RemovePlankSeconds = 3.0f;
 	[Export] public int MaxPlanks = 3;
 	[Export(PropertyHint.Enum, "North,East,South,West")] public int AttackDirection = 0;
-
-	[ExportGroup("Entrance Health (Lawnmower Defense)")]
-	[Export] public int MaxHealth = 1;
-	public int Health { get; set; } = 1;
-	public bool IsBroken => Health <= 0;
-
-	public enum DefenseResult { PlankAbsorbed, LawnmowerTriggered, FatalBreach }
 
 	[ExportGroup("Plank Placement Offsets")]
 	[Export] public float PlankSide = 1.0f;
@@ -79,14 +75,6 @@ public partial class LockableOpening : Node3D
 		AddToGroup("Lockables");
 		_gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
 		_hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
-
-		if (_gm != null)
-		{
-			_gm.PhaseChanged += (isDay, _) =>
-			{
-				if (isDay) RepairEntrance();
-			};
-		}
 
 		CallDeferred(MethodName.SetupPlanks);
 	}
@@ -183,6 +171,56 @@ public partial class LockableOpening : Node3D
 
 	private void HandleHold(double delta)
 	{
+		var player = GetTree().GetFirstNodeInGroup("Player") as PlayerController;
+		var inv = player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+		bool isHoldingCrowbar = inv != null && inv.HasActiveItem(ItemType.Crowbar);
+		bool isHoldingPlank = inv != null && inv.HasActiveItem(ItemType.Plank);
+
+		// 1. Rusted Crowbar Instant Dismantle Mechanic
+		if (isHoldingCrowbar)
+		{
+			bool isCrowbarClick = Input.IsActionJustPressed("lock_hold") ||
+								  Input.IsActionJustPressed("place_barricade") ||
+								  Input.IsMouseButtonPressed(MouseButton.Right) ||
+								  Input.IsMouseButtonPressed(MouseButton.Left);
+
+			if (PlanksPlaced > 0)
+			{
+				SetStatus($"[RUSTED CROWBAR] Click [LMB / RMB] to Instant Dismantle ({PlanksPlaced}/{MaxPlanks} Planks)");
+				if (isCrowbarClick)
+				{
+					int count = PlanksPlaced;
+					PlanksPlaced = 0;
+
+					Node sceneRoot = GetTree().CurrentScene ?? (Node)this;
+					Vector3 dropPos = GlobalPosition + new Vector3(0, 0.25f, 0);
+					for (int i = 0; i < count; i++)
+					{
+						Vector3 offset = new Vector3((i - (count - 1) * 0.5f) * 0.45f, 0, 0.5f);
+						WorldItem.Spawn(sceneRoot, dropPos + offset, ItemType.Plank);
+					}
+
+					if (_gm != null)
+						_gm.RefundPlanks(count);
+
+					AudioManager.Sfx("door_pound", 1.5f);
+					AudioManager.Sfx("window_rattle", 2f);
+					ShowMessage($"[✓] Crowbar instantly dismantled all {count} barricade planks!");
+					UpdateVisuals();
+					_held = 0f;
+					_placeHeld = 0f;
+					_toggled = true;
+					_placeToggled = true;
+				}
+			}
+			else
+			{
+				SetStatus("[RUSTED CROWBAR] Bare Opening - No planks to dismantle");
+			}
+			return;
+		}
+
+		// 2. Standard Plank Removal (3s hold Right Click)
 		bool isRemovePressed = Input.IsActionPressed("lock_hold") || Input.IsMouseButtonPressed(MouseButton.Right);
 		if (!isRemovePressed)
 		{
@@ -192,11 +230,19 @@ public partial class LockableOpening : Node3D
 			if (_placeHeld <= 0f)
 			{
 				if (PlanksPlaced > 0)
-					SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | Hold Left Click: Add | Hold Right Click: Remove");
-				else if (IsBroken)
-					SetStatus("[BROKEN - 0 HP (LAWNMOWER USED)] | Hold Left Click (3s) to Barricade!");
+				{
+					if (isHoldingPlank)
+						SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | Hold Left Click (1.5s): Place Plank | Hold Right Click (3s): Remove");
+					else
+						SetStatus($"BARRICADED ({PlanksPlaced}/{MaxPlanks}) | Hold Right Click (3s): Remove | (Hold Plank to Add)");
+				}
 				else
-					SetStatus("[BARE OPENING] | Hold Left Click (3s) to Place Plank");
+				{
+					if (isHoldingPlank)
+						SetStatus("[BARE OPENING] | Hold Left Click (1.5s) to Place Plank");
+					else
+						SetStatus("[BARE OPENING] | (Hold a Wooden Plank in hand to barricade)");
+				}
 			}
 			return;
 		}
@@ -206,7 +252,7 @@ public partial class LockableOpening : Node3D
 
 		if (PlanksPlaced == 0)
 		{
-			ShowMessage("Opening is bare - hold Left Click (3s) to place a plank!");
+			ShowMessage("Opening is bare - hold a Wooden Plank and hold Left Click (1.5s) to place!");
 			return;
 		}
 
@@ -221,17 +267,34 @@ public partial class LockableOpening : Node3D
 
 		if (PlanksPlaced > 0)
 		{
+			// Spawn 3D WorldItem Planks on the floor
+			Node sceneRoot = GetTree().CurrentScene ?? (Node)this;
+			Vector3 dropPos = GlobalPosition + new Vector3(0, 0.25f, 0);
+			for (int i = 0; i < PlanksPlaced; i++)
+			{
+				Vector3 offset = new Vector3((i - (PlanksPlaced - 1) * 0.5f) * 0.45f, 0, 0.5f);
+				WorldItem.Spawn(sceneRoot, dropPos + offset, ItemType.Plank);
+			}
+
 			if (_gm != null)
 				_gm.RefundPlanks(PlanksPlaced);
 
 			PlanksPlaced = 0;
 			AudioManager.Sfx("door_thud", -4f);
-			ShowMessage("Planks removed - opening is bare");
+			ShowMessage("Planks removed - wooden planks dropped on the floor");
+			UpdateVisuals();
 		}
 	}
 
 	private void HandleBarricade(double delta)
 	{
+		var player = GetTree().GetFirstNodeInGroup("Player") as PlayerController;
+		var inv = player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+
+		// Crowbar already handled in HandleHold
+		if (inv != null && inv.HasActiveItem(ItemType.Crowbar))
+			return;
+
 		bool isPlacePressed = Input.IsActionPressed("place_barricade") || Input.IsMouseButtonPressed(MouseButton.Left);
 		if (!isPlacePressed)
 		{
@@ -249,6 +312,14 @@ public partial class LockableOpening : Node3D
 			return;
 		}
 
+		// STRICT RULE: Must actively hold a Wooden Plank in hand!
+		if (inv == null || !inv.HasActiveItem(ItemType.Plank))
+		{
+			ShowMessage("Cannot place! Actively hold a Wooden Plank in hand to barricade.");
+			_placeHeld = 0f;
+			return;
+		}
+
 		_placeHeld += (float)delta;
 		int percent = Mathf.Min(100, (int)(_placeHeld / PlacePlankSeconds * 100));
 		SetStatus($"Placing plank... {percent}%");
@@ -259,47 +330,17 @@ public partial class LockableOpening : Node3D
 		_placeToggled = true;
 		_placeHeld = 0f;
 
-		if (_gm != null && _gm.TryUsePlank())
+		if (inv.ConsumeActiveItem())
 		{
 			PlanksPlaced++;
 			AudioManager.Sfx("door_thud", -4f);
 			ShowMessage($"Plank placed ({PlanksPlaced}/{MaxPlanks})");
+			UpdateVisuals();
 		}
 		else
 		{
-			ShowMessage("No planks! Buy at the shop.");
+			ShowMessage("No planks! Carry a Wooden Plank to barricade.");
 		}
-	}
-
-	// Plants vs Zombies Lawnmower defense:
-	public DefenseResult TakeHitAndCheckLawnmower()
-	{
-		if (PlanksPlaced > 0)
-		{
-			TearSinglePlank();
-			return DefenseResult.PlankAbsorbed;
-		}
-
-		if (Health > 0)
-		{
-			// 1 HP Lawnmower consumed! Frame shatters to repel Ani-Ani!
-			Health = 0;
-			AudioManager.Sfx("window_rattle", 4f);
-			AudioManager.Sfx("door_pound", 3f);
-			AudioManager.Sfx("banner_sting");
-			ShowMessage("[!] LAWNMOWER DEFENSE! Frame shattered repelling Ani-Ani! (0 HP - BROKEN!)", 3.0f);
-			UpdateVisuals();
-			return DefenseResult.LawnmowerTriggered;
-		}
-
-		// Already 0 HP and 0 planks: fatal breach!
-		return DefenseResult.FatalBreach;
-	}
-
-	public void RepairEntrance()
-	{
-		Health = MaxHealth;
-		UpdateVisuals();
 	}
 
 	// Tears a single plank sequentially during Ani-Ani's assault

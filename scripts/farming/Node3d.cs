@@ -20,6 +20,9 @@
 // - Nov 10, 2026 | air : Shortened farming raycast range to 7m and restricted indoor hover and planting
 // - Nov 10, 2026 | air : Implemented closed bud seedling stage, dynamic bloom texture swap, and unharvestable closed state
 // - Nov 10, 2026 | air : Restricted flower merging to fully bloomed/mature flowers only, blocking closed buds
+// - Nov 13, 2026 | air : Harvested flowers spawn as physical 3D world entities; planting consumes held 3D seeds
+// - Nov 14, 2026 | air : Removed soil tilling for direct planting and suppressed hover feedback when empty-handed
+// - Nov 14, 2026 | air : Enforced strict active seed holding (HasActiveItem) for planting and removed abstract seed fallback
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -27,7 +30,7 @@ using System.Linq;
 
 public partial class Node3d : Node3D
 {
-	public enum TileState { Empty, Tilled, Planted }
+	public enum TileState { Empty, Planted }
 
 	public readonly record struct FlowerTier(Color Color, int Points, float Scale);
 
@@ -207,11 +210,21 @@ public partial class Node3d : Node3D
 		if (hit.Count > 0 && WorldToGrid((Vector3)hit["position"]) is var cell && IsInsideGrid(cell))
 		{
 			_hoveredCell = cell;
+			var tile = GetTile(cell);
+			bool isPlanted = tile?.State == TileState.Planted;
+			bool isDragging = _heldCell.HasValue;
+			var inv = PlayerNode?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+			bool hasSeed = inv != null && inv.HasActiveItem(ItemType.Seed);
+
+			// Empty-handed over empty soil: suppress hover selector highlight and prompt
+			bool shouldShowSelector = isPlanted || isDragging || hasSeed;
 			if (TileSelector != null)
 			{
-				TileSelector.Visible = true;
-				TileSelector.GlobalPosition = GridToWorld(cell) + new Vector3(0, 0.05f, 0);
+				TileSelector.Visible = shouldShowSelector;
+				if (shouldShowSelector)
+					TileSelector.GlobalPosition = GridToWorld(cell) + new Vector3(0, 0.05f, 0);
 			}
+
 			UpdatePrompt(cell);
 			return;
 		}
@@ -248,25 +261,33 @@ public partial class Node3d : Node3D
 		}
 
 		var state = tile?.State ?? TileState.Empty;
-		if (state == TileState.Empty) SetPrompt("[LMB] Till Soil");
-		else if (state == TileState.Tilled)
-		{
-			int seeds = GameManagerNode?.Level1Seeds ?? 0;
-			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop");
-		}
-		else
+		if (state == TileState.Planted)
 		{
 			int tier = Mathf.Clamp(tile.Tier, 1, 5);
-			int harvestCoin = HarvestCoins[tier - 1];
 
 			if (tile.IsMature)
 			{
-				SetPrompt($"[✓ BLOOMED & READY!] Tier {tier} Flower | [RMB] Harvest (+{harvestCoin} Coins) | [LMB] Drag & Merge");
+				SetPrompt($"[✓ BLOOMED & READY!] Tier {tier} Flower | [RMB] Harvest to 3D Item | [LMB] Drag & Merge");
 			}
 			else
 			{
 				float remaining = Mathf.Max(0f, tile.RequiredGrowthTime - tile.GrowthTimer);
 				SetPrompt($"[Growing closed bud... {Mathf.CeilToInt(remaining)}s] Tier {tier} Flower | [LMB] Move | Needs to bloom before merging & harvesting");
+			}
+		}
+		else
+		{
+			// Empty soil tile
+			var inv = PlayerNode?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+			bool hasSeed = inv != null && inv.HasActiveItem(ItemType.Seed);
+			if (hasSeed)
+			{
+				SetPrompt("[LMB] Plant Tier 1 Flower (Seed ready)");
+			}
+			else
+			{
+				// Empty-handed: no hover prompt feedback!
+				ClearPrompt();
 			}
 		}
 	}
@@ -285,24 +306,16 @@ public partial class Node3d : Node3D
 			_pressTime = Time.GetTicksMsec();
 			_isDragging = true;
 		}
-		else if (tile == null || tile.State == TileState.Empty)
+		else
 		{
-			_tiles[cell] = new Tile { State = TileState.Tilled };
-			int seeds = GameManagerNode?.Level1Seeds ?? 0;
-			SetPrompt(seeds > 0 ? $"[LMB] Plant Tier 1 Flower (Daisy) [{seeds} Seed{(seeds == 1 ? "" : "s")} left]" : "[!] Need Seeds! Buy at Flower Shop");
-		}
-		else if (tile.State == TileState.Tilled)
-		{
-			if (GameManagerNode != null && GameManagerNode.Level1Seeds <= 0)
+			// Direct planting on empty tile: strictly require actively holding a seed in hand
+			var inv = PlayerNode?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+			if (inv != null && inv.HasActiveItem(ItemType.Seed))
 			{
-				SetPrompt("[!] Out of seeds! Buy more at the Flower Shop");
-				return;
-			}
-
-			if (GameManagerNode == null || GameManagerNode.TryConsumeLevel1Seed())
-			{
+				inv.ConsumeActiveItem();
 				PlantCropAt(cell, 1);
 				AudioManager.Sfx("flower_plant");
+				SetPrompt("Planted Tier 1 Flower! Closed bud growing...");
 			}
 		}
 	}
@@ -341,7 +354,7 @@ public partial class Node3d : Node3D
 
 				int newTier = fromTile.Tier + 1;
 				fromTile.Visual?.QueueFree();
-				_tiles[from] = new Tile { State = TileState.Tilled };
+				_tiles.Remove(from);
 
 				targetTile.Visual?.QueueFree();
 				var flower = SpawnFlower(newTier, isBloomed: false);
@@ -381,9 +394,9 @@ public partial class Node3d : Node3D
 		else if (fromTile != null)
 		{
 			_tiles[target] = fromTile;
-			_tiles[from] = new Tile { State = TileState.Tilled };
+			_tiles.Remove(from);
 			if (fromTile.Visual != null) fromTile.Visual.GlobalPosition = GridToWorld(target);
-			SetPrompt($"Moved Tier {fromTile.Tier} flower to {target}.");
+			SetPrompt($"Moved Tier {fromTile.Tier} flower.");
 		}
 		_heldCell = null;
 	}
@@ -510,17 +523,17 @@ public partial class Node3d : Node3D
 				return;
 			}
 
-			int reward = HarvestCoins[tier - 1];
+			// Free crop visual and reset tile to empty
 			tile.Visual?.QueueFree();
-			_tiles[cell] = new Tile { State = TileState.Tilled };
-			GameManagerNode?.AddCoins(reward);
-			AudioManager.Sfx("coin_collect");
-			SetPrompt($"[✓] Harvested Tier {tier} Flower! (+{reward} Coins)");
-		}
-		else if (_tiles.Remove(cell, out var emptyTile))
-		{
-			emptyTile.Visual?.QueueFree();
-			SetPrompt("Cleared soil.");
+			_tiles.Remove(cell);
+
+			// Spawn physical 3D WorldItem on the chessboard tile
+			Vector3 dropPos = GridToWorld(cell) + new Vector3(0, 0.4f, 0);
+			Node sceneRoot = GetTree().CurrentScene ?? (Node)this;
+			WorldItem.Spawn(sceneRoot, dropPos, ItemType.Flower, tier);
+
+			AudioManager.Sfx("flower_merge", -2f);
+			SetPrompt($"[✓] Harvested Tier {tier} Flower! [Space] to Grab & Carry");
 		}
 	}
 

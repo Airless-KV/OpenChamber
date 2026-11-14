@@ -12,6 +12,8 @@
 // - Nov 09, 2026 | air : Converted to concrete Bare Opening Barricade class with door and window removal
 // - Nov 10, 2026 | air : Added AttackDirection export and child LockableOpening synchronization
 // - Nov 10, 2026 | air : Updated prompts to reflect Left Click placement and Right Click removal
+// - Nov 13, 2026 | air : Removed broken state prompt following Lawnmower defense decommissioning
+// - Nov 14, 2026 | air : Updated placement hold prompts to 1.5s
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -58,10 +60,7 @@ public partial class InteractableEntrance : InteractableBase
 			if (lockable.PlanksPlaced > 0)
 				return $"[Barricaded: {lockable.PlanksPlaced}/{lockable.MaxPlanks}] {EntranceTypeName} | Hold Left Click: Add | Hold Right Click: Remove";
 
-			if (lockable.IsBroken)
-				return $"[BROKEN OPENING (0 HP)] {EntranceTypeName} | Hold Left Click (3s) to Barricade";
-
-			return $"[Bare {EntranceTypeName}] Hold Left Click (3s) to Place Plank (1 Plank)";
+			return $"[Bare {EntranceTypeName}] Hold Left Click (1.5s) to Place Plank";
 		}
 
 		return $"[Bare {EntranceTypeName}]";
@@ -77,7 +76,7 @@ public partial class InteractableEntrance : InteractableBase
 		}
 		else
 		{
-			hud?.SetInteractionPrompt($"[Bare {EntranceTypeName}] Opening is unbarricaded. Hold Left Click (3s) to place a wooden plank!");
+			hud?.SetInteractionPrompt($"[Bare {EntranceTypeName}] Opening is unbarricaded. Hold Left Click (1.5s) to place a wooden plank!");
 		}
 	}
 

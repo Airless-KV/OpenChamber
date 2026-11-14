@@ -1,6 +1,6 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Oct 2026
-// Responsibilities: - Persistent SQLite database interface and save manager (user://illusion_of_choice.db)
+// Responsibilities: - Persistent SQLite database interface and save manager (user://open_chamber.db)
 //                   - Player profile statistics tracking (survival, merges, attacks repelled)
 //                   - Local ranked leaderboard standings calculation and formatted table generation
 // -----------------------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 // - Oct 30, 2026 | air : Added AudioSettings persistence for Master, Music, SFX, and display options
 // - Oct 31, 2026 | air : Compacted file I/O, DTO initializers, and leaderboard table formatting
 // - Nov 06, 2026 | air : Migrated persistence backend to local SQLite database with match history and save slots
+// - Nov 14, 2026 | air : Updated database interface documentation for open_chamber.db
 // =========================================================================================
 using Godot;
 using System;

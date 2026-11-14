@@ -18,6 +18,10 @@
 // - Nov 06, 2026 | air : Integrated PvZ Lawnmower 1 HP entrance defense, 3-plank cap, and unified retreat dispatch
 // - Nov 10, 2026 | air : Synchronized initial day phase in _Ready and ensured daytime ResetAttack deactivates monster
 // - Nov 11, 2026 | air : Streamlined breach state machine by removing unneeded outside barrier checks
+// - Nov 13, 2026 | air : Decommissioned Lawnmower defense; immediate breach upon total barricade loss or bare entrance assault
+// - Nov 14, 2026 | air : Slower Ani-Ani plank tearing speed (3.0s interval matching placement) and 3-plank cap
+// - Nov 14, 2026 | air : Implemented 7s CCTV camera stare expulsion during approach and mandatory wooden planks at window
+// - Nov 14, 2026 | air : Extended approach stage durations (15s Distant, 15s Approaching, 30s total) and scaled cooldowns
 // =========================================================================================
 using Godot;
 using System;
@@ -44,20 +48,23 @@ public partial class BreachManager : Node
 	[Export] public AniAniMonster MonsterNode;
 
 	[ExportGroup("Monster Attack Settings")]
-	[Export] public float FirstAttackDelay = 12.0f;
+	[Export] public float FirstAttackDelay = 42.0f;
 	[Export] public float AttackInterval = 25.0f;
 	[Export] public float ReactionWindow = 7.0f;
+	[Export] public float CameraExpelRequiredDuration = 7.0f;
+	[Export] public float DistantStageDuration = 15.0f;
+	[Export] public float ApproachingStageDuration = 15.0f;
 	[Export] public bool EnableOutdoorLoss = true;
 	[Export] public float BarricadeDelay = 6.0f;
 
 	[ExportGroup("Plank Shredding & Siege Settings")]
-	[Export(PropertyHint.Range, "0.3,5.0,0.1")] public float PlankTearInterval = 1.5f;
+	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float PlankTearInterval = 3.0f;
 	[Export(PropertyHint.Range, "1,3,1")] public int MinPlanksToTear = 1;
 	[Export(PropertyHint.Range, "1,3,1")] public int MaxPlanksToTear = 3;
 
 	[ExportGroup("Assault Cooldowns")]
-	[Export(PropertyHint.Range, "5.0,60.0,1.0")] public float MinRetreatCooldown = 15.0f;
-	[Export(PropertyHint.Range, "15.0,180.0,1.0")] public float MaxRetreatCooldown = 75.0f;
+	[Export(PropertyHint.Range, "15.0,90.0,1.0")] public float MinRetreatCooldown = 42.0f;
+	[Export(PropertyHint.Range, "30.0,240.0,1.0")] public float MaxRetreatCooldown = 95.0f;
 
 	public bool IsMonsterAttacking { get; private set; }
 	public AttackDirection CurrentApproachDir { get; private set; }
@@ -65,6 +72,7 @@ public partial class BreachManager : Node
 	public float AttackCountdown { get; private set; }
 
 	private float _nextAttackTimer;
+	private float _cameraSpottedTimer;
 	private bool _isNight;
 	private bool _isTearingPlanks;
 	private float _tearTimer;
@@ -143,7 +151,7 @@ public partial class BreachManager : Node
 					return;
 				}
 
-				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SHREDDING {dirName}! ({lockable.PlanksPlaced} planks left) - Hold [G] (3s) to nail planks!");
+				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SHREDDING {dirName}! ({lockable.PlanksPlaced} planks left) - Hold Left Click (1.5s) to reinforce!");
 
 				if (_tearTimer <= 0f)
 				{
@@ -157,20 +165,10 @@ public partial class BreachManager : Node
 
 					if (lockable.PlanksPlaced <= 0)
 					{
-						// All planks torn! Ani-Ani strikes the entrance itself (1 HP Lawnmower defense)!
+						// All planks torn down: immediate fatal security breach!
 						_isTearingPlanks = false;
-						var result = lockable.TakeHitAndCheckLawnmower();
-
-						if (result == LockableOpening.DefenseResult.LawnmowerTriggered)
-						{
-							TriggerMonsterRetreat($"[!] LAWNMOWER DEFENSE! {dirName} entrance shattered repelling Ani-Ani! (0 HP - VULNERABLE!)");
-							return;
-						}
-						else
-						{
-							TriggerBreach($"SECURITY BREACH! The Ani-Ani tore down barricades and charged through the broken {dirName} entrance!");
-							return;
-						}
+						TriggerBreach($"SECURITY BREACH! The Ani-Ani tore down all barricades and broke through the {dirName} entrance!");
+						return;
 					}
 
 					if (_planksTornSoFar >= _planksQuotaToTear && lockable.PlanksPlaced > 0)
@@ -184,7 +182,7 @@ public partial class BreachManager : Node
 			}
 
 			AttackCountdown -= dt;
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - MONITOR CAM {(int)CurrentApproachDir + 1}!");
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - BARRICADE WITH PLANKS!");
 
 			var currentLockable = GetOpeningForDirection(CurrentApproachDir);
 			if (currentLockable != null && currentLockable.PlanksPlaced > 0)
@@ -201,14 +199,48 @@ public partial class BreachManager : Node
 		}
 
 		_nextAttackTimer -= dt;
-		if (_nextAttackTimer <= 16f && CurrentStage == StalkingStage.Hidden)
+		float totalApproachTime = DistantStageDuration + ApproachingStageDuration;
+		if (_nextAttackTimer <= totalApproachTime && CurrentStage == StalkingStage.Hidden)
 		{
 			CurrentApproachDir = (AttackDirection)_rng.Next(0, 4);
+			_cameraSpottedTimer = 0f;
 			SetStalkingStage(StalkingStage.Distant);
 		}
-		else if (_nextAttackTimer <= 8f && CurrentStage == StalkingStage.Distant)
+		else if (_nextAttackTimer <= ApproachingStageDuration && CurrentStage == StalkingStage.Distant)
 		{
 			SetStalkingStage(StalkingStage.Approaching);
+		}
+
+		// Active CCTV surveillance check during approach (Distant / Approaching)
+		if (CurrentStage is StalkingStage.Distant or StalkingStage.Approaching)
+		{
+			string dirName = CurrentApproachDir.ToString().ToUpper();
+			int camIndex = (int)CurrentApproachDir + 1;
+			bool isPlayerWatching = !IsPlayerNotLooking(CurrentApproachDir);
+
+			if (isPlayerWatching)
+			{
+				_cameraSpottedTimer += dt;
+				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SPOTTED ON CAM {camIndex} ({dirName})! EXPELLING: ({_cameraSpottedTimer:F1}s / {CameraExpelRequiredDuration:F1}s) - KEEP WATCH!");
+
+				if (_cameraSpottedTimer >= CameraExpelRequiredDuration)
+				{
+					_cameraSpottedTimer = 0f;
+					TriggerMonsterRetreat($"[✓] ANI-ANI SPOTTED ON CCTV FOR {CameraExpelRequiredDuration:F1}s! EXPELLED BACK INTO THE WOODS!");
+					return;
+				}
+			}
+			else
+			{
+				if (_cameraSpottedTimer > 0f)
+				{
+					HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! RETURN TO CAM {camIndex} TO EXPEL ({_cameraSpottedTimer:F1}s / {CameraExpelRequiredDuration:F1}s)!");
+				}
+				else
+				{
+					HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! MONITOR CAM {camIndex} FOR {CameraExpelRequiredDuration:F0}s TO EXPEL!");
+				}
+			}
 		}
 
 		if (_nextAttackTimer <= 0f) StartMonsterAttack();
@@ -219,6 +251,7 @@ public partial class BreachManager : Node
 		IsMonsterAttacking = false;
 		_isTearingPlanks = false;
 		_planksTornSoFar = 0;
+		_cameraSpottedTimer = 0f;
 		if (_isNight && MonsterNode != null)
 		{
 			int spot = _rng.Next(0, 6);
@@ -244,6 +277,7 @@ public partial class BreachManager : Node
 	{
 		if (!_isNight || IsMonsterAttacking) return;
 		IsMonsterAttacking = true;
+		_cameraSpottedTimer = 0f;
 
 		SetStalkingStage(StalkingStage.Imminent);
 
@@ -257,46 +291,25 @@ public partial class BreachManager : Node
 			_planksQuotaToTear = _rng.Next(MinPlanksToTear, MaxPlanksToTear + 1);
 			_planksTornSoFar = 0;
 			_tearTimer = PlankTearInterval;
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName}! Shredding barricades ({lockable.PlanksPlaced} planks)! Hold [G] (3s) to reinforce!");
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName}! Shredding barricades ({lockable.PlanksPlaced} planks)! Hold Left Click (1.5s) to reinforce!");
 			EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, PlankTearInterval * _planksQuotaToTear);
 			return;
 		}
 
+		// NO PLANKS AT THE WINDOW: Cannot be countered by camera once at the window!
 		_isTearingPlanks = false;
-		AttackCountdown = ReactionWindow;
-		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, AttackCountdown);
+		TriggerBreach($"SECURITY BREACH! The Ani-Ani reached the unbarricaded {dirName} opening! Bare openings cannot stop it once at the window!");
 	}
 
 	public void ResolveMonsterAttack()
 	{
 		IsMonsterAttacking = false;
 		_isTearingPlanks = false;
+		_cameraSpottedTimer = 0f;
 		string dir = CurrentApproachDir.ToString().ToUpper();
 
-		bool entranceOpen = IsAnyEntranceOpen();
-		bool playerNotLooking = IsPlayerNotLooking(CurrentApproachDir);
-
-		if (!entranceOpen && !playerNotLooking)
-		{
-			// Player actively monitored the CCTV feed! Ani-Ani repelled!
-			TriggerMonsterRetreat($"[✓] ANI-ANI REPELLED FROM {dir} BY CCTV MONITORING!");
-			return;
-		}
-
-		// Bare entrance hit by monster: Lawnmower defense test!
-		var lockable = GetOpeningForDirection(CurrentApproachDir);
-		if (lockable != null)
-		{
-			var result = lockable.TakeHitAndCheckLawnmower();
-			if (result == LockableOpening.DefenseResult.LawnmowerTriggered)
-			{
-				TriggerMonsterRetreat($"[!] LAWNMOWER DEFENSE! {dir} entrance shattered repelling Ani-Ani! (0 HP - VULNERABLE!)");
-				return;
-			}
-		}
-
-		// No lawnmower defense remaining: fatal security breach!
-		TriggerBreach($"SECURITY BREACH! The Ani-Ani infiltrated through the undefended {dir} entrance!");
+		// Bare entrance hit by monster with no barricades: fatal security breach!
+		TriggerBreach($"SECURITY BREACH! The Ani-Ani reached the unbarricaded {dir} opening! Wooden planks required at window!");
 	}
 
 	public void TriggerMonsterRetreat(string reason)
@@ -304,6 +317,7 @@ public partial class BreachManager : Node
 		IsMonsterAttacking = false;
 		_isTearingPlanks = false;
 		_planksTornSoFar = 0;
+		_cameraSpottedTimer = 0f;
 
 		float cd = (float)_rng.NextDouble() * (MaxRetreatCooldown - MinRetreatCooldown) + MinRetreatCooldown;
 		_nextAttackTimer = cd;
