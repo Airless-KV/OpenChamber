@@ -10,6 +10,8 @@
 // - Oct 31, 2026 | air : Compacted file I/O, DTO initializers, and leaderboard table formatting
 // - Nov 06, 2026 | air : Migrated persistence backend to local SQLite database with match history and save slots
 // - Nov 14, 2026 | air : Updated database interface documentation for open_chamber.db
+// - Nov 15, 2026 | air : Expanded settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
+// - Nov 15, 2026 | air : Added RenderScale, ScalingMode, MaxFps, and ShowFpsCounter to AudioSettings
 // =========================================================================================
 using Godot;
 using System;
@@ -31,10 +33,28 @@ public class PlayerProfile
 
 public class AudioSettings
 {
+	// Audio
 	public float MasterVolume { get; set; } = 1.0f;
 	public float MusicVolume { get; set; } = 0.8f;
 	public float SFXVolume { get; set; } = 1.0f;
+
+	// Display & Video
 	public bool Fullscreen { get; set; }
+	public int ResolutionWidth { get; set; } = 1920;
+	public int ResolutionHeight { get; set; } = 1080;
+	public int AspectScaling { get; set; } = 0; // 0 = Expand, 1 = Keep, 2 = KeepWidth, 3 = KeepHeight
+	public bool VSync { get; set; } = true;
+	public float RenderScale { get; set; } = 1.0f; // 0.5f to 1.0f (3D viewport resolution scaling)
+	public int ScalingMode { get; set; } = 0; // 0 = Bilinear (Zero Overhead), 1 = FSR 1.0
+	public int MaxFps { get; set; } = 60; // 0 = Unlimited, 30, 60, 90, 120, etc.
+	public bool ShowFpsCounter { get; set; } = false;
+	public float Fov { get; set; } = 75.0f;
+
+	// Controls & Accessibility
+	public float MouseSensitivity { get; set; } = 0.0035f;
+	public bool InvertY { get; set; } = false;
+	public bool Headbob { get; set; } = true;
+	public bool ScreenShake { get; set; } = true;
 }
 
 public class LeaderboardEntry
@@ -67,6 +87,7 @@ public partial class SaveManager : Node
 		if (Instance != null && Instance != this) { QueueFree(); return; }
 		Instance = this;
 		LoadDirect();
+		Callable.From(() => SettingsBinder.ApplyAllSettings(GetTree())).CallDeferred();
 	}
 
 	public static SaveData LoadDirect()

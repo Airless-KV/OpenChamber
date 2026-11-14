@@ -10,6 +10,7 @@
 // - Oct 30, 2026 | air : Implemented full Main Menu navigation flow, name entry, and settings
 // - Oct 31, 2026 | air : Streamlined audio volume settings using shared AudioSettingsBinder
 // - Oct 31, 2026 | air : Parameterized leaderboard row construction and consolidated modal navigation
+// - Nov 15, 2026 | air : Expanded settings modal with tabbed audio, display, resolution, aspect scaling, and controls
 // =========================================================================================
 using Godot;
 
@@ -32,13 +33,42 @@ public partial class MainMenu : Control
 
 	[ExportGroup("Settings Modal")]
 	[Export] public Control SettingsModal;
+	[Export] public Button AudioTabButton;
+	[Export] public Button DisplayTabButton;
+	[Export] public Button ControlsTabButton;
+	[Export] public Control AudioCategory;
+	[Export] public Control DisplayCategory;
+	[Export] public Control ControlsCategory;
+
+	// Audio
 	[Export] public HSlider MasterSlider;
 	[Export] public Label MasterValLabel;
 	[Export] public HSlider MusicSlider;
 	[Export] public Label MusicValLabel;
 	[Export] public HSlider SFXSlider;
 	[Export] public Label SFXValLabel;
+
+	// Display & Video
+	[Export] public OptionButton ResolutionOption;
+	[Export] public OptionButton AspectOption;
 	[Export] public CheckBox FullscreenCheck;
+	[Export] public CheckBox VSyncCheck;
+	[Export] public HSlider RenderScaleSlider;
+	[Export] public Label RenderScaleValLabel;
+	[Export] public OptionButton ScalingModeOption;
+	[Export] public OptionButton MaxFpsOption;
+	[Export] public CheckBox ShowFpsCheck;
+	[Export] public HSlider FovSlider;
+	[Export] public Label FovValLabel;
+
+	// Controls & Accessibility
+	[Export] public HSlider SensitivitySlider;
+	[Export] public Label SensitivityValLabel;
+	[Export] public CheckBox InvertYCheck;
+	[Export] public CheckBox HeadbobCheck;
+	[Export] public CheckBox ScreenShakeCheck;
+
+	[Export] public Button ResetDefaultsButton;
 	[Export] public Button CloseSettingsButton;
 
 	[ExportGroup("Leaderboard Modal")]
@@ -65,8 +95,24 @@ public partial class MainMenu : Control
 		if (CancelNameButton != null) CancelNameButton.Pressed += () => HideModal(NameEntryModal);
 		if (NameInput != null) NameInput.TextSubmitted += _ => OnStartGamePressed();
 
-		AudioSettingsBinder.BindSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
-		if (FullscreenCheck != null) FullscreenCheck.Toggled += OnFullscreenToggled;
+		SettingsBinder.BindFullUI(
+			GetTree(),
+			AudioTabButton, DisplayTabButton, ControlsTabButton,
+			AudioCategory, DisplayCategory, ControlsCategory,
+			MasterSlider, MasterValLabel,
+			MusicSlider, MusicValLabel,
+			SFXSlider, SFXValLabel,
+			ResolutionOption, AspectOption,
+			FullscreenCheck, VSyncCheck,
+			RenderScaleSlider, RenderScaleValLabel,
+			ScalingModeOption,
+			MaxFpsOption,
+			ShowFpsCheck,
+			FovSlider, FovValLabel,
+			SensitivitySlider, SensitivityValLabel,
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
+			ResetDefaultsButton
+		);
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += () => HideModal(SettingsModal);
 		if (CloseLeaderboardButton != null) CloseLeaderboardButton.Pressed += () => HideModal(LeaderboardModal);
 		if (CloseHowToPlayButton != null) CloseHowToPlayButton.Pressed += () => HideModal(HowToPlayModal);
@@ -114,17 +160,21 @@ public partial class MainMenu : Control
 
 	private void OnSettingsPressed()
 	{
-		AudioSettingsBinder.SyncSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
-		if (FullscreenCheck != null)
-			FullscreenCheck.ButtonPressed = DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Fullscreen;
+		SettingsBinder.SyncFullUI(
+			MasterSlider, MasterValLabel,
+			MusicSlider, MusicValLabel,
+			SFXSlider, SFXValLabel,
+			ResolutionOption, AspectOption,
+			FullscreenCheck, VSyncCheck,
+			RenderScaleSlider, RenderScaleValLabel,
+			ScalingModeOption,
+			MaxFpsOption,
+			ShowFpsCheck,
+			FovSlider, FovValLabel,
+			SensitivitySlider, SensitivityValLabel,
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck
+		);
 		ShowModal(SettingsModal);
-	}
-
-	private void OnFullscreenToggled(bool isFullscreen)
-	{
-		DisplayServer.WindowSetMode(isFullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
-		SaveManager.CurrentData.Audio.Fullscreen = isFullscreen;
-		SaveManager.SaveDirect();
 	}
 
 	private void OnLeaderboardPressed()

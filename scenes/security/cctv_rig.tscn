@@ -8,6 +8,7 @@ script = ExtResource("1_nightcam")
 [node name="North" type="Camera3D" parent="." unique_id=444078514]
 transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, -1.605457, 11.714261, -0.2698334)
 fov = 80.0
+far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="North" unique_id=1390124267]
 visible = false
@@ -20,6 +21,7 @@ spot_angle = 48.0
 [node name="East" type="Camera3D" parent="." unique_id=200874105]
 transform = Transform3D(0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 1, 0, 0, -1.3193566, 11.4175, 0.0203196)
 fov = 80.0
+far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="East" unique_id=1613021599]
 visible = false
@@ -32,6 +34,7 @@ spot_angle = 48.0
 [node name="South" type="Camera3D" parent="." unique_id=807088708]
 transform = Transform3D(-1, 0, 0, 0, 0.7071068, 0.7071068, 0, 0.7071068, -0.7071068, -1.6829877, 11.630364, 0.2649888)
 fov = 80.0
+far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="South" unique_id=43654759]
 visible = false
@@ -44,6 +47,7 @@ spot_angle = 48.0
 [node name="West" type="Camera3D" parent="." unique_id=737325008]
 transform = Transform3D(0, -0.7071068, 0.7071068, 0, 0.7071068, 0.7071068, -1, 0, 0, -1.777106, 11.958022, 0)
 fov = 80.0
+far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="West" unique_id=609647932]
 visible = false

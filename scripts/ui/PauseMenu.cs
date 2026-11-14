@@ -10,6 +10,8 @@
 // - Oct 30, 2026 | air : Implemented Pause Menu with countdown freeze, volume sliders, and title navigation
 // - Oct 31, 2026 | air : Streamlined audio volume settings using shared AudioSettingsBinder
 // - Oct 31, 2026 | air : Compacted ESC handling and sub-panel state management
+// - Nov 15, 2026 | air : Expanded in-game settings panel with tabbed audio, display, resolution, aspect scaling, and controls
+// - Nov 15, 2026 | air : Added 3D render scale, scaling mode, max FPS, and FPS counter controls
 // =========================================================================================
 using Godot;
 
@@ -26,12 +28,42 @@ public partial class PauseMenu : CanvasLayer
 
 	[ExportGroup("Sub Panels")]
 	[Export] public Control SettingsPanel;
+	[Export] public Button AudioTabButton;
+	[Export] public Button DisplayTabButton;
+	[Export] public Button ControlsTabButton;
+	[Export] public Control AudioCategory;
+	[Export] public Control DisplayCategory;
+	[Export] public Control ControlsCategory;
+
+	// Audio
 	[Export] public HSlider MasterSlider;
 	[Export] public Label MasterValLabel;
 	[Export] public HSlider MusicSlider;
 	[Export] public Label MusicValLabel;
 	[Export] public HSlider SFXSlider;
 	[Export] public Label SFXValLabel;
+
+	// Display & Video
+	[Export] public OptionButton ResolutionOption;
+	[Export] public OptionButton AspectOption;
+	[Export] public CheckBox FullscreenCheck;
+	[Export] public CheckBox VSyncCheck;
+	[Export] public HSlider RenderScaleSlider;
+	[Export] public Label RenderScaleValLabel;
+	[Export] public OptionButton ScalingModeOption;
+	[Export] public OptionButton MaxFpsOption;
+	[Export] public CheckBox ShowFpsCheck;
+	[Export] public HSlider FovSlider;
+	[Export] public Label FovValLabel;
+
+	// Controls & Accessibility
+	[Export] public HSlider SensitivitySlider;
+	[Export] public Label SensitivityValLabel;
+	[Export] public CheckBox InvertYCheck;
+	[Export] public CheckBox HeadbobCheck;
+	[Export] public CheckBox ScreenShakeCheck;
+
+	[Export] public Button ResetDefaultsButton;
 	[Export] public Button CloseSettingsButton;
 
 	[Export] public Control HowToPlayPanel;
@@ -55,7 +87,24 @@ public partial class PauseMenu : CanvasLayer
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += ShowMainButtons;
 		if (CloseHowToPlayButton != null) CloseHowToPlayButton.Pressed += ShowMainButtons;
 
-		AudioSettingsBinder.BindSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
+		SettingsBinder.BindFullUI(
+			GetTree(),
+			AudioTabButton, DisplayTabButton, ControlsTabButton,
+			AudioCategory, DisplayCategory, ControlsCategory,
+			MasterSlider, MasterValLabel,
+			MusicSlider, MusicValLabel,
+			SFXSlider, SFXValLabel,
+			ResolutionOption, AspectOption,
+			FullscreenCheck, VSyncCheck,
+			RenderScaleSlider, RenderScaleValLabel,
+			ScalingModeOption,
+			MaxFpsOption,
+			ShowFpsCheck,
+			FovSlider, FovValLabel,
+			SensitivitySlider, SensitivityValLabel,
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
+			ResetDefaultsButton
+		);
 		ShowMainButtons();
 	}
 
@@ -111,6 +160,19 @@ public partial class PauseMenu : CanvasLayer
 	private void OnSettingsPressed()
 	{
 		ShowPanel(SettingsPanel);
-		AudioSettingsBinder.SyncSliders(MasterSlider, MasterValLabel, MusicSlider, MusicValLabel, SFXSlider, SFXValLabel);
+		SettingsBinder.SyncFullUI(
+			MasterSlider, MasterValLabel,
+			MusicSlider, MusicValLabel,
+			SFXSlider, SFXValLabel,
+			ResolutionOption, AspectOption,
+			FullscreenCheck, VSyncCheck,
+			RenderScaleSlider, RenderScaleValLabel,
+			ScalingModeOption,
+			MaxFpsOption,
+			ShowFpsCheck,
+			FovSlider, FovValLabel,
+			SensitivitySlider, SensitivityValLabel,
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck
+		);
 	}
 }

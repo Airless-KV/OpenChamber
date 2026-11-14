@@ -53,7 +53,7 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "FullscreenCheck", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton")]
+[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -73,14 +73,36 @@ StartGameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/Sta
 CancelNameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/CancelButton")
 NameErrorLabel = NodePath("Modals/NameEntryModal/Panel/VBox/ErrorLabel")
 SettingsModal = NodePath("Modals/SettingsModal")
-MasterSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MasterSlider")
-MasterValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MasterVal")
-MusicSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MusicSlider")
-MusicValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/MusicVal")
-SFXSlider = NodePath("Modals/SettingsModal/Panel/VBox/Grid/SFXSlider")
-SFXValLabel = NodePath("Modals/SettingsModal/Panel/VBox/Grid/SFXVal")
-FullscreenCheck = NodePath("Modals/SettingsModal/Panel/VBox/FullscreenCheck")
-CloseSettingsButton = NodePath("Modals/SettingsModal/Panel/VBox/CloseButton")
+AudioTabButton = NodePath("Modals/SettingsModal/Panel/VBox/TabHeader/AudioTabBtn")
+DisplayTabButton = NodePath("Modals/SettingsModal/Panel/VBox/TabHeader/DisplayTabBtn")
+ControlsTabButton = NodePath("Modals/SettingsModal/Panel/VBox/TabHeader/ControlsTabBtn")
+AudioCategory = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory")
+DisplayCategory = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory")
+ControlsCategory = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory")
+MasterSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/MasterSlider")
+MasterValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/MasterVal")
+MusicSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/MusicSlider")
+MusicValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/MusicVal")
+SFXSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/SFXSlider")
+SFXValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid/SFXVal")
+ResolutionOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/ResOption")
+AspectOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/AspectOption")
+FullscreenCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox/FullscreenCheck")
+VSyncCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox/VSyncCheck")
+RenderScaleSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/RenderScaleSlider")
+RenderScaleValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/RenderScaleVal")
+ScalingModeOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/ScalingModeOption")
+MaxFpsOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/MaxFpsOption")
+ShowFpsCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox/ShowFpsCheck")
+FovSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovSlider")
+FovValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovVal")
+SensitivitySlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid/SensSlider")
+SensitivityValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid/SensVal")
+InvertYCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/InvertYCheck")
+HeadbobCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/HeadbobCheck")
+ScreenShakeCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/ShakeCheck")
+ResetDefaultsButton = NodePath("Modals/SettingsModal/Panel/VBox/BottomBar/ResetDefaultsBtn")
+CloseSettingsButton = NodePath("Modals/SettingsModal/Panel/VBox/BottomBar/CloseButton")
 LeaderboardModal = NodePath("Modals/LeaderboardModal")
 LifetimeStatsLabel = NodePath("Modals/LeaderboardModal/Panel/VBox/StatsSummary")
 LeaderboardRowsContainer = NodePath("Modals/LeaderboardModal/Panel/VBox/Scroll/RowsContainer")
@@ -340,17 +362,17 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
 [node name="Panel" type="Panel" parent="Modals/SettingsModal" unique_id=473006086]
-custom_minimum_size = Vector2(580, 420)
+custom_minimum_size = Vector2(660, 560)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -290.0
-offset_top = -210.0
-offset_right = 290.0
-offset_bottom = 210.0
+offset_left = -330.0
+offset_top = -280.0
+offset_right = 330.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -360,91 +382,325 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = 30.0
-offset_right = -40.0
-offset_bottom = -30.0
+offset_left = 30.0
+offset_top = 22.0
+offset_right = -30.0
+offset_bottom = -22.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 14
 
 [node name="Title" type="Label" parent="Modals/SettingsModal/Panel/VBox" unique_id=1801617475]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 24
-text = "SETTINGS & AUDIO"
+theme_override_font_sizes/font_size = 22
+text = "SETTINGS & CONFIGURATION"
 horizontal_alignment = 1
 
-[node name="Grid" type="GridContainer" parent="Modals/SettingsModal/Panel/VBox" unique_id=963089175]
+[node name="TabHeader" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="AudioTabBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/TabHeader"]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "AUDIO"
+
+[node name="DisplayTabBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/TabHeader"]
+custom_minimum_size = Vector2(150, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "DISPLAY & VIDEO"
+
+[node name="ControlsTabBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/TabHeader"]
+custom_minimum_size = Vector2(170, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "CONTROLS & ACCESS"
+
+[node name="ContentContainer" type="Control" parent="Modals/SettingsModal/Panel/VBox"]
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AudioCategory" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 16
+
+[node name="Grid" type="GridContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory" unique_id=963089175]
 layout_mode = 2
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 16
 columns = 3
 
-[node name="MasterLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=46057102]
+[node name="MasterLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=46057102]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "Master Volume"
 
-[node name="MasterSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=665575962]
-custom_minimum_size = Vector2(240, 24)
+[node name="MasterSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=665575962]
+custom_minimum_size = Vector2(250, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 value = 100.0
 
-[node name="MasterVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=1251242634]
+[node name="MasterVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=1251242634]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
 text = "100%"
 
-[node name="MusicLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=269026407]
+[node name="MusicLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=269026407]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "Music Volume"
 
-[node name="MusicSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=581403337]
-custom_minimum_size = Vector2(240, 24)
+[node name="MusicSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=581403337]
+custom_minimum_size = Vector2(250, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 value = 80.0
 
-[node name="MusicVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=1669394945]
+[node name="MusicVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=1669394945]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
 text = "80%"
 
-[node name="SFXLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=1556960659]
+[node name="SFXLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=1556960659]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "SFX Volume"
 
-[node name="SFXSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=815307242]
-custom_minimum_size = Vector2(240, 24)
+[node name="SFXSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=815307242]
+custom_minimum_size = Vector2(250, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 value = 100.0
 
-[node name="SFXVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/Grid" unique_id=1559713827]
+[node name="SFXVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/AudioCategory/Grid" unique_id=1559713827]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
 text = "100%"
 
-[node name="FullscreenCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox" unique_id=158047970]
+[node name="DisplayCategory" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 12
+
+[node name="Grid" type="GridContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 12
+columns = 3
+
+[node name="ResLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Resolution"
+
+[node name="ResOption" type="OptionButton" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResSpacer" type="Control" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
+[node name="AspectLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Aspect Ratio Scaling"
+
+[node name="AspectOption" type="OptionButton" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AspectSpacer" type="Control" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
+[node name="FovLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Field of View (FOV)"
+
+[node name="FovSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 70.0
+max_value = 100.0
+value = 75.0
+
+[node name="FovVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "75°"
+
+[node name="RenderScaleLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "3D Render Scale"
+
+[node name="RenderScaleSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 25.0
+max_value = 100.0
+step = 5.0
+value = 100.0
+
+[node name="RenderScaleVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "100%"
+
+[node name="ScalingModeLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Upscaling Filter"
+
+[node name="ScalingModeOption" type="OptionButton" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScalingModeSpacer" type="Control" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
+[node name="MaxFpsLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Max Frame Rate"
+
+[node name="MaxFpsOption" type="OptionButton" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MaxFpsSpacer" type="Control" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
+[node name="TogglesHBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="FullscreenCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox" unique_id=158047970]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
 text = "Fullscreen Mode"
 
-[node name="CloseButton" type="Button" parent="Modals/SettingsModal/Panel/VBox" unique_id=1065680278]
-custom_minimum_size = Vector2(160, 40)
+[node name="VSyncCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox"]
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 15
+button_pressed = true
+text = "V-Sync (Vertical Sync)"
+
+[node name="ShowFpsCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Show FPS Counter"
+
+[node name="ControlsCategory" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 12
+
+[node name="Grid" type="GridContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory"]
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 12
+columns = 3
+
+[node name="SensLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Mouse Sensitivity"
+
+[node name="SensSlider" type="HSlider" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid"]
+custom_minimum_size = Vector2(250, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 10.0
+max_value = 100.0
+value = 35.0
+
+[node name="SensVal" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+text = "0.0035"
+
+[node name="TogglesVBox" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="InvertYCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Invert Y-Axis (Look Up/Down)"
+
+[node name="HeadbobCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+button_pressed = true
+text = "Walking Wobble (Character Headbob)"
+
+[node name="ShakeCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+button_pressed = true
+text = "House Attack Screen Shake (Cabin Shudder)"
+
+[node name="BottomBar" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="ResetDefaultsBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/BottomBar"]
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "RESET DEFAULTS"
+
+[node name="CloseButton" type="Button" parent="Modals/SettingsModal/Panel/VBox/BottomBar" unique_id=1065680278]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "BACK"

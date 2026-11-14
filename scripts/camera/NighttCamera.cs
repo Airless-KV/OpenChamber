@@ -20,6 +20,7 @@
 // - Nov 14, 2026 | air : Adjusted camera pitch down to 45 deg and FOV to 80 deg for comprehensive porch, side wall, and perimeter coverage
 // - Nov 14, 2026 | air : Added Treehouse battery power drain (1% per 10s) and automatic signal cut on battery depletion
 // - Nov 14, 2026 | air : Increased CCTV battery power drain to 1% per second
+// - Nov 15, 2026 | air : Added FarPlane configuration (280m) to restrict CCTV frustum depth while preserving mountains
 // =========================================================================================
 using Godot;
 
@@ -41,6 +42,7 @@ public partial class NighttCamera : Node3D
 	[ExportGroup("CCTV Settings")]
 	[Export] public bool IsNightMode;
 	[Export] public CCTVOverlay OverlayNode;
+	[Export] public float FarPlane = 280.0f;
 
 	public override void _Ready()
 	{
@@ -49,6 +51,7 @@ public partial class NighttCamera : Node3D
 		for (int i = 0; i < _nightCams.Length; i++)
 		{
 			if (_nightCams[i] == null) continue;
+			_nightCams[i].Far = FarPlane;
 			_irLights[i] = _nightCams[i].GetNodeOrNull<SpotLight3D>("IRLight");
 			if (_irLights[i] == null)
 			{

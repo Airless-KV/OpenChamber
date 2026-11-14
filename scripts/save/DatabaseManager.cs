@@ -8,6 +8,8 @@
 // Change Log:
 // - Nov 06, 2026 | air : Created SQLite database layer with local leaderboards and profiles
 // - Nov 14, 2026 | air : Updated database filename to open_chamber.db with automatic migration from illusion_of_choice.db
+// - Nov 15, 2026 | air : Expanded audio_settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
+// - Nov 15, 2026 | air : Added render_scale, scaling_mode, max_fps, and show_fps_counter persistence
 // =========================================================================================
 using Godot;
 using Microsoft.Data.Sqlite;
@@ -83,7 +85,20 @@ public static class DatabaseManager
 					master_volume REAL NOT NULL DEFAULT 1.0,
 					music_volume REAL NOT NULL DEFAULT 0.8,
 					sfx_volume REAL NOT NULL DEFAULT 1.0,
-					fullscreen INTEGER NOT NULL DEFAULT 0
+					fullscreen INTEGER NOT NULL DEFAULT 0,
+					resolution_width INTEGER NOT NULL DEFAULT 1920,
+					resolution_height INTEGER NOT NULL DEFAULT 1080,
+					aspect_scaling INTEGER NOT NULL DEFAULT 0,
+					vsync INTEGER NOT NULL DEFAULT 1,
+					fov REAL NOT NULL DEFAULT 75.0,
+					mouse_sensitivity REAL NOT NULL DEFAULT 0.0035,
+					invert_y INTEGER NOT NULL DEFAULT 0,
+					headbob INTEGER NOT NULL DEFAULT 1,
+					screen_shake INTEGER NOT NULL DEFAULT 1,
+					render_scale REAL NOT NULL DEFAULT 1.0,
+					scaling_mode INTEGER NOT NULL DEFAULT 0,
+					max_fps INTEGER NOT NULL DEFAULT 60,
+					show_fps_counter INTEGER NOT NULL DEFAULT 0
 				);
 
 				CREATE TABLE IF NOT EXISTS leaderboard (
@@ -110,10 +125,45 @@ public static class DatabaseManager
 			";
 			cmd.ExecuteNonQuery();
 
+			EnsureSettingsColumns(conn);
 			SeedInitialDataIfEmpty(conn);
 			CheckAndMigrateLegacyJson(conn);
 
 			_isInitialized = true;
+		}
+	}
+
+	private static void EnsureSettingsColumns(SqliteConnection conn)
+	{
+		string[] columns =
+		{
+			"ALTER TABLE audio_settings ADD COLUMN resolution_width INTEGER NOT NULL DEFAULT 1920;",
+			"ALTER TABLE audio_settings ADD COLUMN resolution_height INTEGER NOT NULL DEFAULT 1080;",
+			"ALTER TABLE audio_settings ADD COLUMN aspect_scaling INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE audio_settings ADD COLUMN vsync INTEGER NOT NULL DEFAULT 1;",
+			"ALTER TABLE audio_settings ADD COLUMN fov REAL NOT NULL DEFAULT 75.0;",
+			"ALTER TABLE audio_settings ADD COLUMN mouse_sensitivity REAL NOT NULL DEFAULT 0.0035;",
+			"ALTER TABLE audio_settings ADD COLUMN invert_y INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE audio_settings ADD COLUMN headbob INTEGER NOT NULL DEFAULT 1;",
+			"ALTER TABLE audio_settings ADD COLUMN screen_shake INTEGER NOT NULL DEFAULT 1;",
+			"ALTER TABLE audio_settings ADD COLUMN render_scale REAL NOT NULL DEFAULT 1.0;",
+			"ALTER TABLE audio_settings ADD COLUMN scaling_mode INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE audio_settings ADD COLUMN max_fps INTEGER NOT NULL DEFAULT 60;",
+			"ALTER TABLE audio_settings ADD COLUMN show_fps_counter INTEGER NOT NULL DEFAULT 0;"
+		};
+
+		foreach (var colSql in columns)
+		{
+			try
+			{
+				using var cmd = conn.CreateCommand();
+				cmd.CommandText = colSql;
+				cmd.ExecuteNonQuery();
+			}
+			catch
+			{
+				// Column already exists in schema
+			}
 		}
 	}
 
@@ -150,8 +200,11 @@ public static class DatabaseManager
 			{
 				using var insertAudio = conn.CreateCommand();
 				insertAudio.CommandText = @"
-					INSERT INTO audio_settings (id, master_volume, music_volume, sfx_volume, fullscreen)
-					VALUES (1, 1.0, 0.8, 1.0, 0);
+					INSERT INTO audio_settings (
+						id, master_volume, music_volume, sfx_volume, fullscreen,
+						resolution_width, resolution_height, aspect_scaling,
+						vsync, fov, mouse_sensitivity, invert_y, headbob, screen_shake
+					) VALUES (1, 1.0, 0.8, 1.0, 0, 1920, 1080, 0, 1, 75.0, 0.0035, 0, 1, 1);
 				";
 				insertAudio.ExecuteNonQuery();
 			}
@@ -367,7 +420,13 @@ public static class DatabaseManager
 			conn.Open();
 
 			using var cmd = conn.CreateCommand();
-			cmd.CommandText = "SELECT master_volume, music_volume, sfx_volume, fullscreen FROM audio_settings WHERE id = 1;";
+			cmd.CommandText = @"
+				SELECT master_volume, music_volume, sfx_volume, fullscreen,
+				       resolution_width, resolution_height, aspect_scaling,
+				       vsync, fov, mouse_sensitivity, invert_y, headbob, screen_shake,
+				       render_scale, scaling_mode, max_fps, show_fps_counter
+				FROM audio_settings WHERE id = 1;
+			";
 			using var reader = cmd.ExecuteReader();
 			if (reader.Read())
 			{
@@ -376,7 +435,20 @@ public static class DatabaseManager
 					MasterVolume = (float)reader.GetDouble(0),
 					MusicVolume = (float)reader.GetDouble(1),
 					SFXVolume = (float)reader.GetDouble(2),
-					Fullscreen = reader.GetInt32(3) == 1
+					Fullscreen = reader.GetInt32(3) == 1,
+					ResolutionWidth = reader.GetInt32(4),
+					ResolutionHeight = reader.GetInt32(5),
+					AspectScaling = reader.GetInt32(6),
+					VSync = reader.GetInt32(7) == 1,
+					Fov = (float)reader.GetDouble(8),
+					MouseSensitivity = (float)reader.GetDouble(9),
+					InvertY = reader.GetInt32(10) == 1,
+					Headbob = reader.GetInt32(11) == 1,
+					ScreenShake = reader.GetInt32(12) == 1,
+					RenderScale = reader.FieldCount > 13 ? (float)reader.GetDouble(13) : 1.0f,
+					ScalingMode = reader.FieldCount > 14 ? reader.GetInt32(14) : 0,
+					MaxFps = reader.FieldCount > 15 ? reader.GetInt32(15) : 60,
+					ShowFpsCounter = reader.FieldCount > 16 && reader.GetInt32(16) == 1
 				};
 			}
 			return new AudioSettings();
@@ -398,13 +470,39 @@ public static class DatabaseManager
 					master_volume = $master,
 					music_volume = $music,
 					sfx_volume = $sfx,
-					fullscreen = $fullscreen
+					fullscreen = $fullscreen,
+					resolution_width = $resW,
+					resolution_height = $resH,
+					aspect_scaling = $aspect,
+					vsync = $vsync,
+					fov = $fov,
+					mouse_sensitivity = $sens,
+					invert_y = $invertY,
+					headbob = $headbob,
+					screen_shake = $screenShake,
+					render_scale = $renderScale,
+					scaling_mode = $scalingMode,
+					max_fps = $maxFps,
+					show_fps_counter = $showFps
 				WHERE id = 1;
 			";
 			cmd.Parameters.AddWithValue("$master", settings.MasterVolume);
 			cmd.Parameters.AddWithValue("$music", settings.MusicVolume);
 			cmd.Parameters.AddWithValue("$sfx", settings.SFXVolume);
 			cmd.Parameters.AddWithValue("$fullscreen", settings.Fullscreen ? 1 : 0);
+			cmd.Parameters.AddWithValue("$resW", settings.ResolutionWidth);
+			cmd.Parameters.AddWithValue("$resH", settings.ResolutionHeight);
+			cmd.Parameters.AddWithValue("$aspect", settings.AspectScaling);
+			cmd.Parameters.AddWithValue("$vsync", settings.VSync ? 1 : 0);
+			cmd.Parameters.AddWithValue("$fov", settings.Fov);
+			cmd.Parameters.AddWithValue("$sens", settings.MouseSensitivity);
+			cmd.Parameters.AddWithValue("$invertY", settings.InvertY ? 1 : 0);
+			cmd.Parameters.AddWithValue("$headbob", settings.Headbob ? 1 : 0);
+			cmd.Parameters.AddWithValue("$screenShake", settings.ScreenShake ? 1 : 0);
+			cmd.Parameters.AddWithValue("$renderScale", settings.RenderScale);
+			cmd.Parameters.AddWithValue("$scalingMode", settings.ScalingMode);
+			cmd.Parameters.AddWithValue("$maxFps", settings.MaxFps);
+			cmd.Parameters.AddWithValue("$showFps", settings.ShowFpsCounter ? 1 : 0);
 			cmd.ExecuteNonQuery();
 		}
 	}

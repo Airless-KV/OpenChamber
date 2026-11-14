@@ -14,21 +14,34 @@
 // - Oct 31, 2026 | air : Compacted mouse look and target follow interpolation
 // - Nov 06, 2026 | air : Added shop cursor synchronization to release mouse and pause look during shopping
 // - Nov 07, 2026 | air : Guarded _Input against cursor re-capture when end screens or pause are active
+// - Nov 15, 2026 | air : Added FarPlane configuration (clamped to 210m for performance optimization)
+// - Nov 15, 2026 | air : Added InvertY, FOV scaling, and ApplySavedSettings integration
 // =========================================================================================
 using Godot;
 
 public partial class CameraPivot : Node3D
 {
+	public static CameraPivot Instance { get; private set; }
+
 	[ExportGroup("First-Person Settings")]
 	[Export] public Vector3 FollowOffset = new(0, 1.45f, 0);
 	[Export] public float MouseSensitivity = 0.0035f;
+	[Export] public bool InvertY = false;
 	[Export] public float MinPitchDegrees = -85.0f;
 	[Export] public float MaxPitchDegrees = 85.0f;
+	[Export] public float FarPlane = 210.0f;
 
 	[ExportGroup("Target Follow")]
 	[Export] public Node3D Target;
 	[Export] public float FollowSpeed = 25.0f;
 
+	[ExportGroup("Walk Wobble (Headbob)")]
+	[Export] public bool EnableWalkWobble = true;
+
+	[ExportGroup("House Attack Wobble (Trauma & Shake)")]
+	[Export] public bool EnableAttackWobble = true;
+
+	private Camera3D _camera;
 	private Control _crosshair;
 	private HUDManager _hud;
 	private float _pitch;
@@ -38,7 +51,14 @@ public partial class CameraPivot : Node3D
 
 	public override void _Ready()
 	{
-		if (GetNodeOrNull<Camera3D>("Camera3D") is { } cam) cam.Position = Vector3.Zero;
+		Instance = this;
+		_camera = GetNodeOrNull<Camera3D>("Camera3D");
+		if (_camera != null)
+		{
+			_camera.Position = Vector3.Zero;
+			_camera.Far = FarPlane;
+		}
+
 		Target ??= GetTree().Root.FindChild("Player", true, false) as Node3D;
 		if (Target is PlayerController { VisualRoot: { } vis }) vis.Visible = false;
 
@@ -48,6 +68,24 @@ public partial class CameraPivot : Node3D
 		_pitch = Rotation.X;
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 		UpdateCrosshair();
+		ApplySavedSettings();
+	}
+
+	public void ApplySavedSettings()
+	{
+		var settings = SaveManager.CurrentData?.Audio;
+		if (settings == null) return;
+
+		MouseSensitivity = settings.MouseSensitivity;
+		InvertY = settings.InvertY;
+		EnableWalkWobble = settings.Headbob;
+		EnableAttackWobble = settings.ScreenShake;
+
+		if (_camera != null)
+		{
+			_camera.Fov = settings.Fov > 0 ? settings.Fov : 75.0f;
+			_camera.Far = FarPlane;
+		}
 	}
 
 	public void SetCCTVActive(bool active)
@@ -86,8 +124,9 @@ public partial class CameraPivot : Node3D
 
 		if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
 		{
+			float pitchDelta = motion.Relative.Y * MouseSensitivity * (InvertY ? -1.0f : 1.0f);
 			_yaw -= motion.Relative.X * MouseSensitivity;
-			_pitch = Mathf.Clamp(_pitch - motion.Relative.Y * MouseSensitivity, Mathf.DegToRad(MinPitchDegrees), Mathf.DegToRad(MaxPitchDegrees));
+			_pitch = Mathf.Clamp(_pitch - pitchDelta, Mathf.DegToRad(MinPitchDegrees), Mathf.DegToRad(MaxPitchDegrees));
 			Rotation = new Vector3(_pitch, _yaw, 0f);
 		}
 	}

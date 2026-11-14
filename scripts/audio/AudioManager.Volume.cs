@@ -7,6 +7,12 @@
 // Change Log:
 // - Oct 31, 2026 | air : Added partial volume methods to interface with UI menus and SaveManager
 // - Oct 31, 2026 | air : Added AudioSettingsBinder to eliminate duplicate slider wiring across UI menus
+// - Nov 15, 2026 | air : Expanded SettingsBinder with resolution, aspect scaling, VSync, FOV, sensitivity, and accessibility
+// - Nov 15, 2026 | air : Fixed resolution window centering, unmaximizing, fullscreen synchronization, and aspect scaling canvas items mode
+// - Nov 15, 2026 | air : Added RenderScale, ScalingMode, MaxFps, and ShowFpsCounter support in SettingsBinder
+// - Nov 15, 2026 | air : Fixed resolution coupling to 3D Viewport scaling and locked UI base canvas to 1080p
+// - Nov 15, 2026 | air : Expanded 3D render scale range down to 25% for ultra low-spec optimization
+// - Nov 15, 2026 | air : Added _isSyncingUI guard in SettingsBinder to prevent control binding feedback loop
 // =========================================================================================
 using Godot;
 
@@ -76,6 +82,633 @@ public partial class AudioManager
 
 		float db = AudioServer.GetBusVolumeDb(idx);
 		return Mathf.DbToLinear(db);
+	}
+}
+
+public static class SettingsBinder
+{
+	private static bool _isSyncingUI = false;
+
+	public static readonly (int Width, int Height, string Label)[] SupportedResolutions =
+	{
+		(1920, 1080, "1920 × 1080 (16:9 FHD)"),
+		(2560, 1440, "2560 × 1440 (16:9 QHD)"),
+		(1600, 900,  "1600 × 900 (16:9 HD+)"),
+		(1366, 768,  "1366 × 768 (16:9 HD)"),
+		(1280, 720,  "1280 × 720 (16:9 HD)"),
+		(1920, 1200, "1920 × 1200 (16:10 WUXGA)"),
+		(1280, 800,  "1280 × 800 (16:10 WXGA)"),
+		(1024, 768,  "1024 × 768 (4:3 XGA)")
+	};
+
+	public static readonly (int Mode, string Label)[] AspectModes =
+	{
+		(0, "Expand (Fill Screen)"),
+		(1, "Keep (Letterbox / Pillarbox)"),
+		(2, "Keep Width"),
+		(3, "Keep Height")
+	};
+
+	public static void PopulateResolutions(OptionButton optionBtn)
+	{
+		if (optionBtn == null) return;
+		optionBtn.Clear();
+		for (int i = 0; i < SupportedResolutions.Length; i++)
+		{
+			optionBtn.AddItem(SupportedResolutions[i].Label, i);
+		}
+	}
+
+	public static void PopulateAspectModes(OptionButton optionBtn)
+	{
+		if (optionBtn == null) return;
+		optionBtn.Clear();
+		for (int i = 0; i < AspectModes.Length; i++)
+		{
+			optionBtn.AddItem(AspectModes[i].Label, i);
+		}
+	}
+
+	public static readonly (int Fps, string Label)[] MaxFpsOptions =
+	{
+		(60,  "60 FPS (Standard / Stable)"),
+		(30,  "30 FPS (Power Saver / HD 620)"),
+		(0,   "Unlimited (Uncapped)"),
+		(90,  "90 FPS"),
+		(120, "120 FPS"),
+		(144, "144 FPS"),
+		(240, "240 FPS")
+	};
+
+	public static readonly (int Mode, string Label)[] ScalingModeOptions =
+	{
+		(0, "Bilinear (Zero Overhead - Recommended)"),
+		(1, "AMD FSR 1.0 (Edge Contrast Sharpening)")
+	};
+
+	public static void PopulateMaxFps(OptionButton optionBtn)
+	{
+		if (optionBtn == null) return;
+		optionBtn.Clear();
+		for (int i = 0; i < MaxFpsOptions.Length; i++)
+		{
+			optionBtn.AddItem(MaxFpsOptions[i].Label, i);
+		}
+	}
+
+	public static void PopulateScalingModes(OptionButton optionBtn)
+	{
+		if (optionBtn == null) return;
+		optionBtn.Clear();
+		for (int i = 0; i < ScalingModeOptions.Length; i++)
+		{
+			optionBtn.AddItem(ScalingModeOptions[i].Label, i);
+		}
+	}
+
+	public static void ApplyEffective3DRenderScale(SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		if (sceneTree?.Root == null) return;
+
+		var s = SaveManager.CurrentData?.Audio;
+		if (s == null) return;
+
+		int targetW = s.ResolutionWidth > 0 ? s.ResolutionWidth : 1920;
+		float userScale = Mathf.Clamp(s.RenderScale, 0.25f, 1.0f);
+		int scalingMode = s.ScalingMode;
+
+		var currentMode = DisplayServer.WindowGetMode();
+		bool isFullscreen = currentMode == DisplayServer.WindowMode.Fullscreen || currentMode == DisplayServer.WindowMode.ExclusiveFullscreen;
+
+		float effectiveScale = userScale;
+		if (isFullscreen)
+		{
+			Vector2I screenSize = DisplayServer.ScreenGetSize();
+			int screenW = screenSize.X > 0 ? screenSize.X : 1920;
+			float resRatio = Mathf.Clamp((float)targetW / (float)screenW, 0.20f, 1.0f);
+			effectiveScale = Mathf.Clamp(resRatio * userScale, 0.15f, 1.0f);
+		}
+
+		sceneTree.Root.Scaling3DMode = scalingMode == 1 
+			? Viewport.Scaling3DModeEnum.Fsr 
+			: Viewport.Scaling3DModeEnum.Bilinear;
+		sceneTree.Root.Scaling3DScale = effectiveScale;
+	}
+
+	public static void ApplyRenderScale(float scale, int scalingMode, SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		scale = Mathf.Clamp(scale, 0.25f, 1.0f);
+
+		SaveManager.CurrentData.Audio.RenderScale = scale;
+		SaveManager.CurrentData.Audio.ScalingMode = scalingMode;
+		SaveManager.SaveDirect();
+
+		ApplyEffective3DRenderScale(sceneTree);
+	}
+
+	public static void ApplyMaxFps(int maxFps)
+	{
+		Engine.MaxFps = maxFps;
+		SaveManager.CurrentData.Audio.MaxFps = maxFps;
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyFpsCounter(bool show, SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		if (sceneTree != null)
+		{
+			FpsOverlay.EnsureInstance(sceneTree);
+			FpsOverlay.Instance?.SetOverlayVisible(show);
+		}
+		SaveManager.CurrentData.Audio.ShowFpsCounter = show;
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyResolution(int width, int height, SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		if (sceneTree?.Root != null)
+		{
+			sceneTree.Root.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+			sceneTree.Root.ContentScaleSize = new Vector2I(1920, 1080);
+		}
+
+		var currentMode = DisplayServer.WindowGetMode();
+		bool isFullscreen = currentMode == DisplayServer.WindowMode.Fullscreen || currentMode == DisplayServer.WindowMode.ExclusiveFullscreen;
+
+		if (!isFullscreen)
+		{
+			if (currentMode == DisplayServer.WindowMode.Maximized)
+			{
+				DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+			}
+
+			DisplayServer.WindowSetSize(new Vector2I(width, height));
+			Vector2I screen = DisplayServer.ScreenGetSize();
+			DisplayServer.WindowSetPosition(new Vector2I(
+				Mathf.Max(0, (screen.X - width) / 2),
+				Mathf.Max(0, (screen.Y - height) / 2)
+			));
+		}
+
+		SaveManager.CurrentData.Audio.ResolutionWidth = width;
+		SaveManager.CurrentData.Audio.ResolutionHeight = height;
+		SaveManager.SaveDirect();
+
+		ApplyEffective3DRenderScale(sceneTree);
+	}
+
+	public static void ApplyAspectScaling(int mode, SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		if (sceneTree?.Root != null)
+		{
+			sceneTree.Root.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+			sceneTree.Root.ContentScaleSize = new Vector2I(1920, 1080);
+
+			Window.ContentScaleAspectEnum aspect = mode switch
+			{
+				0 => Window.ContentScaleAspectEnum.Expand,
+				1 => Window.ContentScaleAspectEnum.Keep,
+				2 => Window.ContentScaleAspectEnum.KeepWidth,
+				3 => Window.ContentScaleAspectEnum.KeepHeight,
+				_ => Window.ContentScaleAspectEnum.Expand
+			};
+			sceneTree.Root.ContentScaleAspect = aspect;
+		}
+		SaveManager.CurrentData.Audio.AspectScaling = mode;
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyFullscreen(bool isFullscreen, SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		int w = SaveManager.CurrentData?.Audio?.ResolutionWidth ?? 1920;
+		int h = SaveManager.CurrentData?.Audio?.ResolutionHeight ?? 1080;
+		if (w <= 0 || h <= 0) { w = 1920; h = 1080; }
+
+		if (isFullscreen)
+		{
+			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+		}
+		else
+		{
+			DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+			DisplayServer.WindowSetSize(new Vector2I(w, h));
+			Vector2I screen = DisplayServer.ScreenGetSize();
+			DisplayServer.WindowSetPosition(new Vector2I(
+				Mathf.Max(0, (screen.X - w) / 2),
+				Mathf.Max(0, (screen.Y - h) / 2)
+			));
+		}
+
+		if (sceneTree?.Root != null)
+		{
+			sceneTree.Root.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+			sceneTree.Root.ContentScaleSize = new Vector2I(1920, 1080);
+		}
+
+		SaveManager.CurrentData.Audio.Fullscreen = isFullscreen;
+		SaveManager.SaveDirect();
+
+		ApplyEffective3DRenderScale(sceneTree);
+	}
+
+	public static void ApplyVSync(bool isVSync)
+	{
+		DisplayServer.WindowSetVsyncMode(isVSync ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
+		SaveManager.CurrentData.Audio.VSync = isVSync;
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyFov(float fov)
+	{
+		SaveManager.CurrentData.Audio.Fov = fov;
+		if (CameraPivot.Instance != null && CameraPivot.Instance.GetNodeOrNull<Camera3D>("Camera3D") is { } cam)
+		{
+			cam.Fov = fov;
+		}
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyMouseSensitivity(float sens)
+	{
+		SaveManager.CurrentData.Audio.MouseSensitivity = sens;
+		if (CameraPivot.Instance != null)
+		{
+			CameraPivot.Instance.MouseSensitivity = sens;
+		}
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyInvertY(bool invert)
+	{
+		SaveManager.CurrentData.Audio.InvertY = invert;
+		if (CameraPivot.Instance != null)
+		{
+			CameraPivot.Instance.InvertY = invert;
+		}
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyHeadbob(bool enabled)
+	{
+		SaveManager.CurrentData.Audio.Headbob = enabled;
+		if (CameraPivot.Instance != null)
+		{
+			CameraPivot.Instance.EnableWalkWobble = enabled;
+		}
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyScreenShake(bool enabled)
+	{
+		SaveManager.CurrentData.Audio.ScreenShake = enabled;
+		if (CameraPivot.Instance != null)
+		{
+			CameraPivot.Instance.EnableAttackWobble = enabled;
+		}
+		SaveManager.SaveDirect();
+	}
+
+	public static void ApplyAllSettings(SceneTree tree)
+	{
+		var s = SaveManager.CurrentData?.Audio;
+		if (s == null) return;
+
+		AudioManager.Instance?.SetMasterVolume(s.MasterVolume, false);
+		AudioManager.Instance?.SetMusicVolume(s.MusicVolume, false);
+		AudioManager.Instance?.SetSFXVolume(s.SFXVolume, false);
+
+		int w = s.ResolutionWidth > 0 ? s.ResolutionWidth : 1920;
+		int h = s.ResolutionHeight > 0 ? s.ResolutionHeight : 1080;
+
+		if (tree?.Root != null)
+		{
+			tree.Root.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
+			tree.Root.ContentScaleSize = new Vector2I(1920, 1080);
+		}
+
+		ApplyFullscreen(s.Fullscreen, tree);
+		ApplyResolution(w, h, tree);
+		ApplyAspectScaling(s.AspectScaling, tree);
+		ApplyVSync(s.VSync);
+		ApplyRenderScale(s.RenderScale, s.ScalingMode, tree);
+		ApplyMaxFps(s.MaxFps);
+		ApplyFpsCounter(s.ShowFpsCounter, tree);
+		CameraPivot.Instance?.ApplySavedSettings();
+	}
+
+	public static void BindFullUI(
+		SceneTree tree,
+		Button audioTabBtn, Button displayTabBtn, Button controlsTabBtn,
+		Control audioPanel, Control displayPanel, Control controlsPanel,
+		HSlider masterSlider, Label masterLabel,
+		HSlider musicSlider, Label musicLabel,
+		HSlider sfxSlider, Label sfxLabel,
+		OptionButton resOption, OptionButton aspectOption,
+		CheckBox fullscreenCheck, CheckBox vsyncCheck,
+		HSlider renderScaleSlider, Label renderScaleLabel,
+		OptionButton scalingModeOption,
+		OptionButton maxFpsOption,
+		CheckBox showFpsCheck,
+		HSlider fovSlider, Label fovLabel,
+		HSlider sensSlider, Label sensLabel,
+		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck,
+		Button resetDefaultsBtn)
+	{
+		PopulateResolutions(resOption);
+		PopulateAspectModes(aspectOption);
+		PopulateScalingModes(scalingModeOption);
+		PopulateMaxFps(maxFpsOption);
+
+		void SwitchTab(int tab)
+		{
+			if (audioPanel != null) audioPanel.Visible = (tab == 0);
+			if (displayPanel != null) displayPanel.Visible = (tab == 1);
+			if (controlsPanel != null) controlsPanel.Visible = (tab == 2);
+		}
+
+		if (audioTabBtn != null) audioTabBtn.Pressed += () => SwitchTab(0);
+		if (displayTabBtn != null) displayTabBtn.Pressed += () => SwitchTab(1);
+		if (controlsTabBtn != null) controlsTabBtn.Pressed += () => SwitchTab(2);
+		SwitchTab(0);
+
+		if (masterSlider != null)
+		{
+			masterSlider.ValueChanged += (val) =>
+			{
+				if (masterLabel != null) masterLabel.Text = $"{Mathf.RoundToInt(val)}%";
+				if (_isSyncingUI) return;
+				AudioManager.Instance?.SetMasterVolume((float)val / 100.0f);
+			};
+		}
+		if (musicSlider != null)
+		{
+			musicSlider.ValueChanged += (val) =>
+			{
+				if (musicLabel != null) musicLabel.Text = $"{Mathf.RoundToInt(val)}%";
+				if (_isSyncingUI) return;
+				AudioManager.Instance?.SetMusicVolume((float)val / 100.0f);
+			};
+		}
+		if (sfxSlider != null)
+		{
+			sfxSlider.ValueChanged += (val) =>
+			{
+				if (sfxLabel != null) sfxLabel.Text = $"{Mathf.RoundToInt(val)}%";
+				if (_isSyncingUI) return;
+				AudioManager.Instance?.SetSFXVolume((float)val / 100.0f);
+			};
+		}
+
+		if (resOption != null)
+		{
+			resOption.ItemSelected += (idx) =>
+			{
+				if (_isSyncingUI) return;
+				if (idx >= 0 && idx < SupportedResolutions.Length)
+				{
+					ApplyResolution(SupportedResolutions[idx].Width, SupportedResolutions[idx].Height, tree);
+				}
+			};
+		}
+		if (aspectOption != null)
+		{
+			aspectOption.ItemSelected += (idx) =>
+			{
+				if (_isSyncingUI) return;
+				if (idx >= 0 && idx < AspectModes.Length)
+				{
+					ApplyAspectScaling(AspectModes[idx].Mode, tree);
+				}
+			};
+		}
+		if (fullscreenCheck != null)
+		{
+			fullscreenCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyFullscreen(toggled, tree); };
+		}
+		if (vsyncCheck != null)
+		{
+			vsyncCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyVSync(toggled); };
+		}
+		if (renderScaleSlider != null)
+		{
+			renderScaleSlider.ValueChanged += (val) =>
+			{
+				if (renderScaleLabel != null) renderScaleLabel.Text = $"{Mathf.RoundToInt(val)}%";
+				if (_isSyncingUI) return;
+				float scale = (float)val / 100.0f;
+				int mode = SaveManager.CurrentData?.Audio?.ScalingMode ?? 0;
+				ApplyRenderScale(scale, mode, tree);
+			};
+		}
+		if (scalingModeOption != null)
+		{
+			scalingModeOption.ItemSelected += (idx) =>
+			{
+				if (_isSyncingUI) return;
+				if (idx >= 0 && idx < ScalingModeOptions.Length)
+				{
+					float scale = SaveManager.CurrentData?.Audio?.RenderScale ?? 1.0f;
+					ApplyRenderScale(scale, ScalingModeOptions[idx].Mode, tree);
+				}
+			};
+		}
+		if (maxFpsOption != null)
+		{
+			maxFpsOption.ItemSelected += (idx) =>
+			{
+				if (_isSyncingUI) return;
+				if (idx >= 0 && idx < MaxFpsOptions.Length)
+				{
+					ApplyMaxFps(MaxFpsOptions[idx].Fps);
+				}
+			};
+		}
+		if (showFpsCheck != null)
+		{
+			showFpsCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyFpsCounter(toggled, tree); };
+		}
+		if (fovSlider != null)
+		{
+			fovSlider.ValueChanged += (val) =>
+			{
+				if (fovLabel != null) fovLabel.Text = $"{Mathf.RoundToInt(val)}°";
+				if (_isSyncingUI) return;
+				ApplyFov((float)val);
+			};
+		}
+
+		if (sensSlider != null)
+		{
+			sensSlider.ValueChanged += (val) =>
+			{
+				float sens = (float)val / 10000.0f;
+				if (sensLabel != null) sensLabel.Text = $"{sens:F4}";
+				if (_isSyncingUI) return;
+				ApplyMouseSensitivity(sens);
+			};
+		}
+		if (invertYCheck != null)
+		{
+			invertYCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyInvertY(toggled); };
+		}
+		if (headbobCheck != null)
+		{
+			headbobCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyHeadbob(toggled); };
+		}
+		if (shakeCheck != null)
+		{
+			shakeCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyScreenShake(toggled); };
+		}
+
+		if (resetDefaultsBtn != null)
+		{
+			resetDefaultsBtn.Pressed += () =>
+			{
+				ResetToDefaults(tree);
+				SyncFullUI(
+					masterSlider, masterLabel,
+					musicSlider, musicLabel,
+					sfxSlider, sfxLabel,
+					resOption, aspectOption,
+					fullscreenCheck, vsyncCheck,
+					renderScaleSlider, renderScaleLabel,
+					scalingModeOption, maxFpsOption, showFpsCheck,
+					fovSlider, fovLabel,
+					sensSlider, sensLabel,
+					invertYCheck, headbobCheck, shakeCheck
+				);
+			};
+		}
+
+		SyncFullUI(
+			masterSlider, masterLabel,
+			musicSlider, musicLabel,
+			sfxSlider, sfxLabel,
+			resOption, aspectOption,
+			fullscreenCheck, vsyncCheck,
+			renderScaleSlider, renderScaleLabel,
+			scalingModeOption, maxFpsOption, showFpsCheck,
+			fovSlider, fovLabel,
+			sensSlider, sensLabel,
+			invertYCheck, headbobCheck, shakeCheck
+		);
+	}
+
+	public static void ResetToDefaults(SceneTree tree)
+	{
+		var s = SaveManager.CurrentData?.Audio;
+		if (s == null) return;
+
+		s.MasterVolume = 1.0f;
+		s.MusicVolume = 0.8f;
+		s.SFXVolume = 1.0f;
+		s.Fullscreen = false;
+		s.ResolutionWidth = 1920;
+		s.ResolutionHeight = 1080;
+		s.AspectScaling = 0;
+		s.VSync = true;
+		s.RenderScale = 1.0f;
+		s.ScalingMode = 0;
+		s.MaxFps = 60;
+		s.ShowFpsCounter = false;
+		s.Fov = 75.0f;
+		s.MouseSensitivity = 0.0035f;
+		s.InvertY = false;
+		s.Headbob = true;
+		s.ScreenShake = true;
+
+		SaveManager.SaveDirect();
+		ApplyAllSettings(tree);
+	}
+
+	public static void SyncFullUI(
+		HSlider masterSlider, Label masterLabel,
+		HSlider musicSlider, Label musicLabel,
+		HSlider sfxSlider, Label sfxLabel,
+		OptionButton resOption, OptionButton aspectOption,
+		CheckBox fullscreenCheck, CheckBox vsyncCheck,
+		HSlider renderScaleSlider, Label renderScaleLabel,
+		OptionButton scalingModeOption,
+		OptionButton maxFpsOption,
+		CheckBox showFpsCheck,
+		HSlider fovSlider, Label fovLabel,
+		HSlider sensSlider, Label sensLabel,
+		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck)
+	{
+		_isSyncingUI = true;
+		try
+		{
+			var s = SaveManager.CurrentData?.Audio;
+			if (s == null) return;
+
+			if (masterSlider != null) masterSlider.Value = s.MasterVolume * 100.0f;
+			if (musicSlider != null) musicSlider.Value = s.MusicVolume * 100.0f;
+			if (sfxSlider != null) sfxSlider.Value = s.SFXVolume * 100.0f;
+			if (masterLabel != null) masterLabel.Text = $"{Mathf.RoundToInt(s.MasterVolume * 100.0f)}%";
+			if (musicLabel != null) musicLabel.Text = $"{Mathf.RoundToInt(s.MusicVolume * 100.0f)}%";
+			if (sfxLabel != null) sfxLabel.Text = $"{Mathf.RoundToInt(s.SFXVolume * 100.0f)}%";
+
+			if (resOption != null)
+			{
+				int selIdx = 0;
+				for (int i = 0; i < SupportedResolutions.Length; i++)
+				{
+					if (SupportedResolutions[i].Width == s.ResolutionWidth && SupportedResolutions[i].Height == s.ResolutionHeight)
+					{
+						selIdx = i;
+						break;
+					}
+				}
+				resOption.Select(selIdx);
+			}
+			if (aspectOption != null)
+			{
+				aspectOption.Select(Mathf.Clamp(s.AspectScaling, 0, AspectModes.Length - 1));
+			}
+			if (fullscreenCheck != null) fullscreenCheck.ButtonPressed = s.Fullscreen;
+			if (vsyncCheck != null) vsyncCheck.ButtonPressed = s.VSync;
+
+			if (renderScaleSlider != null) renderScaleSlider.Value = s.RenderScale * 100.0f;
+			if (renderScaleLabel != null) renderScaleLabel.Text = $"{Mathf.RoundToInt(s.RenderScale * 100.0f)}%";
+			if (scalingModeOption != null)
+			{
+				int selIdx = 0;
+				for (int i = 0; i < ScalingModeOptions.Length; i++)
+				{
+					if (ScalingModeOptions[i].Mode == s.ScalingMode) { selIdx = i; break; }
+				}
+				scalingModeOption.Select(selIdx);
+			}
+			if (maxFpsOption != null)
+			{
+				int selIdx = 0;
+				for (int i = 0; i < MaxFpsOptions.Length; i++)
+				{
+					if (MaxFpsOptions[i].Fps == s.MaxFps) { selIdx = i; break; }
+				}
+				maxFpsOption.Select(selIdx);
+			}
+			if (showFpsCheck != null) showFpsCheck.ButtonPressed = s.ShowFpsCounter;
+
+			if (fovSlider != null) fovSlider.Value = s.Fov;
+			if (fovLabel != null) fovLabel.Text = $"{Mathf.RoundToInt(s.Fov)}°";
+
+			if (sensSlider != null) sensSlider.Value = s.MouseSensitivity * 10000.0f;
+			if (sensLabel != null) sensLabel.Text = $"{s.MouseSensitivity:F4}";
+			if (invertYCheck != null) invertYCheck.ButtonPressed = s.InvertY;
+			if (headbobCheck != null) headbobCheck.ButtonPressed = s.Headbob;
+			if (shakeCheck != null) shakeCheck.ButtonPressed = s.ScreenShake;
+		}
+		finally
+		{
+			_isSyncingUI = false;
+		}
 	}
 }
 
