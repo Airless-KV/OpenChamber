@@ -24,7 +24,7 @@ height = 0.75
 albedo_color = Color(1, 0.05, 0.05, 1)
 emission_enabled = true
 emission = Color(1, 0.05, 0.05, 1)
-emission_energy_multiplier = 4.0
+emission_energy_multiplier = 6.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_e66kd"]
 radius = 0.075
@@ -46,6 +46,7 @@ transform = Transform3D(1.02, 0, 0, 0, 1.02, 0, 0, 0, 1.02, 0, 0, 0)
 
 [node name="Torso" type="MeshInstance3D" parent="VisualRoot" unique_id=862608873]
 transform = Transform3D(1, 0, 0, 0, 0.9848077, -0.1736482, 0, 0.1736482, 0.9848077, 0, 3.4, 0)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CapsuleMesh_e0sgc")
 
@@ -53,16 +54,19 @@ mesh = SubResource("CapsuleMesh_e0sgc")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.8, 0.25)
 
 [node name="Head" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=199966541]
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("SphereMesh_7m30a")
 
 [node name="LeftHorn" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=942679938]
 transform = Transform3D(0.90630776, 0.42261827, 0, -0.4082179, 0.87542605, 0.25881904, 0.10938165, -0.23456971, 0.9659258, -0.24, 0.48, -0.08)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CylinderMesh_ihdio")
 
 [node name="RightHorn" type="MeshInstance3D" parent="VisualRoot/HeadNode" unique_id=710743858]
 transform = Transform3D(0.90630776, -0.42261827, 0, 0.4082179, 0.87542605, 0.25881904, -0.10938165, -0.23456971, 0.9659258, 0.24, 0.48, -0.08)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CylinderMesh_ihdio")
 
@@ -79,24 +83,30 @@ mesh = SubResource("SphereMesh_e66kd")
 [node name="EyeGlowLight" type="OmniLight3D" parent="VisualRoot/HeadNode" unique_id=769505123]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.5)
 light_color = Color(1, 0.05, 0.05, 1)
-light_energy = 2.2
+light_energy = 1.2
+light_cull_mask = 1
+omni_range = 3.0
 
 [node name="LeftArm" type="MeshInstance3D" parent="VisualRoot" unique_id=135714258]
 transform = Transform3D(0.9848077, -0.17364818, 0, 0.16773126, 0.9512512, -0.25881904, 0.044943456, 0.25488698, 0.9659258, -0.68, 2.9, 0.1)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CapsuleMesh_olfhl")
 
 [node name="RightArm" type="MeshInstance3D" parent="VisualRoot" unique_id=1293082561]
 transform = Transform3D(0.9848077, 0.17364818, 0, -0.16773126, 0.9512512, -0.25881904, -0.044943456, 0.25488698, 0.9659258, 0.68, 2.9, 0.1)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CapsuleMesh_olfhl")
 
 [node name="LeftLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=803761787]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 1.5, -0.05)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CapsuleMesh_mqshw")
 
 [node name="RightLeg" type="MeshInstance3D" parent="VisualRoot" unique_id=1686112313]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 1.5, -0.05)
+layers = 2
 material_override = SubResource("StandardMaterial3D_2k5n2")
 mesh = SubResource("CapsuleMesh_mqshw")

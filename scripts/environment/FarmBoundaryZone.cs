@@ -14,6 +14,8 @@
 //                        extended survival window to 20s, and added periodic red stalker eyes behind head
 // - Nov 13, 2026 | air : Repositioned eyes deep into forest trees (10-18m away) facing player,
 //                        extended sustained glow duration to ~6s, and scaled eye emission for distance
+// - Nov 15, 2026 | air : Integrated DeathScenario.WildernessConsumption and stalker position with 3D death scenes
+// - Nov 15, 2026 | air : Softened death fog from 1.0 to 0.35 for sharp monster visibility during takedown
 // =========================================================================================
 using Godot;
 
@@ -327,12 +329,20 @@ public partial class FarmBoundaryZone : Node3D
 
 		ResetEyes();
 
-		// Restore daytime atmosphere for game-over screen readability
+		// Soften dark fog from 1.0 (blackout) to 0.35 so the monster and its horns cut clearly through the misty trees
 		if (AtmosphereNode != null)
 		{
-			AtmosphereNode.DangerDarkness = 0.0f;
+			AtmosphereNode.DangerDarkness = 0.35f;
 		}
 
-		BreachManagerNode?.TriggerBreach("You wandered into the forbidden wild... Ani-Ani consumed you in the dark.");
+		Vector3 threatPos = StalkerEyesRoot != null
+			? StalkerEyesRoot.GlobalPosition
+			: (PlayerNode != null ? PlayerNode.GlobalPosition + PlayerNode.GlobalBasis.Z * 8f : Vector3.Zero);
+
+		BreachManagerNode?.TriggerBreach(
+			"You wandered into the forbidden wild... Ani-Ani consumed you in the dark.",
+			BreachManager.DeathScenario.WildernessConsumption,
+			threatPos
+		);
 	}
 }

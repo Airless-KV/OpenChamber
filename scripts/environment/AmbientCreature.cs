@@ -8,6 +8,9 @@
 // Change Log:
 // - Nov 10, 2026 | air : Created AmbientCreature controller for passive red-eyed cows and yellow-eyed sheep
 // - Nov 11, 2026 | air : Added 2.5D billboard sprite support with directional FlipH and procedural grazing/idle bobbing
+// - Nov 15, 2026 | air : Isolated creature eye lights to Layer 1 and body sprites to Layer 3 to prevent self-illumination
+// - Nov 15, 2026 | air : Integrated pixel-locked billboard sprite emission and removed misplaced 3D eye meshes
+// - Nov 15, 2026 | air : Implemented CCTV night stealth mechanic (bodies hidden in direct night view, revealed on CCTV feeds)
 // =========================================================================================
 using Godot;
 using System;
@@ -39,6 +42,7 @@ public partial class AmbientCreature : CharacterBody3D
 	[Export] public Node3D LegBackLeft;
 	[Export] public Node3D LegBackRight;
 	[Export] public OmniLight3D EyeLight;
+	[Export] public Node3D NightEyes;
 
 	public CreatureState CurrentState { get; private set; } = CreatureState.Idle;
 
@@ -48,6 +52,9 @@ public partial class AmbientCreature : CharacterBody3D
 	private double _animTime;
 	private readonly Random _rng = new();
 	private float _baseEyeEnergy = 1.2f;
+	private bool _isNight = false;
+	private bool _isCCTV = false;
+	private bool _nightCamConnected = false;
 
 	// Base transforms for clean procedural resets
 	private Vector3 _headBaseRot;
@@ -63,7 +70,10 @@ public partial class AmbientCreature : CharacterBody3D
 		if (BillboardSprite != null)
 		{
 			_spriteBasePos = BillboardSprite.Position;
+			BillboardSprite.Layers = 4; // Visual Layer 3
 		}
+
+		NightEyes ??= GetNodeOrNull<Node3D>("NightEyes");
 
 		// Auto-bind nodes if not explicitly assigned in inspector
 		VisualRoot ??= GetNodeOrNull<Node3D>("VisualRoot");
@@ -75,6 +85,11 @@ public partial class AmbientCreature : CharacterBody3D
 			LegFrontRight ??= VisualRoot.GetNodeOrNull<Node3D>("FrontRightLeg");
 			LegBackLeft ??= VisualRoot.GetNodeOrNull<Node3D>("BackLeftLeg");
 			LegBackRight ??= VisualRoot.GetNodeOrNull<Node3D>("BackRightLeg");
+
+			foreach (var mesh in VisualRoot.FindChildren("*", "MeshInstance3D", true, false))
+			{
+				if (mesh is MeshInstance3D mi) mi.Layers = 4;
+			}
 		}
 
 		if (HeadNode != null)
@@ -83,13 +98,63 @@ public partial class AmbientCreature : CharacterBody3D
 			EyeLight ??= HeadNode.GetNodeOrNull<OmniLight3D>("EyeLight");
 		}
 
+		EyeLight ??= GetNodeOrNull<OmniLight3D>("EyeLight");
+
 		if (EyeLight != null)
 		{
 			_baseEyeEnergy = EyeLight.LightEnergy;
+			EyeLight.LightCullMask = 1; // Illuminates ground/grass only, never self
 		}
+
+		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+		if (gm != null)
+		{
+			gm.PhaseChanged += (isDay, _) =>
+			{
+				_isNight = !isDay;
+				UpdateVisibility();
+			};
+			_isNight = gm.CurrentPhase == GameManager.GamePhase.Night;
+		}
+
+		if (NighttCamera.Instance != null)
+		{
+			NighttCamera.Instance.CCTVModeChanged += isCCTV =>
+			{
+				_isCCTV = isCCTV;
+				UpdateVisibility();
+			};
+			_isCCTV = NighttCamera.Instance.IsNightMode;
+			_nightCamConnected = true;
+		}
+
+		UpdateVisibility();
 
 		// Initial idle timer with random offset
 		_stateTimer = (float)(MinIdleTime + _rng.NextDouble() * (MaxIdleTime - MinIdleTime));
+	}
+
+	public void UpdateVisibility()
+	{
+		if (!_isNight)
+		{
+			// Daytime: normal peaceful farm animals, night eyes & eye lights disabled
+			if (BillboardSprite != null) BillboardSprite.Visible = true;
+			if (VisualRoot != null && VisualRoot != this) VisualRoot.Visible = true;
+			if (NightEyes != null) NightEyes.Visible = false;
+			if (EyeLight != null) EyeLight.Visible = false;
+			return;
+		}
+
+		// Nighttime:
+		// Body is ONLY rendered when viewed on CCTV!
+		// In first-person direct view (looking through doors/windows), body is OFF so only NightEyes appear!
+		bool showBody = _isCCTV;
+		if (BillboardSprite != null) BillboardSprite.Visible = showBody;
+		if (VisualRoot != null && VisualRoot != this) VisualRoot.Visible = showBody;
+
+		if (NightEyes != null) NightEyes.Visible = true;
+		if (EyeLight != null) EyeLight.Visible = _isCCTV;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -98,11 +163,38 @@ public partial class AmbientCreature : CharacterBody3D
 		_animTime += delta;
 		_stateTimer -= dt;
 
+		if (!_nightCamConnected && NighttCamera.Instance != null)
+		{
+			NighttCamera.Instance.CCTVModeChanged += isCCTV =>
+			{
+				_isCCTV = isCCTV;
+				UpdateVisibility();
+			};
+			_isCCTV = NighttCamera.Instance.IsNightMode;
+			_nightCamConnected = true;
+			UpdateVisibility();
+		}
+
+		// Rotate NightEyes around Y to always face the player/active camera so both eyes are visible
+		if (NightEyes != null && NightEyes.Visible)
+		{
+			Camera3D cam = GetViewport()?.GetCamera3D();
+			if (cam != null)
+			{
+				Vector3 toCam = cam.GlobalPosition - NightEyes.GlobalPosition;
+				toCam.Y = 0;
+				if (toCam.LengthSquared() > 0.01f)
+				{
+					NightEyes.LookAt(NightEyes.GlobalPosition - toCam, Vector3.Up);
+				}
+			}
+		}
+
 		// Gentle eye light flicker/pulsing for eerie atmosphere
-		if (EyeLight != null)
+		if (EyeLight != null && EyeLight.Visible)
 		{
 			float pulse = Mathf.Sin((float)_animTime * 2.8f) * 0.18f;
-			EyeLight.LightEnergy = Mathf.Max(0.2f, _baseEyeEnergy + pulse);
+			EyeLight.LightEnergy = Mathf.Max(0.05f, _baseEyeEnergy + pulse);
 		}
 
 		switch (CurrentState)

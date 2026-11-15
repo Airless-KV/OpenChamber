@@ -5,17 +5,14 @@
 // Change Log:
 // - Nov 06, 2026 | rbn : Implemented barricade plank refund handling
 // - Nov 06, 2026 | air : Consolidated TryUsePlank with GameManager.Shop.cs
+// - Nov 15, 2026 | air : Decommissioned barricade plank refunds
 // =========================================================================================
 using Godot;
 
 public partial class GameManager
 {
-	// Ibinabalik ang mga plank na tinanggal mula sa pinto o bintana.
+	// Legacy stub maintained for backwards compatibility
 	public void RefundPlanks(int amount)
 	{
-		if (amount <= 0)
-			return;
-
-		AddPlanks(amount);
 	}
 }

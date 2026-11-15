@@ -14,6 +14,7 @@
 // - Nov 10, 2026 | air : Updated prompts to reflect Left Click placement and Right Click removal
 // - Nov 13, 2026 | air : Removed broken state prompt following Lawnmower defense decommissioning
 // - Nov 14, 2026 | air : Updated placement hold prompts to 1.5s
+// - Nov 15, 2026 | air : Decommissioned barricade interactions and simplified opening prompts
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -54,35 +55,17 @@ public partial class InteractableEntrance : InteractableBase
 
 	public override string GetPrompt()
 	{
-		var lockable = GetChildren().OfType<LockableOpening>().FirstOrDefault();
-		if (lockable != null)
-		{
-			if (lockable.PlanksPlaced > 0)
-				return $"[Barricaded: {lockable.PlanksPlaced}/{lockable.MaxPlanks}] {EntranceTypeName} | Hold Left Click: Add | Hold Right Click: Remove";
-
-			return $"[Bare {EntranceTypeName}] Hold Left Click (1.5s) to Place Plank";
-		}
-
-		return $"[Bare {EntranceTypeName}]";
+		return $"[{EntranceTypeName}]";
 	}
 
 	protected override void OnInteract(PlayerController player)
 	{
 		var hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
-		var lockable = GetChildren().OfType<LockableOpening>().FirstOrDefault();
-		if (lockable != null && lockable.PlanksPlaced > 0)
-		{
-			hud?.SetInteractionPrompt($"[Barricaded {EntranceTypeName}] ({lockable.PlanksPlaced}/{lockable.MaxPlanks} Planks). Hold Left Click to add, or Right Click to remove.");
-		}
-		else
-		{
-			hud?.SetInteractionPrompt($"[Bare {EntranceTypeName}] Opening is unbarricaded. Hold Left Click (1.5s) to place a wooden plank!");
-		}
+		hud?.SetInteractionPrompt($"[{EntranceTypeName}] Cabin opening.");
 	}
 
 	protected override void OnInteractSecondary(PlayerController player)
 	{
-		// Handled via LockableOpening hold timers (Right Click hold, Left Click hold)
 	}
 
 	public bool AbsorbBreachWithBarricade()

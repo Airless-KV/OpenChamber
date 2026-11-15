@@ -9,6 +9,10 @@
 // - Nov 13, 2026 | air : Created physical 3D WorldItem entity for tactile carry system
 // - Nov 13, 2026 | air : Added ItemType.CarBattery with custom 3D model, terminal posts, and battery health
 // - Nov 14, 2026 | air : Added ItemType.Crowbar with 3D rusted iron prybar model and instant barricade dismantling
+// - Nov 15, 2026 | air : Assigned CollisionLayer to Layer 2 (Items) and CollisionMask to 0 so ground items have no player collision
+// - Nov 15, 2026 | air : Removed Plank and Crowbar item types and models following barricade removal
+// - Nov 15, 2026 | air : Added flower shelf life (Tier 1: 180s, scaling down 30s per tier) and natural wilting
+// - Nov 15, 2026 | air : Updated Seed GetItemDisplayName to reflect FlowerTier level
 // =========================================================================================
 using Godot;
 using System;
@@ -17,9 +21,7 @@ public enum ItemType
 {
 	Flower,
 	Seed,
-	Plank,
-	CarBattery,
-	Crowbar
+	CarBattery
 }
 
 public partial class WorldItem : InteractableBase
@@ -27,6 +29,7 @@ public partial class WorldItem : InteractableBase
 	[Export] public ItemType ItemType = ItemType.Seed;
 	[Export] public int FlowerTier = 1;
 	[Export] public int BatteryHealth = 100;
+	[Export] public float FreshnessTimer = 180f;
 
 	private Node3D _visualRoot;
 	private float _bobTimer;
@@ -44,10 +47,23 @@ public partial class WorldItem : InteractableBase
 
 	public static readonly int[] FlowerPrices = { 3, 8, 20, 45, 100 };
 
+	public static float GetMaxShelfLife(int tier)
+	{
+		// Level 1: 180s (3m), decreasing by 30s each tier down to Level 5: 60s (1m)
+		int t = Mathf.Clamp(tier, 1, 5);
+		return Mathf.Max(30f, 180f - (t - 1) * 30f);
+	}
+
 	public override void _Ready()
 	{
 		base._Ready();
 		AddToGroup("WorldItems");
+
+		// Isolate world items to Layer 2 (Items) with zero collision mask
+		// This completely eliminates player character body collision while allowing raycast targeting
+		CollisionLayer = 2;
+		CollisionMask = 0;
+
 		BuildVisuals();
 		_basePos = GlobalPosition;
 		_bobTimer = (float)GD.RandRange(0.0, Math.PI * 2);
@@ -61,6 +77,17 @@ public partial class WorldItem : InteractableBase
 			_initializedBasePos = true;
 		}
 
+		// Flower freshness decay while in the world
+		if (ItemType == ItemType.Flower)
+		{
+			FreshnessTimer -= (float)delta;
+			if (FreshnessTimer <= 0f)
+			{
+				WiltAndDespawn();
+				return;
+			}
+		}
+
 		_bobTimer += (float)delta * 2.5f;
 		float bobY = Mathf.Sin(_bobTimer) * 0.08f;
 		if (_visualRoot != null)
@@ -70,15 +97,21 @@ public partial class WorldItem : InteractableBase
 		}
 	}
 
+	private void WiltAndDespawn()
+	{
+		var hud = GetTree()?.Root.FindChild("HUD", true, false) as HUDManager;
+		hud?.SetInteractionPrompt($"[!] A Tier {FlowerTier} Flower wilted away into dust!");
+		AudioManager.Sfx("foliage_rustle", -2f);
+		QueueFree();
+	}
+
 	public string GetItemDisplayName()
 	{
 		return ItemType switch
 		{
-			ItemType.Plank => "Wooden Plank",
-			ItemType.Seed => "Level 1 Seed",
-			ItemType.Flower => FlowerNames[Mathf.Clamp(FlowerTier - 1, 0, 4)],
+			ItemType.Seed => $"Level {Mathf.Clamp(FlowerTier, 1, 5)} Seed",
+			ItemType.Flower => $"{FlowerNames[Mathf.Clamp(FlowerTier - 1, 0, 4)]} ({Mathf.CeilToInt(FreshnessTimer)}s)",
 			ItemType.CarBattery => $"Car Battery ({BatteryHealth}% HP)",
-			ItemType.Crowbar => "Rusted Crowbar",
 			_ => "Item"
 		};
 	}
@@ -87,14 +120,10 @@ public partial class WorldItem : InteractableBase
 	{
 		if (ItemType == ItemType.Flower)
 			return FlowerPrices[Mathf.Clamp(FlowerTier - 1, 0, 4)];
-		if (ItemType == ItemType.Plank)
-			return 2;
 		if (ItemType == ItemType.Seed)
 			return 1;
 		if (ItemType == ItemType.CarBattery)
 			return 3;
-		if (ItemType == ItemType.Crowbar)
-			return 2;
 		return 0;
 	}
 
@@ -134,9 +163,6 @@ public partial class WorldItem : InteractableBase
 
 		switch (ItemType)
 		{
-			case ItemType.Plank:
-				BuildPlankVisual();
-				break;
 			case ItemType.Seed:
 				BuildSeedVisual();
 				break;
@@ -146,25 +172,7 @@ public partial class WorldItem : InteractableBase
 			case ItemType.CarBattery:
 				BuildCarBatteryVisual();
 				break;
-			case ItemType.Crowbar:
-				BuildCrowbarVisual();
-				break;
 		}
-	}
-
-	private void BuildPlankVisual()
-	{
-		var meshInstance = new MeshInstance3D();
-		var box = new BoxMesh { Size = new Vector3(1.1f, 0.12f, 0.32f) };
-		meshInstance.Mesh = box;
-
-		var mat = new StandardMaterial3D
-		{
-			AlbedoColor = new Color(0.58f, 0.38f, 0.22f),
-			Roughness = 0.85f
-		};
-		meshInstance.MaterialOverride = mat;
-		_visualRoot.AddChild(meshInstance);
 	}
 
 	private void BuildSeedVisual()
@@ -274,54 +282,17 @@ public partial class WorldItem : InteractableBase
 		_visualRoot.AddChild(label);
 	}
 
-	private void BuildCrowbarVisual()
+	public static WorldItem Spawn(Node parent, Vector3 position, ItemType type, int tier = 1, int batteryHealth = 100, float freshness = -1f)
 	{
-		var rustMat = new StandardMaterial3D
-		{
-			AlbedoColor = new Color(0.38f, 0.24f, 0.18f),
-			Metallic = 0.75f,
-			Roughness = 0.65f
-		};
-
-		// 1. Main shaft
-		var shaft = new MeshInstance3D();
-		shaft.Mesh = new CylinderMesh { TopRadius = 0.024f, BottomRadius = 0.024f, Height = 0.72f };
-		shaft.MaterialOverride = rustMat;
-		shaft.RotationDegrees = new Vector3(25f, 0f, 40f);
-		_visualRoot.AddChild(shaft);
-
-		// 2. Curved gooseneck hook
-		var hook = new MeshInstance3D();
-		hook.Mesh = new CylinderMesh { TopRadius = 0.022f, BottomRadius = 0.022f, Height = 0.22f };
-		hook.MaterialOverride = rustMat;
-		hook.Position = new Vector3(0.24f, 0.28f, -0.08f);
-		hook.RotationDegrees = new Vector3(-35f, 20f, -50f);
-		_visualRoot.AddChild(hook);
-
-		// 3. Pry claw chisel head
-		var claw = new MeshInstance3D();
-		claw.Mesh = new BoxMesh { Size = new Vector3(0.065f, 0.015f, 0.08f) };
-		claw.MaterialOverride = rustMat;
-		claw.Position = new Vector3(0.32f, 0.32f, -0.12f);
-		claw.RotationDegrees = new Vector3(-35f, 20f, -50f);
-		_visualRoot.AddChild(claw);
-
-		// 4. Straight end wedge / chisel
-		var wedge = new MeshInstance3D();
-		wedge.Mesh = new BoxMesh { Size = new Vector3(0.055f, 0.015f, 0.07f) };
-		wedge.MaterialOverride = rustMat;
-		wedge.Position = new Vector3(-0.25f, -0.28f, 0.09f);
-		wedge.RotationDegrees = new Vector3(25f, 0f, 40f);
-		_visualRoot.AddChild(wedge);
-	}
-
-	public static WorldItem Spawn(Node parent, Vector3 position, ItemType type, int tier = 1, int batteryHealth = 100)
-	{
+		float shelfLife = freshness >= 0f ? freshness : GetMaxShelfLife(tier);
 		var item = new WorldItem
 		{
 			ItemType = type,
 			FlowerTier = tier,
 			BatteryHealth = Mathf.Clamp(batteryHealth, 0, 100),
+			FreshnessTimer = shelfLife,
+			CollisionLayer = 2,
+			CollisionMask = 0,
 			GlobalPosition = position
 		};
 		parent.AddChild(item);

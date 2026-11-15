@@ -25,7 +25,6 @@ AudioManager="*res://scripts/audio/AudioManager.cs"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode="windowed"
-window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -52,17 +51,22 @@ place_barricade={
 ]
 }
 
+[layer_names]
+
+3d_physics/layer_1="World"
+3d_physics/layer_2="Items"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
 
 [rendering]
 
+rendering_device/driver.windows="d3d12"
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
 scaling_3d/mode=1
 scaling_3d/scale=0.75
 scaling_3d/fsr_sharpness=0.2
-lights_and_shadows/directional_shadow/size=1024
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
 lights_and_shadows/positional_shadow/size=1024
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
-rendering_device/driver.windows="d3d12"

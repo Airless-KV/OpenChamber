@@ -9,6 +9,9 @@
 // - Nov 11, 2026 | air : Removed unneeded Barrier and Axe items from active shop catalog
 // - Nov 13, 2026 | air : Added Car Battery item definition to shop catalog
 // - Nov 14, 2026 | air : Added Rusted Crowbar item definition to shop catalog
+// - Nov 15, 2026 | air : Removed Plank and Crowbar item definitions following barricade decommission
+// - Nov 15, 2026 | air : Added Cryo-Freezer item definition for flower preservation
+// - Nov 15, 2026 | air : Increased seed price from 1 to 100 coins
 // =========================================================================================
 using System.Collections.Generic;
 
@@ -27,14 +30,13 @@ public static class ShopCatalog
 	public const string AxeId = "axe";
 	public const string SeedId = "seed";
 	public const string BatteryId = "battery";
-	public const string CrowbarId = "crowbar";
+	public const string FreezerId = "freezer";
 
 	private static readonly Dictionary<string, ShopItem> _items = new()
 	{
-		{ PlankId, new ShopItem { Id = PlankId, DisplayName = "Wooden Plank", Price = 2, Description = "Fortify bare cabin openings against night breaches." } },
-		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 1, Description = "Plantable seed to cultivate valuable flowers." } },
+		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 100, Description = "Plantable seed to cultivate valuable flowers." } },
 		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 5, Description = "Powers cabin halogen floodlights to blind night monsters." } },
-		{ CrowbarId, new ShopItem { Id = CrowbarId, DisplayName = "Rusted Crowbar", Price = 4, Description = "Instantly pries off all barricade planks from a window or door." } }
+		{ FreezerId, new ShopItem { Id = FreezerId, DisplayName = "Cryo-Freezer Box", Price = 8, Description = "Preserves up to 10 harvested flowers. Requires a Car Battery (burns 1% per 5s)." } }
 	};
 
 	public static ShopItem Get(string id)

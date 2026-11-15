@@ -13,15 +13,20 @@
 // - Nov 13, 2026 | air : Integrated 3D entity item spawning and carried inventory synchronization on purchase
 // - Nov 13, 2026 | air : Added Car Battery purchase handling and 3D spawning
 // - Nov 14, 2026 | air : Removed infinite planks; added Rusted Crowbar shop purchasing and real-count tracking
+// - Nov 15, 2026 | air : Removed Plank and Crowbar inventory tracking and purchasing
+// - Nov 15, 2026 | air : Added Cryo-Freezer shop purchase handling and physical instantiation
+// - Nov 15, 2026 | air : Added multi-freezer cabin placement support with dedicated battery per unit
+// - Nov 15, 2026 | air : Expanded freezer purchase capacity and support for portable placement
 // =========================================================================================
 using Godot;
+using System.Linq;
 
 public partial class GameManager
 {
 	[Signal]
 	public delegate void InventoryChangedEventHandler();
 
-	public int Planks { get; private set; } = 0;
+	public int Planks => 0;
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
 
@@ -50,6 +55,43 @@ public partial class GameManager
 			}
 		}
 		_lastObservedSeeds = totalSeeds;
+	}
+
+	public void SpawnFreezerInCabin()
+	{
+		Node house = GetTree()?.Root.FindChild("House", true, false)
+			?? GetTree()?.CurrentScene?.FindChild("House", true, false);
+
+		var existingFreezers = GetTree().GetNodesInGroup("Freezers");
+		int count = existingFreezers.Count;
+
+		// Offset positions along cabin wall or near cabin entrance
+		float xOffset = -2.1f + ((count % 4) * 1.15f);
+		float zOffset = count < 4 ? -1.8f : (count < 8 ? 1.8f : 0f);
+
+		var freezerScene = GD.Load<PackedScene>("res://scenes/interaction/freezer.tscn");
+		InteractableFreezer freezer = freezerScene != null
+			? freezerScene.Instantiate<InteractableFreezer>()
+			: new InteractableFreezer();
+
+		freezer.Name = $"CryoFreezer_{count + 1}";
+
+		if (house != null)
+		{
+			freezer.Position = new Vector3(xOffset, 0.0f, zOffset);
+			house.AddChild(freezer);
+		}
+		else
+		{
+			var player = GetTree()?.GetFirstNodeInGroup("Player") as PlayerController;
+			Vector3 dropPos = player != null ? player.GlobalPosition + new Vector3(1.0f, 0.2f, 1.0f) : new Vector3(0, 0, 0);
+			freezer.GlobalPosition = dropPos;
+			(GetTree()?.CurrentScene ?? (Node)this).AddChild(freezer);
+		}
+
+		AudioManager.Sfx("door_pound", 1f);
+		var successHud = GetTree()?.Root.FindChild("HUD", true, false) as HUDManager;
+		successHud?.SetInteractionPrompt($"[✓] Cryo-Freezer #{count + 1} delivered! Press [G] to pick up and relocate.");
 	}
 
 	public void SpawnOrAddPurchasedItem(ItemType type, int batteryHealth = 100)
@@ -84,19 +126,8 @@ public partial class GameManager
 		EmitSignal(SignalName.SeedsChanged, Level1Seeds);
 	}
 
-	public bool TryUsePlank()
-	{
-		if (Planks <= 0) return false;
-		Planks--;
-		EmitSignal(SignalName.InventoryChanged);
-		return true;
-	}
-
-	public void AddPlanks(int amount)
-	{
-		Planks += amount;
-		EmitSignal(SignalName.InventoryChanged);
-	}
+	public bool TryUsePlank() => false;
+	public void AddPlanks(int amount) { }
 
 	public bool TryUseBarrier()
 	{
@@ -123,18 +154,14 @@ public partial class GameManager
 
 		switch (id)
 		{
-			case ShopCatalog.PlankId:
-				Planks++;
-				SpawnOrAddPurchasedItem(ItemType.Plank);
-				break;
 			case ShopCatalog.SeedId:
 				SpawnOrAddPurchasedItem(ItemType.Seed);
 				break;
 			case ShopCatalog.BatteryId:
 				SpawnOrAddPurchasedItem(ItemType.CarBattery, 100);
 				break;
-			case ShopCatalog.CrowbarId:
-				SpawnOrAddPurchasedItem(ItemType.Crowbar);
+			case ShopCatalog.FreezerId:
+				SpawnFreezerInCabin();
 				break;
 		}
 

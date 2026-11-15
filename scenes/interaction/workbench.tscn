@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://c5e7b8w3k1pxq"]
+
+[ext_resource type="Script" uid="uid://divlimhmclter" path="res://scripts/interaction/InteractableWorkbench.cs" id="1_workbench"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bench"]
+size = Vector3(1.4, 0.9, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_top"]
+albedo_color = Color(0.48, 0.33, 0.22, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_top"]
+size = Vector3(1.35, 0.08, 0.75)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_legs"]
+albedo_color = Color(0.32, 0.21, 0.13, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg"]
+size = Vector3(0.09, 0.82, 0.09)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cutting_board"]
+albedo_color = Color(0.65, 0.5, 0.35, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_cutting_board"]
+size = Vector3(0.42, 0.03, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bowl"]
+albedo_color = Color(0.25, 0.28, 0.3, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_bowl"]
+top_radius = 0.11
+bottom_radius = 0.07
+height = 0.06
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_seeds"]
+albedo_color = Color(0.82, 0.72, 0.45, 1)
+roughness = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_seeds"]
+radius = 0.08
+height = 0.04
+
+[node name="Workbench" type="StaticBody3D" unique_id=987654401 node_paths=PackedStringArray("StatusLabel", "SpawnPoint")]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_workbench")
+StatusLabel = NodePath("StatusLabel")
+SpawnPoint = NodePath("SpawnPoint")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=987654402]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("BoxShape3D_bench")
+
+[node name="TableTop" type="MeshInstance3D" parent="." unique_id=987654403]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.82, 0)
+material_override = SubResource("StandardMaterial3D_wood_top")
+mesh = SubResource("BoxMesh_top")
+
+[node name="LegFL" type="MeshInstance3D" parent="." unique_id=987654404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.41, 0.3)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="LegFR" type="MeshInstance3D" parent="." unique_id=987654405]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, 0.41, 0.3)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="LegBL" type="MeshInstance3D" parent="." unique_id=987654406]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.41, -0.3)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="LegBR" type="MeshInstance3D" parent="." unique_id=987654407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, 0.41, -0.3)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="CuttingBoard" type="MeshInstance3D" parent="." unique_id=987654408]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.87, 0.05)
+material_override = SubResource("StandardMaterial3D_cutting_board")
+mesh = SubResource("BoxMesh_cutting_board")
+
+[node name="SeedBowl" type="MeshInstance3D" parent="." unique_id=987654409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.88, -0.05)
+material_override = SubResource("StandardMaterial3D_bowl")
+mesh = SubResource("CylinderMesh_bowl")
+
+[node name="SeedPile" type="MeshInstance3D" parent="." unique_id=987654410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.9, -0.05)
+material_override = SubResource("StandardMaterial3D_seeds")
+mesh = SubResource("SphereMesh_seeds")
+
+[node name="SpawnPoint" type="Marker3D" parent="." unique_id=987654411]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+
+[node name="StatusLabel" type="Label3D" parent="." unique_id=987654412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+double_sided = false
+text = "Seed Workbench
+1 Flower -> 2 Seeds"
+font_size = 22
+outline_size = 6
+outline_modulate = Color(0, 0, 0, 0.8)
+modulate = Color(0.9, 0.9, 0.9, 1)

@@ -12,6 +12,7 @@
 // - Nov 10, 2026 | air : Updated prompt to Left Click to fire and Right Click to clear planks
 // - Nov 13, 2026 | air : Gated spotlights on treehouse Car Battery power and integrated 25% health drain per activation
 // - Nov 14, 2026 | air : Synchronized Direction with RequiredEntrance.AttackDirection in _Ready
+// - Nov 15, 2026 | air : Removed barricade obstruction requirements from floodlight beam
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -27,6 +28,7 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 
 	[ExportGroup("Switch Visuals")]
 	[Export] public MeshInstance3D SwitchLever;
+	[Export] public MeshInstance3D LampLensMesh;
 
 	public bool IsActive { get; private set; }
 	public bool IsOnCooldown => _cooldownTimer > 0f;
@@ -34,6 +36,7 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 	private float _activeTimer;
 	private float _cooldownTimer;
 	private HUDManager _hud;
+	private StandardMaterial3D _lensMat;
 
 	public override void _Ready()
 	{
@@ -41,6 +44,14 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		AddToGroup("Floodlights");
 		_hud ??= GetTree().Root.FindChild("HUD", true, false) as HUDManager;
 		if (ExteriorFloodlight != null) ExteriorFloodlight.Visible = false;
+
+		LampLensMesh ??= GetNodeOrNull<MeshInstance3D>("LampHead/LensMesh");
+		if (LampLensMesh != null && LampLensMesh.MaterialOverride is StandardMaterial3D sm)
+		{
+			_lensMat = sm.Duplicate() as StandardMaterial3D;
+			LampLensMesh.MaterialOverride = _lensMat;
+			SetLensActive(false);
+		}
 
 		if (RequiredEntrance != null)
 		{
@@ -74,34 +85,30 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 
 	private InteractableBatteryStation GetBatteryStation()
 	{
-		return InteractableBatteryStation.Instance 
-			?? GetTree()?.GetFirstNodeInGroup("BatteryStation") as InteractableBatteryStation
-			?? GetTree()?.Root.FindChild("BatteryStation", true, false) as InteractableBatteryStation;
+		return InteractableBatteryStation.GetStation(PowerSystemType.Floodlights)
+			?? InteractableBatteryStation.Instance 
+			?? GetTree()?.GetFirstNodeInGroup("BatteryStation") as InteractableBatteryStation;
 	}
 
 	public override string GetPrompt()
 	{
 		var station = GetBatteryStation();
 		if (station == null || !station.HasBattery)
-			return "[!] NO POWER! Insert Car Battery at Treehouse Power Station!";
+			return "[!] NO POWER! Insert Car Battery at Floodlight Power Station!";
 
 		if (station.BatteryHealth <= 0)
-			return "[!] BATTERY DEAD (0% HP)! Replace battery at Treehouse Power Station!";
+			return "[!] BATTERY DEAD (0% HP)! Replace battery at Floodlight Power Station!";
 
 		if (IsActive)
-			return $"[Active] Floodlight beam active! ({Mathf.CeilToInt(_activeTimer)}s) [Battery: {station.BatteryHealth}%]";
+			return $"[Active] Floodlight beam active! ({Mathf.CeilToInt(_activeTimer)}s) [Floodlight Batt: {station.BatteryHealth}%]";
 
 		if (IsOnCooldown)
 			return $"[Cooldown] Recharging floodlight capacitor ({Mathf.CeilToInt(_cooldownTimer)}s)...";
 
-		var lockable = GetOpeningLockable();
 		if (RequiredEntrance != null && !RequiredEntrance.IsOpen)
 			return $"[!] {RequiredEntrance.Name} is CLOSED! Open it to cast floodlight beam outside!";
 
-		if (lockable != null && lockable.PlanksPlaced > 0)
-			return $"[!] {RequiredEntrance.Name} is BARRICADED ({lockable.PlanksPlaced} planks)! Clear opening (Hold Right Click 3s) to fire beam!";
-
-		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}! [Battery: {station.BatteryHealth}%]";
+		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}! [Batt: {station.BatteryHealth}%]";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -119,16 +126,9 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 			return;
 		}
 
-		var lockable = GetOpeningLockable();
 		if (RequiredEntrance != null && !RequiredEntrance.IsOpen)
 		{
 			_hud?.SetInteractionPrompt($"[!] Open {RequiredEntrance.Name} first to aim the beam outside!");
-			return;
-		}
-
-		if (lockable != null && lockable.PlanksPlaced > 0)
-		{
-			_hud?.SetInteractionPrompt($"[!] Barricaded! Remove planks from {RequiredEntrance.Name} (Hold Right Click 3s) to clear the floodlight beam!");
 			return;
 		}
 
@@ -149,6 +149,8 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 			ExteriorFloodlight.Visible = true;
 			ExteriorFloodlight.LightEnergy = 9.0f;
 		}
+
+		SetLensActive(true);
 
 		if (SwitchLever != null)
 			SwitchLever.RotationDegrees = new Vector3(-35f, 0, 0);
@@ -190,7 +192,19 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		if (ExteriorFloodlight != null)
 			ExteriorFloodlight.Visible = false;
 
+		SetLensActive(false);
+
 		if (SwitchLever != null)
 			SwitchLever.RotationDegrees = Vector3.Zero;
+	}
+
+	private void SetLensActive(bool active)
+	{
+		if (_lensMat != null)
+		{
+			_lensMat.EmissionEnabled = true;
+			_lensMat.Emission = active ? new Color(1f, 0.95f, 0.8f) : new Color(0.12f, 0.12f, 0.12f);
+			_lensMat.EmissionEnergyMultiplier = active ? 4.0f : 0.05f;
+		}
 	}
 }

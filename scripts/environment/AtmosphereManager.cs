@@ -10,6 +10,9 @@
 // - Oct 31, 2026 | air : Streamlined atmosphere profiles into encapsulated struct, eliminated
 //                        redundant lerp fields and multi-parameter target resolution
 // - Nov 13, 2026 | air : Added DangerDarkness 3D environment dimming, void sky, and dark fog roll
+// - Nov 15, 2026 | air : Implemented pitch-black night exterior atmosphere with high-contrast emissive eyes
+// - Nov 15, 2026 | air : Restored balanced cold moonlight baseline and ambient light to support CCTV night vision amplification
+// - Nov 15, 2026 | air : Gated house ceiling light bulb power and emission to Siren battery station
 // =========================================================================================
 using Godot;
 using System;
@@ -86,16 +89,16 @@ public partial class AtmosphereManager : Node3D
 
 	public static readonly AtmosphereProfile NightProfile = new()
 	{
-		SunColor = new(0.32f, 0.45f, 0.70f),
-		SunEnergy = 0.18f,
+		SunColor = new(0.25f, 0.35f, 0.55f),
+		SunEnergy = 0.10f,
 		SunRotation = new(-30.0f, -145.0f, 0.0f),
-		SkyTop = new(0.015f, 0.020f, 0.040f),
-		SkyHorizon = new(0.050f, 0.080f, 0.130f),
-		AmbientColor = new(0.07f, 0.10f, 0.17f),
-		AmbientEnergy = 0.10f,
-		FogColor = new(0.10f, 0.14f, 0.20f),
-		FogDensity = 0.045f,
-		Saturation = 0.42f,
+		SkyTop = new(0.010f, 0.015f, 0.030f),
+		SkyHorizon = new(0.035f, 0.055f, 0.095f),
+		AmbientColor = new(0.06f, 0.08f, 0.14f),
+		AmbientEnergy = 0.06f,
+		FogColor = new(0.05f, 0.07f, 0.12f),
+		FogDensity = 0.035f,
+		Saturation = 0.40f,
 		Contrast = 1.18f,
 		InteriorEnergy = 1.40f
 	};
@@ -105,6 +108,7 @@ public partial class AtmosphereManager : Node3D
 	[Export] public DirectionalLight3D SunLightNode;
 	[Export] public WorldEnvironment WorldEnvironmentNode;
 	[Export] public Light3D InteriorLightNode;
+	[Export] public MeshInstance3D BulbGlassMeshNode;
 
 	[ExportGroup("Transition Settings")]
 	[Export] public float TransitionSpeed = 2.5f;
@@ -119,6 +123,7 @@ public partial class AtmosphereManager : Node3D
 	private bool _isNight = false;
 	private float _dayProgress = 0.0f;
 	private float _initialPhaseDuration = 300.0f;
+	private StandardMaterial3D _bulbMaterial;
 
 	public override void _Ready()
 	{
@@ -126,6 +131,13 @@ public partial class AtmosphereManager : Node3D
 		SunLightNode ??= GetTree().Root.FindChild("DirectionalLight3D", true, false) as DirectionalLight3D;
 		WorldEnvironmentNode ??= GetTree().Root.FindChild("WorldEnvironment", true, false) as WorldEnvironment;
 		InteriorLightNode ??= GetTree().Root.FindChild("CeilingLight", true, false) as Light3D;
+		BulbGlassMeshNode ??= GetTree().Root.FindChild("BulbGlass", true, false) as MeshInstance3D;
+
+		if (BulbGlassMeshNode?.MaterialOverride is StandardMaterial3D sm)
+		{
+			_bulbMaterial = (StandardMaterial3D)sm.Duplicate();
+			BulbGlassMeshNode.MaterialOverride = _bulbMaterial;
+		}
 
 		SetupEnvironment();
 		SetupLight();
@@ -228,7 +240,15 @@ public partial class AtmosphereManager : Node3D
 
 		if (InteriorLightNode != null)
 		{
-			InteriorLightNode.LightEnergy = _current.InteriorEnergy;
+			var sirenStation = InteractableBatteryStation.GetStation(PowerSystemType.Siren);
+			bool hasPower = sirenStation != null && sirenStation.HasPower;
+
+			InteriorLightNode.LightEnergy = hasPower ? _current.InteriorEnergy : 0.0f;
+
+			if (_bulbMaterial != null)
+			{
+				_bulbMaterial.EmissionEnergyMultiplier = hasPower ? 2.5f : 0.0f;
+			}
 		}
 	}
 

@@ -1,37 +1,630 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://o8ywtkxfpi25"]
 
-[ext_resource type="Script" path="res://scripts/interaction/InteractableCCTVStation.cs" id="1_cctv"]
+[ext_resource type="Script" uid="uid://dj5clu12852ye" path="res://scripts/interaction/InteractableCCTVStation.cs" id="1_cctv"]
+[ext_resource type="Script" uid="uid://df1miuetbvtv7" path="res://scripts/interaction/InteractableSirenSwitch.cs" id="2_siren_switch"]
+[ext_resource type="Script" uid="uid://bk0ara22p6jq1" path="res://scripts/interaction/InteractableFloodlightButton.cs" id="3_flood_btn"]
+[ext_resource type="Script" uid="uid://c8m7v1pq4ayt4" path="res://scripts/interaction/InteractableBatteryStation.cs" id="4_battery_station"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_desk"]
-size = Vector3(1.6, 0.8, 0.8)
+[sub_resource type="BoxShape3D" id="BoxShape3D_tabletop_col"]
+size = Vector3(1.6, 0.08, 0.8)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_desk"]
-albedo_color = Color(0.32, 0.2, 0.1, 1)
+[sub_resource type="BoxShape3D" id="BoxShape3D_backboard_col"]
+size = Vector3(1.48, 0.35, 0.04)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_leg_col"]
+size = Vector3(0.08, 0.74, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tabletop"]
+albedo_color = Color(0.24, 0.16, 0.1, 1)
+roughness = 0.55
+
+[sub_resource type="BoxMesh" id="BoxMesh_tabletop"]
+size = Vector3(1.6, 0.06, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal_frame"]
+albedo_color = Color(0.12, 0.12, 0.14, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_desk_leg"]
+size = Vector3(0.06, 0.74, 0.06)
+
+[sub_resource type="BoxMesh" id="BoxMesh_backboard"]
+size = Vector3(1.48, 0.3, 0.03)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pc_chassis"]
+size = Vector3(0.24, 0.46, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pc_chassis"]
+albedo_color = Color(0.14, 0.14, 0.15, 1)
+metallic = 0.4
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_pc_chassis"]
+size = Vector3(0.22, 0.44, 0.48)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pc_front"]
+albedo_color = Color(0.09, 0.09, 0.1, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_pc_front"]
+size = Vector3(0.2, 0.42, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pc_led_green"]
+albedo_color = Color(0.2, 0.9, 0.3, 1)
+emission_enabled = true
+emission = Color(0.2, 0.9, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_pc_led"]
+size = Vector3(0.015, 0.015, 0.01)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pc_led_amber"]
+albedo_color = Color(0.95, 0.55, 0.1, 1)
+emission_enabled = true
+emission = Color(0.95, 0.55, 0.1, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bar_bg"]
+albedo_color = Color(0.08, 0.08, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_bar_bg"]
+size = Vector3(0.22, 0.035, 0.01)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bar_fill"]
+albedo_color = Color(0.2, 0.95, 0.3, 1)
+emission_enabled = true
+emission = Color(0.2, 0.95, 0.3, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_bar_fill"]
+size = Vector3(0.21, 0.025, 0.012)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_battery_body"]
+albedo_color = Color(0.12, 0.13, 0.14, 1)
 roughness = 0.6
 
-[sub_resource type="BoxMesh" id="BoxMesh_desk"]
-size = Vector3(1.6, 0.8, 0.8)
+[sub_resource type="BoxMesh" id="BoxMesh_battery_body"]
+size = Vector3(0.22, 0.16, 0.18)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall_conduit"]
+albedo_color = Color(0.25, 0.26, 0.28, 1)
+metallic = 0.8
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wall_conduit"]
+top_radius = 0.025
+bottom_radius = 0.025
+height = 2.230533
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_batt_dock"]
+size = Vector3(0.32, 0.3, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_siren_dock_housing"]
+albedo_color = Color(0.28, 0.12, 0.12, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_batt_dock_housing"]
+size = Vector3(0.28, 0.22, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock_led"]
+albedo_color = Color(0.15, 0.9, 0.3, 1)
+emission_enabled = true
+emission = Color(0.15, 0.9, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_dock_led"]
+radius = 0.02
+height = 0.04
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pos_term"]
+albedo_color = Color(0.88, 0.2, 0.2, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_term"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.04
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_neg_term"]
+albedo_color = Color(0.18, 0.38, 0.88, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flood_dock_housing"]
+albedo_color = Color(0.26, 0.22, 0.1, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_monitor_stand"]
+albedo_color = Color(0.12, 0.12, 0.14, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_monitor_stand_base"]
+size = Vector3(0.32, 0.02, 0.26)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_monitor_neck"]
+top_radius = 0.04
+bottom_radius = 0.04
+height = 0.12
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crt_col"]
+size = Vector3(0.68, 0.5, 0.38)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_monitor_body"]
+albedo_color = Color(0.18, 0.18, 0.2, 1)
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="BoxMesh_monitor_body"]
+size = Vector3(0.66, 0.48, 0.36)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_screen"]
-albedo_color = Color(0.1, 0.85, 0.65, 1)
+albedo_color = Color(0.08, 0.32, 0.26, 1)
+roughness = 0.2
 emission_enabled = true
-emission = Color(0.1, 0.85, 0.65, 1)
-emission_energy_multiplier = 1.5
+emission = Color(0.1, 0.7, 0.55, 1)
+emission_energy_multiplier = 1.4
 
-[sub_resource type="BoxMesh" id="BoxMesh_monitor"]
-size = Vector3(0.6, 0.5, 0.1)
+[sub_resource type="BoxMesh" id="BoxMesh_screen"]
+size = Vector3(0.54, 0.38, 0.02)
 
-[node name="CCTVStation" type="StaticBody3D" unique_id=944499830]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_power_led"]
+albedo_color = Color(0.1, 0.9, 0.3, 1)
+emission_enabled = true
+emission = Color(0.1, 0.9, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_power_led"]
+size = Vector3(0.015, 0.015, 0.01)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_console_panel"]
+albedo_color = Color(0.16, 0.16, 0.18, 1)
+metallic = 0.3
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_console_panel"]
+size = Vector3(0.34, 0.05, 0.34)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_key_btn"]
+size = Vector3(0.08, 0.06, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flood_btn"]
+albedo_color = Color(0.85, 0.65, 0.12, 1)
+metallic = 0.2
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_flood_btn"]
+size = Vector3(0.07, 0.035, 0.07)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_siren_box"]
+size = Vector3(0.24, 0.18, 0.24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_siren_box"]
+albedo_color = Color(0.22, 0.22, 0.24, 1)
+metallic = 0.3
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_siren_box"]
+size = Vector3(0.22, 0.08, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_siren_collar"]
+albedo_color = Color(0.85, 0.65, 0.1, 1)
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_siren_collar"]
+top_radius = 0.075
+bottom_radius = 0.08
+height = 0.03
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_siren_btn"]
+albedo_color = Color(0.95, 0.15, 0.15, 1)
+roughness = 0.3
+emission_enabled = true
+emission = Color(1, 0.1, 0.1, 1)
+emission_energy_multiplier = 0.7
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_siren_btn"]
+top_radius = 0.06
+bottom_radius = 0.06
+height = 0.05
+
+[node name="CCTVStation" type="Node3D" unique_id=944499830]
+
+[node name="DeskBody" type="StaticBody3D" parent="." unique_id=183745177]
+
+[node name="CollisionTabletop" type="CollisionShape3D" parent="DeskBody" unique_id=590120705]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.36, 0)
+shape = SubResource("BoxShape3D_tabletop_col")
+
+[node name="CollisionBackboard" type="CollisionShape3D" parent="DeskBody" unique_id=2048262679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.35)
+shape = SubResource("BoxShape3D_backboard_col")
+
+[node name="CollisionLegFL" type="CollisionShape3D" parent="DeskBody" unique_id=2020450443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.74, -0.03, 0.34)
+shape = SubResource("BoxShape3D_leg_col")
+
+[node name="CollisionLegFR" type="CollisionShape3D" parent="DeskBody" unique_id=1470398160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.74, -0.03, 0.34)
+shape = SubResource("BoxShape3D_leg_col")
+
+[node name="CollisionLegBL" type="CollisionShape3D" parent="DeskBody" unique_id=1210037217]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.74, -0.03, -0.34)
+shape = SubResource("BoxShape3D_leg_col")
+
+[node name="CollisionLegBR" type="CollisionShape3D" parent="DeskBody" unique_id=1208823016]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.74, -0.03, -0.34)
+shape = SubResource("BoxShape3D_leg_col")
+
+[node name="DeskRoot" type="Node3D" parent="." unique_id=965291378]
+
+[node name="Tabletop" type="MeshInstance3D" parent="DeskRoot" unique_id=1865478643]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.37, 0)
+material_override = SubResource("StandardMaterial3D_tabletop")
+mesh = SubResource("BoxMesh_tabletop")
+
+[node name="LegFrontLeft" type="MeshInstance3D" parent="DeskRoot" unique_id=1901550402]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.74, -0.03, 0.34)
+material_override = SubResource("StandardMaterial3D_metal_frame")
+mesh = SubResource("BoxMesh_desk_leg")
+
+[node name="LegFrontRight" type="MeshInstance3D" parent="DeskRoot" unique_id=1210352984]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.74, -0.03, 0.34)
+material_override = SubResource("StandardMaterial3D_metal_frame")
+mesh = SubResource("BoxMesh_desk_leg")
+
+[node name="LegBackLeft" type="MeshInstance3D" parent="DeskRoot" unique_id=1623981081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.74, -0.03, -0.34)
+material_override = SubResource("StandardMaterial3D_metal_frame")
+mesh = SubResource("BoxMesh_desk_leg")
+
+[node name="LegBackRight" type="MeshInstance3D" parent="DeskRoot" unique_id=581863030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.74, -0.03, -0.34)
+material_override = SubResource("StandardMaterial3D_metal_frame")
+mesh = SubResource("BoxMesh_desk_leg")
+
+[node name="DeskBackboard" type="MeshInstance3D" parent="DeskRoot" unique_id=1608653865]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.35)
+material_override = SubResource("StandardMaterial3D_metal_frame")
+mesh = SubResource("BoxMesh_backboard")
+
+[node name="UnderDeskPC" type="StaticBody3D" parent="." unique_id=1021525815 node_paths=PackedStringArray("BatteryVisual", "LedIndicator", "StatusLabel", "LevelBarFill")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.45, -0.17, 0)
+script = ExtResource("4_battery_station")
+StationType = 2
+BatteryVisual = NodePath("InstalledBatteryVisual")
+LedIndicator = NodePath("PowerLED")
+StatusLabel = NodePath("StatusLabel")
+LevelBarFill = NodePath("LevelBarRoot/LevelBarFill")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="UnderDeskPC" unique_id=2093916849]
+shape = SubResource("BoxShape3D_pc_chassis")
+
+[node name="Chassis" type="MeshInstance3D" parent="UnderDeskPC" unique_id=1899318653]
+material_override = SubResource("StandardMaterial3D_pc_chassis")
+mesh = SubResource("BoxMesh_pc_chassis")
+
+[node name="FrontFace" type="MeshInstance3D" parent="UnderDeskPC" unique_id=1821682971]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.245)
+material_override = SubResource("StandardMaterial3D_pc_front")
+mesh = SubResource("BoxMesh_pc_front")
+
+[node name="PowerLED" type="MeshInstance3D" parent="UnderDeskPC" unique_id=411770406]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0.14, 0.256)
+material_override = SubResource("StandardMaterial3D_pc_led_green")
+mesh = SubResource("BoxMesh_pc_led")
+
+[node name="HDDActivityLED" type="MeshInstance3D" parent="UnderDeskPC" unique_id=1278138019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0.14, 0.256)
+material_override = SubResource("StandardMaterial3D_pc_led_amber")
+mesh = SubResource("BoxMesh_pc_led")
+
+[node name="LevelBarRoot" type="Node3D" parent="UnderDeskPC" unique_id=838110389]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, 0.08, 0.256)
+
+[node name="LevelBarBg" type="MeshInstance3D" parent="UnderDeskPC/LevelBarRoot" unique_id=2088373778]
+material_override = SubResource("StandardMaterial3D_bar_bg")
+mesh = SubResource("BoxMesh_bar_bg")
+
+[node name="LevelBarFill" type="MeshInstance3D" parent="UnderDeskPC/LevelBarRoot" unique_id=785707410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.002)
+material_override = SubResource("StandardMaterial3D_bar_fill")
+mesh = SubResource("BoxMesh_bar_fill")
+
+[node name="InstalledBatteryVisual" type="Node3D" parent="UnderDeskPC" unique_id=1159879493]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, -0.05, 0.12)
+visible = false
+
+[node name="BatteryBody" type="MeshInstance3D" parent="UnderDeskPC/InstalledBatteryVisual" unique_id=1547747340]
+material_override = SubResource("StandardMaterial3D_battery_body")
+mesh = SubResource("BoxMesh_battery_body")
+
+[node name="StatusLabel" type="Label3D" parent="UnderDeskPC" unique_id=689247522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.28, 0.26)
+modulate = Color(0.4, 0.8, 1, 1)
+text = "[CCTV POWER: EMPTY]"
+font_size = 14
+
+[node name="WallMountConduit" type="MeshInstance3D" parent="." unique_id=216999615]
+transform = Transform3D(1.0146897, 0, 0, 0, 1.0146897, 0, 0, 0, 1.0146897, 1.2490549, 1.3484296, -0.68005025)
+material_override = SubResource("StandardMaterial3D_wall_conduit")
+mesh = SubResource("CylinderMesh_wall_conduit")
+
+[node name="SirenBatteryDock" type="StaticBody3D" parent="." unique_id=375288371 node_paths=PackedStringArray("BatteryVisual", "LedIndicator", "StatusLabel", "LevelBarFill")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.82, -0.52)
+script = ExtResource("4_battery_station")
+StationType = 1
+BatteryVisual = NodePath("InstalledBatteryVisual")
+LedIndicator = NodePath("LedIndicator")
+StatusLabel = NodePath("StatusLabel")
+LevelBarFill = NodePath("LevelBarRoot/LevelBarFill")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SirenBatteryDock" unique_id=534746914]
+shape = SubResource("BoxShape3D_batt_dock")
+
+[node name="HousingMesh" type="MeshInstance3D" parent="SirenBatteryDock" unique_id=369834887]
+material_override = SubResource("StandardMaterial3D_siren_dock_housing")
+mesh = SubResource("BoxMesh_batt_dock_housing")
+
+[node name="LedIndicator" type="MeshInstance3D" parent="SirenBatteryDock" unique_id=1000253104]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.08, 0.165)
+material_override = SubResource("StandardMaterial3D_dock_led")
+mesh = SubResource("SphereMesh_dock_led")
+
+[node name="LevelBarRoot" type="Node3D" parent="SirenBatteryDock" unique_id=1059003634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, 0.165)
+
+[node name="LevelBarBg" type="MeshInstance3D" parent="SirenBatteryDock/LevelBarRoot" unique_id=417292173]
+material_override = SubResource("StandardMaterial3D_bar_bg")
+mesh = SubResource("BoxMesh_bar_bg")
+
+[node name="LevelBarFill" type="MeshInstance3D" parent="SirenBatteryDock/LevelBarRoot" unique_id=1767638822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.002)
+material_override = SubResource("StandardMaterial3D_bar_fill")
+mesh = SubResource("BoxMesh_bar_fill")
+
+[node name="StatusLabel" type="Label3D" parent="SirenBatteryDock" unique_id=554776838]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0.17)
+modulate = Color(1, 0.35, 0.35, 1)
+text = "[SIREN POWER]"
+font_size = 14
+
+[node name="InstalledBatteryVisual" type="Node3D" parent="SirenBatteryDock" unique_id=741861127]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+visible = false
+
+[node name="BatteryBody" type="MeshInstance3D" parent="SirenBatteryDock/InstalledBatteryVisual" unique_id=987461405]
+material_override = SubResource("StandardMaterial3D_battery_body")
+mesh = SubResource("BoxMesh_battery_body")
+
+[node name="PosTerminal" type="MeshInstance3D" parent="SirenBatteryDock/InstalledBatteryVisual" unique_id=823276719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_pos_term")
+mesh = SubResource("CylinderMesh_term")
+
+[node name="NegTerminal" type="MeshInstance3D" parent="SirenBatteryDock/InstalledBatteryVisual" unique_id=424026870]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_neg_term")
+mesh = SubResource("CylinderMesh_term")
+
+[node name="FloodlightBatteryDock" type="StaticBody3D" parent="." unique_id=279219413 node_paths=PackedStringArray("BatteryVisual", "LedIndicator", "StatusLabel", "LevelBarFill")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.32, -0.52)
+script = ExtResource("4_battery_station")
+BatteryVisual = NodePath("InstalledBatteryVisual")
+LedIndicator = NodePath("LedIndicator")
+StatusLabel = NodePath("StatusLabel")
+LevelBarFill = NodePath("LevelBarRoot/LevelBarFill")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloodlightBatteryDock" unique_id=1679407462]
+shape = SubResource("BoxShape3D_batt_dock")
+
+[node name="HousingMesh" type="MeshInstance3D" parent="FloodlightBatteryDock" unique_id=1782331583]
+material_override = SubResource("StandardMaterial3D_flood_dock_housing")
+mesh = SubResource("BoxMesh_batt_dock_housing")
+
+[node name="LedIndicator" type="MeshInstance3D" parent="FloodlightBatteryDock" unique_id=356361997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.08, 0.165)
+material_override = SubResource("StandardMaterial3D_dock_led")
+mesh = SubResource("SphereMesh_dock_led")
+
+[node name="LevelBarRoot" type="Node3D" parent="FloodlightBatteryDock" unique_id=596905027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, 0.165)
+
+[node name="LevelBarBg" type="MeshInstance3D" parent="FloodlightBatteryDock/LevelBarRoot" unique_id=77128153]
+material_override = SubResource("StandardMaterial3D_bar_bg")
+mesh = SubResource("BoxMesh_bar_bg")
+
+[node name="LevelBarFill" type="MeshInstance3D" parent="FloodlightBatteryDock/LevelBarRoot" unique_id=789859555]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.002)
+material_override = SubResource("StandardMaterial3D_bar_fill")
+mesh = SubResource("BoxMesh_bar_fill")
+
+[node name="StatusLabel" type="Label3D" parent="FloodlightBatteryDock" unique_id=1709713792]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0.17)
+modulate = Color(1, 0.85, 0.35, 1)
+text = "[FLOODLIGHT PWR]"
+font_size = 14
+
+[node name="InstalledBatteryVisual" type="Node3D" parent="FloodlightBatteryDock" unique_id=573355774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+visible = false
+
+[node name="BatteryBody" type="MeshInstance3D" parent="FloodlightBatteryDock/InstalledBatteryVisual" unique_id=298968296]
+material_override = SubResource("StandardMaterial3D_battery_body")
+mesh = SubResource("BoxMesh_battery_body")
+
+[node name="PosTerminal" type="MeshInstance3D" parent="FloodlightBatteryDock/InstalledBatteryVisual" unique_id=350623857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_pos_term")
+mesh = SubResource("CylinderMesh_term")
+
+[node name="NegTerminal" type="MeshInstance3D" parent="FloodlightBatteryDock/InstalledBatteryVisual" unique_id=1111903129]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_neg_term")
+mesh = SubResource("CylinderMesh_term")
+
+[node name="MonitorStand" type="Node3D" parent="." unique_id=696881556]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -0.04)
+
+[node name="StandBase" type="MeshInstance3D" parent="MonitorStand" unique_id=1226023191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+material_override = SubResource("StandardMaterial3D_monitor_stand")
+mesh = SubResource("BoxMesh_monitor_stand_base")
+
+[node name="StandNeck" type="MeshInstance3D" parent="MonitorStand" unique_id=1856042366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+material_override = SubResource("StandardMaterial3D_monitor_stand")
+mesh = SubResource("CylinderMesh_monitor_neck")
+
+[node name="CRTMonitorStation" type="StaticBody3D" parent="." unique_id=1531479667 node_paths=PackedStringArray("InteractLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.02)
 script = ExtResource("1_cctv")
+InteractLabel = NodePath("InteractLabel")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=590120705]
-shape = SubResource("BoxShape3D_desk")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CRTMonitorStation" unique_id=965778170]
+shape = SubResource("BoxShape3D_crt_col")
 
-[node name="DeskMesh" type="MeshInstance3D" parent="." unique_id=1682279589]
-material_override = SubResource("StandardMaterial3D_desk")
-mesh = SubResource("BoxMesh_desk")
+[node name="MonitorMesh" type="MeshInstance3D" parent="CRTMonitorStation" unique_id=940723835]
+material_override = SubResource("StandardMaterial3D_monitor_body")
+mesh = SubResource("BoxMesh_monitor_body")
 
-[node name="MonitorMesh" type="MeshInstance3D" parent="." unique_id=1531479667]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+[node name="ScreenDisplay" type="MeshInstance3D" parent="CRTMonitorStation/MonitorMesh" unique_id=1407210269]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.175)
 material_override = SubResource("StandardMaterial3D_screen")
-mesh = SubResource("BoxMesh_monitor")
+mesh = SubResource("BoxMesh_screen")
+
+[node name="MonitorLED" type="MeshInstance3D" parent="CRTMonitorStation/MonitorMesh" unique_id=2014897710]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.24, -0.19, 0.181)
+material_override = SubResource("StandardMaterial3D_power_led")
+mesh = SubResource("BoxMesh_power_led")
+
+[node name="InteractLabel" type="Label3D" parent="CRTMonitorStation" unique_id=1738291045]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0.12)
+modulate = Color(0.2, 0.95, 0.8, 1)
+text = "CCTV SECURITY FEED
+Access Feeds"
+font_size = 18
+outline_size = 4
+
+[node name="FloodlightKeypad" type="Node3D" parent="." unique_id=1119967348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.52, 0.4, 0.08)
+
+[node name="ConsolePanel" type="MeshInstance3D" parent="FloodlightKeypad" unique_id=226487406]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+material_override = SubResource("StandardMaterial3D_console_panel")
+mesh = SubResource("BoxMesh_console_panel")
+
+[node name="PanelHeader" type="Label3D" parent="FloodlightKeypad" unique_id=1572475317]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 0.05672908, 0.19160555)
+modulate = Color(1, 0.85, 0.35, 1)
+text = "FLOODLIGHTS"
+font_size = 14
+
+[node name="ButtonNorth" type="StaticBody3D" parent="FloodlightKeypad" unique_id=128794419 node_paths=PackedStringArray("ButtonMesh", "DirectionLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.075)
+script = ExtResource("3_flood_btn")
+ButtonMesh = NodePath("ButtonMesh")
+DirectionLabel = NodePath("Label3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloodlightKeypad/ButtonNorth" unique_id=1827314312]
+shape = SubResource("BoxShape3D_key_btn")
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="FloodlightKeypad/ButtonNorth" unique_id=678943645]
+material_override = SubResource("StandardMaterial3D_flood_btn")
+mesh = SubResource("BoxMesh_flood_btn")
+
+[node name="Label3D" type="Label3D" parent="FloodlightKeypad/ButtonNorth" unique_id=1626712733]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.055603236, 0.02000001, -0.040275037)
+modulate = Color(0.1, 0.1, 0.1, 1)
+text = "▲ N"
+font_size = 18
+
+[node name="ButtonSouth" type="StaticBody3D" parent="FloodlightKeypad" unique_id=222313050 node_paths=PackedStringArray("ButtonMesh", "DirectionLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.075)
+script = ExtResource("3_flood_btn")
+Direction = 2
+ButtonMesh = NodePath("ButtonMesh")
+DirectionLabel = NodePath("Label3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloodlightKeypad/ButtonSouth" unique_id=349687968]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.0035150647)
+shape = SubResource("BoxShape3D_key_btn")
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="FloodlightKeypad/ButtonSouth" unique_id=492194068]
+material_override = SubResource("StandardMaterial3D_flood_btn")
+mesh = SubResource("BoxMesh_flood_btn")
+
+[node name="Label3D" type="Label3D" parent="FloodlightKeypad/ButtonSouth" unique_id=1715331815]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.04817, 0.02000001, 0.015732527)
+modulate = Color(0.1, 0.1, 0.1, 1)
+text = "▼ S"
+font_size = 18
+
+[node name="ButtonWest" type="StaticBody3D" parent="FloodlightKeypad" unique_id=1965880612 node_paths=PackedStringArray("ButtonMesh", "DirectionLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09, 0.05, 0)
+script = ExtResource("3_flood_btn")
+Direction = 3
+ButtonMesh = NodePath("ButtonMesh")
+DirectionLabel = NodePath("Label3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloodlightKeypad/ButtonWest" unique_id=2120775974]
+shape = SubResource("BoxShape3D_key_btn")
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="FloodlightKeypad/ButtonWest" unique_id=1027116266]
+material_override = SubResource("StandardMaterial3D_flood_btn")
+mesh = SubResource("BoxMesh_flood_btn")
+
+[node name="Label3D" type="Label3D" parent="FloodlightKeypad/ButtonWest" unique_id=1680714924]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.036973596, 0.02000001, -0.012096658)
+modulate = Color(0.1, 0.1, 0.1, 1)
+text = "◄ W"
+font_size = 18
+
+[node name="ButtonEast" type="StaticBody3D" parent="FloodlightKeypad" unique_id=2015942556 node_paths=PackedStringArray("ButtonMesh", "DirectionLabel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0.05, 0)
+script = ExtResource("3_flood_btn")
+Direction = 1
+ButtonMesh = NodePath("ButtonMesh")
+DirectionLabel = NodePath("Label3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloodlightKeypad/ButtonEast" unique_id=150252264]
+shape = SubResource("BoxShape3D_key_btn")
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="FloodlightKeypad/ButtonEast" unique_id=684711011]
+material_override = SubResource("StandardMaterial3D_flood_btn")
+mesh = SubResource("BoxMesh_flood_btn")
+
+[node name="Label3D" type="Label3D" parent="FloodlightKeypad/ButtonEast" unique_id=1179040519]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.0642823, 0.02000001, -0.020800889)
+modulate = Color(0.1, 0.1, 0.1, 1)
+text = "► E"
+font_size = 18
+
+[node name="SirenSwitch" type="StaticBody3D" parent="." unique_id=1279008288 node_paths=PackedStringArray("ButtonMesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.52, 0.4, 0.08)
+script = ExtResource("2_siren_switch")
+ButtonMesh = NodePath("ButtonMesh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SirenSwitch" unique_id=762508765]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+shape = SubResource("BoxShape3D_siren_box")
+
+[node name="HousingMesh" type="MeshInstance3D" parent="SirenSwitch" unique_id=1057820704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+material_override = SubResource("StandardMaterial3D_siren_box")
+mesh = SubResource("BoxMesh_siren_box")
+
+[node name="CollarMesh" type="MeshInstance3D" parent="SirenSwitch" unique_id=536494031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, 0)
+material_override = SubResource("StandardMaterial3D_siren_collar")
+mesh = SubResource("CylinderMesh_siren_collar")
+
+[node name="ButtonMesh" type="MeshInstance3D" parent="SirenSwitch" unique_id=858223661]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
+material_override = SubResource("StandardMaterial3D_siren_btn")
+mesh = SubResource("CylinderMesh_siren_btn")
+
+[node name="Label3D" type="Label3D" parent="SirenSwitch" unique_id=167820183]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 0.08, 0.17)
+modulate = Color(1, 0.35, 0.35, 1)
+text = "SIREN"
+font_size = 20

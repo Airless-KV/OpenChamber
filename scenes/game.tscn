@@ -19,6 +19,8 @@
 [ext_resource type="PackedScene" uid="uid://sheep001" path="res://scenes/environment/spooky_sheep.tscn" id="18_sheep"]
 [ext_resource type="PackedScene" uid="uid://d3epk37vmo5n5" path="res://scenes/environment/world_foliage.tscn" id="19_foliage"]
 [ext_resource type="PackedScene" path="res://scenes/environment/farm_boundary_zone.tscn" id="20_farmboundary"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tutorial_overlay.tscn" id="21_tutorial"]
+[ext_resource type="PackedScene" uid="uid://crow001" path="res://scenes/environment/spooky_crow.tscn" id="22_crow"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
 sky_top_color = Color(0.35, 0.62, 0.95, 1)
@@ -52,9 +54,11 @@ environment = SubResource("Environment_iowxr")
 transform = Transform3D(0.9996935, 0.006144611, 0.023982251, -0.024755446, 0.23757695, 0.9710533, 0.00026911497, -0.9713493, 0.23765627, -1.6614189, 250.00006, 0)
 light_color = Color(1, 0.94, 0.82, 1)
 light_energy = 1.3
+light_cull_mask = 7
 shadow_enabled = true
-directional_shadow_mode = 1
-directional_shadow_max_distance = 65.0
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.75
+directional_shadow_max_distance = 110.0
 
 [node name="AtmosphereManager" type="Node3D" parent="." unique_id=1847192841 node_paths=PackedStringArray("GameManagerNode", "SunLightNode", "WorldEnvironmentNode", "InteriorLightNode")]
 script = ExtResource("11_atmosphere")
@@ -79,11 +83,39 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
-[node name="AniAniMonster" parent="." unique_id=1984218731 instance=ExtResource("13_anianimonster")]
+[node name="AniAniMonster" parent="." unique_id=1984218731 node_paths=PackedStringArray("LoiterSpotsContainer") instance=ExtResource("13_anianimonster")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.25, -3.75)
+LoiterSpotsContainer = NodePath("../LoiterSpots_AniAni")
 
-[node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("MonsterNode")]
+[node name="LoiterSpots_AniAni" type="Node3D" parent="." unique_id=1984218790]
+
+[node name="Spot_North" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218791]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, 9.60997, 1.25, -30.539303)
+
+[node name="Spot_East" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218792]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 31.573965, 1.25, -9.544749)
+
+[node name="Spot_South" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.351195, 1.25, 30.813404)
+
+[node name="Spot_West" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218794]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -28.5, 1.25, -17.11405)
+
+[node name="Spot_NorthEast" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218795]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, 15.067434, 1.25, -32.03542)
+
+[node name="Spot_NorthWest" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218796]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -38.81056, 1.25, -9.55972)
+
+[node name="Spot_SouthEast" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218797]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 28.92584, 1.25, 17.575268)
+
+[node name="Spot_SouthWest" type="Marker3D" parent="LoiterSpots_AniAni" unique_id=1984218798]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -20.981697, 1.25, 31.323883)
+
+[node name="BreachManager" type="Node" parent="." unique_id=1165219863 node_paths=PackedStringArray("CameraPivotNode", "MonsterNode")]
 script = ExtResource("3_breach")
+CameraPivotNode = NodePath("../CameraPivot")
 MonsterNode = NodePath("../AniAniMonster")
 
 [node name="CameraPivot" type="Node3D" parent="." unique_id=1007978221 node_paths=PackedStringArray("Target")]
@@ -116,10 +148,33 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.560114, 1.5545688, 0)
 
 [node name="PauseMenu" parent="." unique_id=1928374650 instance=ExtResource("15_pausemenu")]
 
-[node name="CropDevourer" parent="." unique_id=741829201 node_paths=PackedStringArray("GridManagerNode", "GameManagerNode") instance=ExtResource("16_cropdevourer")]
+[node name="TutorialOverlay" parent="." unique_id=271538656 instance=ExtResource("21_tutorial")]
+
+[node name="CropDevourer" parent="." unique_id=741829201 node_paths=PackedStringArray("GridManagerNode", "GameManagerNode", "LoiterSpotsContainer") instance=ExtResource("16_cropdevourer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 1.4903667, 2)
 GridManagerNode = NodePath("../FarmPlot/GridManager")
 GameManagerNode = NodePath("../GameManager")
+LoiterSpotsContainer = NodePath("../LoiterSpots_CropDevourer")
+
+[node name="LoiterSpots_CropDevourer" type="Node3D" parent="." unique_id=741829280]
+
+[node name="Spot_North" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829281]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, -2.9379616, 1.25, -32.67714)
+
+[node name="Spot_East" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829282]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 35.60504, 1.25, -6.752494)
+
+[node name="Spot_South" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829283]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.853121, 1.25, 32.192097)
+
+[node name="Spot_West" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829284]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -35.4543, 1.25, -1.2185988)
+
+[node name="Spot_NorthWest" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829285]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -27.33354, 1.25, -36.827415)
+
+[node name="Spot_SouthEast" type="Marker3D" parent="LoiterSpots_CropDevourer" unique_id=741829286]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 21.234936, 1.25, 28.625315)
 
 [node name="SpookyCow_01" parent="." unique_id=1398732285 instance=ExtResource("17_cow")]
 transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 8, 1.25, -8)
@@ -127,18 +182,382 @@ transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 
 [node name="SpookyCow_02" parent="." unique_id=2012739987 instance=ExtResource("17_cow")]
 transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, 14, 1.25, 2)
 
+[node name="SpookyCow_03" parent="." unique_id=1398732291 instance=ExtResource("17_cow")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -8, 1.25, -6)
+
+[node name="SpookyCow_OuterNorth" parent="." unique_id=1398732292 instance=ExtResource("17_cow")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -5, 1.25, -31)
+
+[node name="SpookyCow_OuterEast" parent="." unique_id=1398732293 instance=ExtResource("17_cow")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 30, 1.25, 8)
+
+[node name="SpookyCow_OuterSouth" parent="." unique_id=1398732294 instance=ExtResource("17_cow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.25, 30)
+
+[node name="SpookyCow_OuterWest" parent="." unique_id=1398732295 instance=ExtResource("17_cow")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -30, 1.25, 12)
+
+[node name="SpookyCow_NorthMeadow" parent="." unique_id=1398732296 instance=ExtResource("17_cow")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 4, 1.25, -18)
+
+[node name="SpookyCow_SouthWest" parent="." unique_id=1398732297 instance=ExtResource("17_cow")]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -18, 1.25, 18)
+
+[node name="SpookyCow_EastRidge" parent="." unique_id=1398732298 instance=ExtResource("17_cow")]
+transform = Transform3D(-0.5, 0, -0.866025, 0, 1, 0, 0.866025, 0, -0.5, 24, 1.25, -16)
+
 [node name="SpookySheep_01" parent="." unique_id=157839141 instance=ExtResource("18_sheep")]
 transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 8.5, 1.25, 7.5)
 
 [node name="SpookySheep_02" parent="." unique_id=1402110729 instance=ExtResource("18_sheep")]
 transform = Transform3D(-0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, -0.866025, 0, 1.25, 12)
 
+[node name="SpookySheep_03" parent="." unique_id=1402110731 instance=ExtResource("18_sheep")]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, -6, 1.25, 7)
+
+[node name="SpookySheep_04" parent="." unique_id=1402110732 instance=ExtResource("18_sheep")]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, 16, 1.25, -10)
+
+[node name="SpookySheep_OuterNorth" parent="." unique_id=1402110733 instance=ExtResource("18_sheep")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 15, 1.25, -29)
+
+[node name="SpookySheep_OuterSouth" parent="." unique_id=1402110734 instance=ExtResource("18_sheep")]
+transform = Transform3D(-0.5, 0, -0.866025, 0, 1, 0, 0.866025, 0, -0.5, -15, 1.25, 30)
+
+[node name="SpookySheep_OuterWest" parent="." unique_id=1402110735 instance=ExtResource("18_sheep")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -31, 1.25, -6)
+
+[node name="SpookySheep_OuterEast" parent="." unique_id=1402110736 instance=ExtResource("18_sheep")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 32, 1.25, -10)
+
+[node name="SpookySheep_NorthPaddock" parent="." unique_id=1402110737 instance=ExtResource("18_sheep")]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -14, 1.25, -20)
+
+[node name="SpookySheep_SouthMeadow" parent="." unique_id=1402110738 instance=ExtResource("18_sheep")]
+transform = Transform3D(-0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, -0.866025, 12, 1.25, 22)
+
+[node name="SpookySheep_WestPond" parent="." unique_id=1402110739 instance=ExtResource("18_sheep")]
+transform = Transform3D(0.5, 0, -0.866025, 0, 1, 0, 0.866025, 0, 0.5, -22, 1.25, -14)
+
+[node name="CrowFlock" type="Node3D" parent="." unique_id=167829000]
+
+[node name="Crow_East_Near" parent="CrowFlock" unique_id=167829001 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 6.4, -4)
+AnchorPosition = Vector3(36, 6.4, -4)
+OrbitRadiusX = 13.0
+OrbitRadiusZ = 12.0
+FlightSpeed = 4.7
+HasGlowingEyes = true
+InitialAngleDegrees = 15.0
+
+[node name="Crow_East_Mid" parent="CrowFlock" unique_id=167829002 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 6.3, 6)
+AnchorPosition = Vector3(24, 6.3, 6)
+OrbitRadiusX = 12.0
+OrbitRadiusZ = 11.0
+FlightSpeed = 4.4
+BaseHeight = 6.3
+AltitudeAmplitude = 0.35
+OrbitClockwise = false
+HasGlowingEyes = false
+InitialAngleDegrees = 120.0
+
+[node name="Crow_East_Far" parent="CrowFlock" unique_id=167829003 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 6.5, -10)
+AnchorPosition = Vector3(44, 6.5, -10)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+HasGlowingEyes = true
+InitialAngleDegrees = 240.0
+
+[node name="Crow_North_Near" parent="CrowFlock" unique_id=167829004 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 6.2, -18)
+AnchorPosition = Vector3(-2, 6.2, -18)
+OrbitRadiusX = 11.0
+OrbitRadiusZ = 10.0
+FlightSpeed = 4.0
+AltitudeAmplitude = 0.3
+OrbitClockwise = false
+HasGlowingEyes = false
+InitialAngleDegrees = 45.0
+
+[node name="Crow_North_Mid" parent="CrowFlock" unique_id=167829005 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.3, -24)
+AnchorPosition = Vector3(6, 6.3, -24)
+OrbitRadiusX = 12.0
+OrbitRadiusZ = 10.0
+FlightSpeed = 4.3
+BaseHeight = 6.3
+AltitudeAmplitude = 0.35
+HasGlowingEyes = false
+InitialAngleDegrees = 160.0
+
+[node name="Crow_North_Far" parent="CrowFlock" unique_id=167829006 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 6.5, -42)
+AnchorPosition = Vector3(-12, 6.5, -42)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 4.9
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 290.0
+
+[node name="Crow_South_Near" parent="CrowFlock" unique_id=167829007 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 6.2, 18)
+AnchorPosition = Vector3(2, 6.2, 18)
+OrbitRadiusX = 11.0
+OrbitRadiusZ = 10.0
+FlightSpeed = 4.1
+HasGlowingEyes = false
+InitialAngleDegrees = 30.0
+
+[node name="Crow_South_Mid" parent="CrowFlock" unique_id=167829008 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 6.3, 24)
+AnchorPosition = Vector3(-6, 6.3, 24)
+OrbitRadiusX = 12.0
+OrbitRadiusZ = 11.0
+FlightSpeed = 4.4
+BaseHeight = 6.3
+AltitudeAmplitude = 0.35
+OrbitClockwise = false
+HasGlowingEyes = false
+InitialAngleDegrees = 140.0
+
+[node name="Crow_South_Far" parent="CrowFlock" unique_id=167829009 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 6.5, 42)
+AnchorPosition = Vector3(10, 6.5, 42)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+HasGlowingEyes = true
+InitialAngleDegrees = 250.0
+
+[node name="Crow_West_Near" parent="CrowFlock" unique_id=167829010 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36, 6.4, 2)
+AnchorPosition = Vector3(-36, 6.4, 2)
+OrbitRadiusX = 13.0
+OrbitRadiusZ = 12.0
+FlightSpeed = 4.7
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 75.0
+
+[node name="Crow_West_Mid" parent="CrowFlock" unique_id=167829011 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 6.3, -6)
+AnchorPosition = Vector3(-24, 6.3, -6)
+OrbitRadiusX = 12.0
+OrbitRadiusZ = 11.0
+FlightSpeed = 4.4
+BaseHeight = 6.3
+AltitudeAmplitude = 0.35
+HasGlowingEyes = false
+InitialAngleDegrees = 195.0
+
+[node name="Crow_West_Far" parent="CrowFlock" unique_id=167829012 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 6.5, 8)
+AnchorPosition = Vector3(-44, 6.5, 8)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 310.0
+
+[node name="Crow_NE_Near" parent="CrowFlock" unique_id=167829013 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34, 6.4, -32)
+AnchorPosition = Vector3(34, 6.4, -32)
+OrbitRadiusX = 14.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 4.8
+HasGlowingEyes = true
+InitialAngleDegrees = 60.0
+
+[node name="Crow_NE_Far" parent="CrowFlock" unique_id=167829014 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 6.5, -38)
+AnchorPosition = Vector3(42, 6.5, -38)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 210.0
+
+[node name="Crow_NW_Near" parent="CrowFlock" unique_id=167829015 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 6.4, -32)
+AnchorPosition = Vector3(-34, 6.4, -32)
+OrbitRadiusX = 14.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 4.8
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 90.0
+
+[node name="Crow_NW_Far" parent="CrowFlock" unique_id=167829016 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 6.5, -38)
+AnchorPosition = Vector3(-42, 6.5, -38)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+HasGlowingEyes = true
+InitialAngleDegrees = 270.0
+
+[node name="Crow_SE_Near" parent="CrowFlock" unique_id=167829017 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34, 6.4, 32)
+AnchorPosition = Vector3(34, 6.4, 32)
+OrbitRadiusX = 14.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 4.8
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 105.0
+
+[node name="Crow_SE_Far" parent="CrowFlock" unique_id=167829018 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 6.5, 38)
+AnchorPosition = Vector3(42, 6.5, 38)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+HasGlowingEyes = true
+InitialAngleDegrees = 285.0
+
+[node name="Crow_SW_Near" parent="CrowFlock" unique_id=167829019 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 6.4, 32)
+AnchorPosition = Vector3(-34, 6.4, 32)
+OrbitRadiusX = 14.0
+OrbitRadiusZ = 13.0
+FlightSpeed = 4.8
+HasGlowingEyes = true
+InitialAngleDegrees = 135.0
+
+[node name="Crow_SW_Far" parent="CrowFlock" unique_id=167829020 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 6.5, 38)
+AnchorPosition = Vector3(-42, 6.5, 38)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 330.0
+
+[node name="Crow_FarmCenter_High" parent="CrowFlock" unique_id=167829021 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 8.5, 0)
+AnchorPosition = Vector3(-2, 8.5, 0)
+OrbitRadiusX = 12.0
+OrbitRadiusZ = 12.0
+FlightSpeed = 3.8
+BaseHeight = 8.5
+AltitudeAmplitude = 0.35
+OrbitClockwise = true
+HasGlowingEyes = false
+InitialAngleDegrees = 45.0
+
+[node name="Crow_Cabin_Perimeter" parent="CrowFlock" unique_id=167829022 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 6.8, -4)
+AnchorPosition = Vector3(2, 6.8, -4)
+OrbitRadiusX = 13.0
+OrbitRadiusZ = 10.0
+FlightSpeed = 4.1
+BaseHeight = 6.8
+AltitudeAmplitude = 0.3
+OrbitClockwise = false
+HasGlowingEyes = false
+InitialAngleDegrees = 160.0
+
+[node name="Crow_NorthMeadow_Mid" parent="CrowFlock" unique_id=167829023 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -46)
+AnchorPosition = Vector3(0, 6.5, -46)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = true
+HasGlowingEyes = true
+InitialAngleDegrees = 80.0
+
+[node name="Crow_EastRidge_Mid" parent="CrowFlock" unique_id=167829024 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 6.5, 0)
+AnchorPosition = Vector3(48, 6.5, 0)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 15.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 220.0
+
+[node name="Crow_SouthGrove_Mid" parent="CrowFlock" unique_id=167829025 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 46)
+AnchorPosition = Vector3(0, 6.5, 46)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 15.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = true
+HasGlowingEyes = true
+InitialAngleDegrees = 110.0
+
+[node name="Crow_WestForest_Mid" parent="CrowFlock" unique_id=167829026 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 6.5, 0)
+AnchorPosition = Vector3(-48, 6.5, 0)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 15.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 290.0
+
+[node name="Crow_NE_Canopy" parent="CrowFlock" unique_id=167829027 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 6.5, -42)
+AnchorPosition = Vector3(38, 6.5, -42)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = true
+HasGlowingEyes = true
+InitialAngleDegrees = 175.0
+
+[node name="Crow_SW_Canopy" parent="CrowFlock" unique_id=167829028 instance=ExtResource("22_crow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 6.5, 42)
+AnchorPosition = Vector3(-38, 6.5, 42)
+OrbitRadiusX = 15.0
+OrbitRadiusZ = 14.0
+FlightSpeed = 5.0
+BaseHeight = 6.5
+AltitudeAmplitude = 0.4
+OrbitClockwise = false
+HasGlowingEyes = true
+InitialAngleDegrees = 340.0
+
 [node name="WorldFoliage" parent="." unique_id=1847192830 instance=ExtResource("19_foliage")]
-FarmBoundsMin = Vector2(-25.66068, -24.01839)
-FarmBoundsMax = Vector2(22.28932, 23.93161)
-FarmCenter = Vector3(-1.6856804, 0.604, -0.043390274)
-OuterTreeCount = 1200
-MidTreeCount = 250
+FarmBoundsMin = Vector2(-25.626204, -24.022251)
+FarmBoundsMax = Vector2(22.323797, 23.92775)
+FarmCenter = Vector3(-1.6512032, 0.604, -0.047250748)
+OuterTreeCount = 2800
+MidTreeCount = 450
 BushCount = 250
 FloraCount = 250
 RockCount = 120

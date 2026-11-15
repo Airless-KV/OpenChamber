@@ -12,6 +12,7 @@
 // - Oct 31, 2026 | air : Compacted ESC handling and sub-panel state management
 // - Nov 15, 2026 | air : Expanded in-game settings panel with tabbed audio, display, resolution, aspect scaling, and controls
 // - Nov 15, 2026 | air : Added 3D render scale, scaling mode, max FPS, and FPS counter controls
+// - Nov 15, 2026 | air : Added ReplayTutorialButton integration for in-game tutorial relaunch
 // =========================================================================================
 using Godot;
 
@@ -23,6 +24,7 @@ public partial class PauseMenu : CanvasLayer
 	[Export] public Button ResumeButton;
 	[Export] public Button SettingsButton;
 	[Export] public Button HowToPlayButton;
+	[Export] public Button ReplayTutorialButton;
 	[Export] public Button RestartButton;
 	[Export] public Button TitleButton;
 
@@ -81,6 +83,16 @@ public partial class PauseMenu : CanvasLayer
 		if (ResumeButton != null) ResumeButton.Pressed += ResumeGame;
 		if (SettingsButton != null) SettingsButton.Pressed += OnSettingsPressed;
 		if (HowToPlayButton != null) HowToPlayButton.Pressed += () => ShowPanel(HowToPlayPanel);
+		if (ReplayTutorialButton != null)
+		{
+			ReplayTutorialButton.Pressed += () =>
+			{
+				ResumeGame();
+				var tm = GetTree().Root.FindChild("TutorialOverlay", true, false) as TutorialManager
+					?? GetTree().Root.FindChild("TutorialManager", true, false) as TutorialManager;
+				tm?.ReplayTutorial();
+			};
+		}
 		if (RestartButton != null) RestartButton.Pressed += () => { GetTree().Paused = false; GetTree().ReloadCurrentScene(); };
 		if (TitleButton != null) TitleButton.Pressed += () => { GetTree().Paused = false; Input.MouseMode = Input.MouseModeEnum.Visible; GetTree().ChangeSceneToFile("res://scenes/ui/main_menu.tscn"); };
 

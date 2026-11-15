@@ -2,6 +2,7 @@
 // Original Author : air (Airless-KV) - Oct 2026
 // Responsibilities: - 3D CharacterBody3D player movement, sprint acceleration, and deceleration
 //                   - First-person camera-relative movement direction calculation (WASD)
+//                   - Procedural character walking wobble and hip sway on VisualRoot
 //                   - Player indoor/outdoor boundary detection (IsIndoors safe zone)
 //                   - Step-assist and obstacle climbing for door thresholds, curbs, and humps
 //                   - Slope climbing with normal projection and vertical incline propulsion
@@ -13,6 +14,8 @@
 // - Nov 10, 2026 | air : Increased MaxStepHeight to 0.85m for terrain step-assist onto chessboard
 // - Nov 11, 2026 | air : Added slope vector projection and 70° incline climbing for steep ramps and terrain
 // - Nov 11, 2026 | air : Adjusted house boundary center and extents for elevated treehouse coordinates
+// - Nov 14, 2026 | air : Added procedural walking wobble (step bob & hip sway) to VisualRoot
+// - Nov 15, 2026 | air : Added IsMovementLocked state support for 3D animated death sequences
 // =========================================================================================
 using Godot;
 
@@ -38,7 +41,12 @@ public partial class PlayerController : CharacterBody3D
 	[Export] public Vector3 HouseExtents = new(3.2f, 2.0f, 3.2f);
 
 	public bool IsIndoors { get; private set; } = false;
+	public bool IsMovementLocked { get; set; } = false;
 	private bool _wasIndoors = false;
+
+	private Vector3 _visualBasePos = Vector3.Zero;
+	private Vector3 _visualBaseRot = Vector3.Zero;
+	private float _walkCycleTimer = 0f;
 
 	public override void _Ready()
 	{
@@ -47,11 +55,31 @@ public partial class PlayerController : CharacterBody3D
 		FloorSnapLength = 0.5f;
 		FloorConstantSpeed = true;
 		FloorStopOnSlope = true;
+
+		if (VisualRoot != null)
+		{
+			_visualBasePos = VisualRoot.Position;
+			_visualBaseRot = VisualRoot.RotationDegrees;
+		}
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
 		float dt = (float)delta;
+		if (IsMovementLocked)
+		{
+			Vector3 lockedVel = Velocity;
+			if (!IsOnFloor())
+				lockedVel.Y -= Gravity * dt;
+			else
+				lockedVel.Y = 0f;
+			lockedVel.X = Mathf.MoveToward(lockedVel.X, 0f, Deceleration * dt);
+			lockedVel.Z = Mathf.MoveToward(lockedVel.Z, 0f, Deceleration * dt);
+			Velocity = lockedVel;
+			MoveAndSlide();
+			return;
+		}
+
 		Vector3 vel = Velocity;
 
 		Vector2 input = new(
@@ -166,12 +194,38 @@ public partial class PlayerController : CharacterBody3D
 		Velocity = vel;
 		MoveAndSlide();
 
+		UpdateVisualWobble(dt, vel);
+
 		Vector3 diff = (GlobalPosition - HouseCenter).Abs();
 		bool indoors = diff.X <= HouseExtents.X && diff.Z <= HouseExtents.Z && diff.Y <= HouseExtents.Y;
 		if (indoors != _wasIndoors)
 		{
 			_wasIndoors = IsIndoors = indoors;
 			EmitSignal(SignalName.LocationChanged, IsIndoors);
+		}
+	}
+
+	private void UpdateVisualWobble(float dt, Vector3 vel)
+	{
+		if (VisualRoot == null) return;
+
+		float hSpeed = new Vector2(vel.X, vel.Z).Length();
+		if (hSpeed > 0.2f && IsOnFloor())
+		{
+			float speedNorm = Mathf.Clamp(hSpeed / (WalkSpeed > 0f ? WalkSpeed : 6.0f), 0.2f, 2.0f);
+			_walkCycleTimer += dt * 8.5f * speedNorm;
+
+			float bobY = Mathf.Abs(Mathf.Sin(_walkCycleTimer * 0.5f)) * 0.04f;
+			float swayX = Mathf.Sin(_walkCycleTimer * 0.5f) * 0.03f;
+			float rollZ = Mathf.Sin(_walkCycleTimer * 0.5f) * 1.5f;
+
+			VisualRoot.Position = _visualBasePos + new Vector3(swayX, bobY, 0f);
+			VisualRoot.RotationDegrees = new Vector3(_visualBaseRot.X, _visualBaseRot.Y, _visualBaseRot.Z + rollZ);
+		}
+		else
+		{
+			VisualRoot.Position = VisualRoot.Position.Lerp(_visualBasePos, dt * 10f);
+			VisualRoot.RotationDegrees = VisualRoot.RotationDegrees.Lerp(_visualBaseRot, dt * 10f);
 		}
 	}
 }

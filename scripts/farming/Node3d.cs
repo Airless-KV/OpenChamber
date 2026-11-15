@@ -23,6 +23,8 @@
 // - Nov 13, 2026 | air : Harvested flowers spawn as physical 3D world entities; planting consumes held 3D seeds
 // - Nov 14, 2026 | air : Removed soil tilling for direct planting and suppressed hover feedback when empty-handed
 // - Nov 14, 2026 | air : Enforced strict active seed holding (HasActiveItem) for planting and removed abstract seed fallback
+// - Nov 15, 2026 | air : Added CropPlanted and CropsMerged signals for tutorial and event hooks
+// - Nov 15, 2026 | air : Supported planting seeds of any tier level (Level 1-5) based on active held seed FlowerTier
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -30,6 +32,9 @@ using System.Linq;
 
 public partial class Node3d : Node3D
 {
+	[Signal] public delegate void CropPlantedEventHandler(Vector2I cell, int tier);
+	[Signal] public delegate void CropsMergedEventHandler(int resultingTier);
+
 	public enum TileState { Empty, Planted }
 
 	public readonly record struct FlowerTier(Color Color, int Points, float Scale);
@@ -282,7 +287,8 @@ public partial class Node3d : Node3D
 			bool hasSeed = inv != null && inv.HasActiveItem(ItemType.Seed);
 			if (hasSeed)
 			{
-				SetPrompt("[LMB] Plant Tier 1 Flower (Seed ready)");
+				int seedTier = Mathf.Clamp(inv.Slots[inv.ActiveSlot].FlowerTier, 1, 5);
+				SetPrompt($"[LMB] Plant Tier {seedTier} Flower (Seed ready)");
 			}
 			else
 			{
@@ -312,10 +318,11 @@ public partial class Node3d : Node3D
 			var inv = PlayerNode?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
 			if (inv != null && inv.HasActiveItem(ItemType.Seed))
 			{
+				int seedTier = Mathf.Clamp(inv.Slots[inv.ActiveSlot].FlowerTier, 1, 5);
 				inv.ConsumeActiveItem();
-				PlantCropAt(cell, 1);
+				PlantCropAt(cell, seedTier);
 				AudioManager.Sfx("flower_plant");
-				SetPrompt("Planted Tier 1 Flower! Closed bud growing...");
+				SetPrompt($"Planted Tier {seedTier} Flower! Closed bud growing...");
 			}
 		}
 	}
@@ -381,6 +388,7 @@ public partial class Node3d : Node3D
 				AudioManager.Sfx("flower_merge");
 				SetPrompt($"[★ MERGED!] Level {newTier} Flower created! Growing closed bud... ({Mathf.CeilToInt(reqTime)}s until bloom)");
 				SaveManager.RecordMerge();
+				EmitSignal(SignalName.CropsMerged, newTier);
 			}
 			else
 			{
@@ -433,6 +441,7 @@ public partial class Node3d : Node3D
 		};
 
 		SetPrompt($"Planted Tier {level} Flower! Growing closed bud... ({Mathf.CeilToInt(reqTime)}s until bloom)");
+		EmitSignal(SignalName.CropPlanted, cell, level);
 	}
 
 	private static readonly string[] FlowerTexturePaths =

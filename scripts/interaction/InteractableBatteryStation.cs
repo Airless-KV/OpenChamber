@@ -1,20 +1,41 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Nov 13, 2026
-// Responsibilities: - Treehouse power station and car battery docking station
+// Responsibilities: - Power station and car battery docking station
 //                   - Manages battery insertion, ejection, and physical dock visuals
-//                   - Powers interior halogen spotlights and supplies power queries
+//                   - Subsystem-specific power station routing (Floodlights, Siren, CCTV)
 //                   - Per-activation battery health degradation and LED status indicators
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 13, 2026 | air : Created physical Treehouse Car Battery Power Station
 // - Nov 14, 2026 | air : Added in-scene visual binding support for editor visibility
+// - Nov 15, 2026 | air : Added PowerSystemType support (Floodlights, Siren, CCTV) and multi-station registry
 // =========================================================================================
 using Godot;
 using System;
+using System.Collections.Generic;
+
+public enum PowerSystemType
+{
+	Floodlights,
+	Siren,
+	CCTV
+}
 
 public partial class InteractableBatteryStation : InteractableBase
 {
 	public static InteractableBatteryStation Instance { get; private set; }
+
+	private static readonly Dictionary<PowerSystemType, InteractableBatteryStation> _stationRegistry = new();
+
+	public static InteractableBatteryStation GetStation(PowerSystemType type)
+	{
+		if (_stationRegistry.TryGetValue(type, out var station) && IsInstanceValid(station))
+			return station;
+		return null;
+	}
+
+	[ExportGroup("Station Configuration")]
+	[Export] public PowerSystemType StationType { get; set; } = PowerSystemType.Floodlights;
 
 	[ExportGroup("Battery State")]
 	[Export] public bool HasBattery { get; set; } = false;
@@ -26,15 +47,29 @@ public partial class InteractableBatteryStation : InteractableBase
 	[Export] public MeshInstance3D LedIndicator;
 	[Export] public Label3D StatusLabel;
 	[Export] public OmniLight3D IndicatorLight;
+	[Export] public MeshInstance3D LevelBarFill;
 
 	public bool HasPower => HasBattery && BatteryHealth > 0;
 
 	private HUDManager _hud;
 	private StandardMaterial3D _ledMat;
+	private StandardMaterial3D _barMat;
+
+	public string SystemDisplayName => StationType switch
+	{
+		PowerSystemType.Floodlights => "Floodlights",
+		PowerSystemType.Siren => "Siren",
+		PowerSystemType.CCTV => "CCTV",
+		_ => "Station"
+	};
 
 	public override void _EnterTree()
 	{
-		Instance = this;
+		_stationRegistry[StationType] = this;
+		if (StationType == PowerSystemType.Floodlights || Instance == null)
+		{
+			Instance = this;
+		}
 	}
 
 	public override void _Ready()
@@ -49,6 +84,7 @@ public partial class InteractableBatteryStation : InteractableBase
 		LedIndicator ??= GetNodeOrNull<MeshInstance3D>("LedIndicator");
 		IndicatorLight ??= GetNodeOrNull<OmniLight3D>("IndicatorLight");
 		StatusLabel ??= GetNodeOrNull<Label3D>("StatusLabel");
+		LevelBarFill ??= GetNodeOrNull<MeshInstance3D>("LevelBarFill");
 
 		if (LedIndicator != null)
 		{
@@ -60,12 +96,26 @@ public partial class InteractableBatteryStation : InteractableBase
 			}
 		}
 
+		if (LevelBarFill != null)
+		{
+			_barMat = LevelBarFill.MaterialOverride as StandardMaterial3D;
+			if (_barMat == null)
+			{
+				_barMat = new StandardMaterial3D { EmissionEnabled = true };
+				LevelBarFill.MaterialOverride = _barMat;
+			}
+		}
+
 		BuildStationVisuals();
 		UpdateVisuals();
 	}
 
 	public override void _ExitTree()
 	{
+		if (_stationRegistry.TryGetValue(StationType, out var st) && st == this)
+		{
+			_stationRegistry.Remove(StationType);
+		}
 		if (Instance == this) Instance = null;
 	}
 
@@ -78,17 +128,17 @@ public partial class InteractableBatteryStation : InteractableBase
 		{
 			if (inv != null && inv.HasAnyBattery(out _, out int hp))
 			{
-				return $"[LMB] Insert Car Battery ({hp}% HP) into Power Station";
+				return $"[LMB] Insert Car Battery ({hp}% HP) into {SystemDisplayName} Station";
 			}
-			return "[!] Power Station Empty - Insert Car Battery to power spotlights";
+			return $"[!] {SystemDisplayName} Power Station Empty - Insert Car Battery";
 		}
 
 		if (BatteryHealth <= 0)
 		{
-			return "[!] DEAD BATTERY (0% HP) - [LMB] Eject Battery to replace";
+			return $"[!] DEAD BATTERY (0% HP) - [LMB] Eject {SystemDisplayName} Battery";
 		}
 
-		return $"[LMB] Eject Car Battery ({BatteryHealth}% HP) | Spotlights Powered";
+		return $"[LMB] Eject {SystemDisplayName} Battery ({BatteryHealth}% HP) | Powered";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -103,12 +153,12 @@ public partial class InteractableBatteryStation : InteractableBase
 				HasBattery = true;
 				BatteryHealth = hp;
 				AudioManager.Sfx("door_thud", 2f);
-				_hud?.SetInteractionPrompt($"[✓] Car Battery Installed ({BatteryHealth}% HP)! Treehouse spotlights powered.");
+				_hud?.SetInteractionPrompt($"[✓] Car Battery Installed ({BatteryHealth}% HP)! {SystemDisplayName} powered.");
 				UpdateVisuals();
 			}
 			else
 			{
-				_hud?.SetInteractionPrompt("[!] You need a Car Battery to power this station! (Found in cabin or bought at Shop)");
+				_hud?.SetInteractionPrompt($"[!] You need a Car Battery to power {SystemDisplayName}! (Found in cabin or bought at Shop)");
 				AudioManager.Sfx("window_rattle", -2f);
 			}
 		}
@@ -121,7 +171,7 @@ public partial class InteractableBatteryStation : InteractableBase
 
 			if (inv != null && inv.AddItem(ItemType.CarBattery, 1, ejectedHp))
 			{
-				_hud?.SetInteractionPrompt($"[✓] Ejected Car Battery ({ejectedHp}% HP) to carried inventory.");
+				_hud?.SetInteractionPrompt($"[✓] Ejected {SystemDisplayName} Battery ({ejectedHp}% HP) to carried inventory.");
 			}
 			else
 			{
@@ -129,7 +179,7 @@ public partial class InteractableBatteryStation : InteractableBase
 				Node sceneRoot = GetTree()?.CurrentScene ?? (Node)this;
 				Vector3 dropPos = GlobalPosition + new Vector3(0, 0.35f, 0.6f);
 				WorldItem.Spawn(sceneRoot, dropPos, ItemType.CarBattery, 1, ejectedHp);
-				_hud?.SetInteractionPrompt($"[✓] Ejected Car Battery ({ejectedHp}% HP) onto cabin floor (inventory full).");
+				_hud?.SetInteractionPrompt($"[✓] Ejected {SystemDisplayName} Battery ({ejectedHp}% HP) onto floor (inventory full).");
 			}
 
 			AudioManager.Sfx("door_thud", -2f);
@@ -149,34 +199,40 @@ public partial class InteractableBatteryStation : InteractableBase
 		if (BatteryHealth <= 0)
 		{
 			AudioManager.Sfx("banner_sting");
-			_hud?.SetInteractionPrompt("[!] BATTERY DIED! The spotlights consumed all power from the battery!");
+			_hud?.SetInteractionPrompt($"[!] BATTERY DIED! {SystemDisplayName} has consumed all power!");
 		}
 
 		return true;
 	}
 
-	private void BuildStationVisuals()
+	public void BuildStationVisuals()
 	{
-		// 1. Station Cradle / Metal Base Box
-		if (GetNodeOrNull<MeshInstance3D>("BaseBox") == null)
+		// If custom authored meshes exist in the scene (e.g. HousingMesh or Chassis), do not generate fallback dock
+		if (GetNodeOrNull<MeshInstance3D>("BaseBox") != null ||
+		    GetNodeOrNull<MeshInstance3D>("HousingMesh") != null ||
+		    GetNodeOrNull<MeshInstance3D>("Chassis") != null)
 		{
-			var baseBox = new MeshInstance3D { Name = "BaseBox" };
-			baseBox.Mesh = new BoxMesh { Size = new Vector3(0.85f, 0.65f, 0.55f) };
-			baseBox.MaterialOverride = new StandardMaterial3D
-			{
-				AlbedoColor = new Color(0.24f, 0.26f, 0.30f),
-				Roughness = 0.5f,
-				Metallic = 0.4f
-			};
-			AddChild(baseBox);
+			return;
+		}
 
-			var col = GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
-			if (col == null)
-			{
-				col = new CollisionShape3D { Name = "CollisionShape3D" };
-				col.Shape = new BoxShape3D { Size = new Vector3(0.9f, 0.7f, 0.6f) };
-				AddChild(col);
-			}
+		// 1. Heavy Metal Dock Stand (fallback if node was placed empty in scene)
+		var baseMesh = new MeshInstance3D();
+		baseMesh.Name = "BaseBox";
+		baseMesh.Mesh = new BoxMesh { Size = new Vector3(0.9f, 0.7f, 0.6f) };
+		baseMesh.MaterialOverride = new StandardMaterial3D
+		{
+			AlbedoColor = new Color(0.2f, 0.22f, 0.25f),
+			Metallic = 0.8f,
+			Roughness = 0.35f
+		};
+		AddChild(baseMesh);
+
+		if (GetNodeOrNull<CollisionShape3D>("CollisionShape3D") == null)
+		{
+			var col = new CollisionShape3D();
+			col.Name = "CollisionShape3D";
+			col.Shape = new BoxShape3D { Size = new Vector3(0.9f, 0.7f, 0.6f) };
+			AddChild(col);
 		}
 
 		// 2. Battery Tray Cutout / Dock
@@ -191,13 +247,13 @@ public partial class InteractableBatteryStation : InteractableBase
 			battNode.AddChild(body);
 
 			var posTerm = new MeshInstance3D();
-			posTerm.Mesh = new CylinderMesh { TopRadius = 0.045f, BottomRadius = 0.05f, Height = 0.09f };
-			posTerm.MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.85f, 0.15f, 0.15f) };
+			posTerm.Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.04f, Height = 0.08f };
+			posTerm.MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.88f, 0.2f, 0.2f) };
 			posTerm.Position = new Vector3(-0.16f, 0.21f, 0f);
 			battNode.AddChild(posTerm);
 
 			var negTerm = new MeshInstance3D();
-			negTerm.Mesh = new CylinderMesh { TopRadius = 0.045f, BottomRadius = 0.05f, Height = 0.09f };
+			negTerm.Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.04f, Height = 0.08f };
 			negTerm.MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.18f, 0.38f, 0.88f) };
 			negTerm.Position = new Vector3(0.16f, 0.21f, 0f);
 			battNode.AddChild(negTerm);
@@ -209,32 +265,34 @@ public partial class InteractableBatteryStation : InteractableBase
 		// 3. Status LED Light and Indicator
 		if (LedIndicator == null)
 		{
+			var led = new MeshInstance3D();
+			led.Name = "LedIndicator";
+			led.Mesh = new SphereMesh { Radius = 0.04f, Height = 0.08f };
 			_ledMat = new StandardMaterial3D { EmissionEnabled = true };
-			var led = new MeshInstance3D { Name = "LedIndicator" };
-			led.Mesh = new SphereMesh { Radius = 0.05f, Height = 0.1f };
-			led.Position = new Vector3(0.32f, 0.22f, 0.28f);
 			led.MaterialOverride = _ledMat;
+			led.Position = new Vector3(0.32f, 0.22f, 0.28f);
 			AddChild(led);
 			LedIndicator = led;
 		}
 
 		if (IndicatorLight == null)
 		{
-			var light = new OmniLight3D { Name = "IndicatorLight" };
+			var light = new OmniLight3D();
+			light.Name = "IndicatorLight";
+			light.OmniRange = 1.5f;
+			light.LightEnergy = 0.5f;
 			light.Position = new Vector3(0.32f, 0.22f, 0.32f);
-			light.OmniRange = 1.2f;
-			light.LightEnergy = 0.8f;
 			AddChild(light);
 			IndicatorLight = light;
 		}
 
-		// 4. Status Text Label
 		if (StatusLabel == null)
 		{
-			var lbl = new Label3D { Name = "StatusLabel" };
+			var lbl = new Label3D();
+			lbl.Name = "StatusLabel";
+			lbl.Billboard = BaseMaterial3D.BillboardModeEnum.Disabled;
 			lbl.Position = new Vector3(0, 0.62f, 0);
-			lbl.Billboard = BaseMaterial3D.BillboardModeEnum.FixedY;
-			lbl.FontSize = 26;
+			lbl.FontSize = 20;
 			AddChild(lbl);
 			StatusLabel = lbl;
 		}
@@ -256,7 +314,7 @@ public partial class InteractableBatteryStation : InteractableBase
 			energy = 0.1f;
 			if (StatusLabel != null)
 			{
-				StatusLabel.Text = "[POWER STATION: EMPTY]\nInsert Car Battery";
+				StatusLabel.Text = $"[{SystemDisplayName.ToUpper()} POWER: EMPTY]\nInsert Car Battery";
 				StatusLabel.Modulate = new Color(0.9f, 0.4f, 0.4f);
 			}
 		}
@@ -266,7 +324,7 @@ public partial class InteractableBatteryStation : InteractableBase
 			energy = 1.2f;
 			if (StatusLabel != null)
 			{
-				StatusLabel.Text = $"[POWER STATION: ONLINE]\nBattery: {BatteryHealth}% HP";
+				StatusLabel.Text = $"[{SystemDisplayName.ToUpper()} POWER: ONLINE]\nBattery: {BatteryHealth}% HP";
 				StatusLabel.Modulate = new Color(0.3f, 0.95f, 0.4f);
 			}
 		}
@@ -276,7 +334,7 @@ public partial class InteractableBatteryStation : InteractableBase
 			energy = 1.0f;
 			if (StatusLabel != null)
 			{
-				StatusLabel.Text = $"[POWER STATION: LOW]\nBattery: {BatteryHealth}% HP";
+				StatusLabel.Text = $"[{SystemDisplayName.ToUpper()} POWER: LOW]\nBattery: {BatteryHealth}% HP";
 				StatusLabel.Modulate = new Color(0.95f, 0.75f, 0.2f);
 			}
 		}
@@ -286,7 +344,7 @@ public partial class InteractableBatteryStation : InteractableBase
 			energy = 1.0f;
 			if (StatusLabel != null)
 			{
-				StatusLabel.Text = "[POWER STATION: DEAD]\nBattery: 0% (Replace)";
+				StatusLabel.Text = $"[{SystemDisplayName.ToUpper()} POWER: DEAD]\nBattery: 0% (Replace)";
 				StatusLabel.Modulate = new Color(0.95f, 0.2f, 0.2f);
 			}
 		}
@@ -302,6 +360,36 @@ public partial class InteractableBatteryStation : InteractableBase
 		{
 			IndicatorLight.LightColor = ledColor;
 			IndicatorLight.LightEnergy = energy;
+		}
+
+		// Real-time physical battery level bar fill update
+		if (LevelBarFill != null)
+		{
+			float ratio = HasBattery ? Mathf.Clamp(BatteryHealth / 100f, 0f, 1f) : 0f;
+			LevelBarFill.Visible = HasBattery && ratio > 0.01f;
+
+			// Scale bar horizontally (scale.x) and offset pivot to fill left-to-right
+			LevelBarFill.Scale = new Vector3(ratio, 1f, 1f);
+
+			Color barColor;
+			if (BatteryHealth > 50)
+				barColor = new Color(0.2f, 0.95f, 0.3f);
+			else if (BatteryHealth > 20)
+				barColor = new Color(0.95f, 0.75f, 0.15f);
+			else
+				barColor = new Color(0.95f, 0.2f, 0.15f);
+
+			if (_barMat == null && LevelBarFill.MaterialOverride is StandardMaterial3D sm)
+			{
+				_barMat = sm;
+			}
+
+			if (_barMat != null)
+			{
+				_barMat.AlbedoColor = barColor;
+				_barMat.Emission = barColor;
+				_barMat.EmissionEnergyMultiplier = HasBattery && BatteryHealth > 0 ? 2.5f : 0f;
+			}
 		}
 	}
 }

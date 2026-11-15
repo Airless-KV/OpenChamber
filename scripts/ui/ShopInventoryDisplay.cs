@@ -7,13 +7,14 @@
 // Change Log:
 // - Nov 11, 2026 | air : Created ShopInventoryDisplay for streamlined plank inventory HUD
 // - Nov 14, 2026 | air : Added dynamic Car Battery and Rusted Crowbar shop buttons and real-time inventory counter
+// - Nov 15, 2026 | air : Added BuyFreezerButton integration for Cryo-Freezer flower storage
 // =========================================================================================
 using Godot;
 
 public partial class ShopInventoryDisplay : Label
 {
 	private Button _buyBatteryBtn;
-	private Button _buyCrowbarBtn;
+	private Button _buyFreezerBtn;
 	private CarriedInventory _carriedInv;
 
 	public override void _Ready()
@@ -45,8 +46,13 @@ public partial class ShopInventoryDisplay : Label
 		var vbox = GetParent() as VBoxContainer;
 		if (vbox == null) return;
 
-		// Find sibling BuyPlankButton for style matching
+		// Hide legacy BuyPlankButton from the HUD shop UI so planks are not offered
 		var plankBtn = vbox.GetNodeOrNull<Button>("BuyPlankButton");
+		if (plankBtn != null)
+		{
+			plankBtn.Visible = false;
+		}
+
 		var normalStyle = plankBtn?.GetThemeStylebox("normal");
 		var hoverStyle = plankBtn?.GetThemeStylebox("hover");
 		int fontSize = plankBtn != null ? plankBtn.GetThemeFontSize("font_size") : 15;
@@ -73,23 +79,23 @@ public partial class ShopInventoryDisplay : Label
 			insertIndex++;
 		}
 
-		// 2. Rusted Crowbar Button
-		if (_buyCrowbarBtn == null || !IsInstanceValid(_buyCrowbarBtn))
+		// 2. Cryo-Freezer Button
+		if (_buyFreezerBtn == null || !IsInstanceValid(_buyFreezerBtn))
 		{
-			_buyCrowbarBtn = new Button
+			_buyFreezerBtn = new Button
 			{
-				Name = "BuyCrowbarButton",
-				Text = "Rusted Crowbar (4c)",
+				Name = "BuyFreezerButton",
+				Text = "Cryo-Freezer Box (8c)",
 				CustomMinimumSize = new Vector2(0, 42),
 				LayoutMode = 2
 			};
-			if (fontSize > 0) _buyCrowbarBtn.AddThemeFontSizeOverride("font_size", fontSize);
-			if (normalStyle != null) _buyCrowbarBtn.AddThemeStyleboxOverride("normal", normalStyle);
-			if (hoverStyle != null) _buyCrowbarBtn.AddThemeStyleboxOverride("hover", hoverStyle);
+			if (fontSize > 0) _buyFreezerBtn.AddThemeFontSizeOverride("font_size", fontSize);
+			if (normalStyle != null) _buyFreezerBtn.AddThemeStyleboxOverride("normal", normalStyle);
+			if (hoverStyle != null) _buyFreezerBtn.AddThemeStyleboxOverride("hover", hoverStyle);
 
-			_buyCrowbarBtn.Pressed += OnBuyCrowbarClicked;
-			vbox.AddChild(_buyCrowbarBtn);
-			vbox.MoveChild(_buyCrowbarBtn, insertIndex);
+			_buyFreezerBtn.Pressed += OnBuyFreezerClicked;
+			vbox.AddChild(_buyFreezerBtn);
+			vbox.MoveChild(_buyFreezerBtn, insertIndex);
 		}
 	}
 
@@ -109,12 +115,12 @@ public partial class ShopInventoryDisplay : Label
 		}
 	}
 
-	private void OnBuyCrowbarClicked()
+	private void OnBuyFreezerClicked()
 	{
 		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
 		if (gm != null)
 		{
-			if (gm.TryBuyItem(ShopCatalog.CrowbarId))
+			if (gm.TryBuyItem(ShopCatalog.FreezerId))
 			{
 				AudioManager.Sfx("coin_collect", 2f);
 			}
@@ -137,21 +143,17 @@ public partial class ShopInventoryDisplay : Label
 			}
 		}
 
-		int planks = 0;
 		int batteries = 0;
-		int crowbars = 0;
 
 		if (_carriedInv != null)
 		{
 			for (int i = 0; i < CarriedInventory.MaxSlots; i++)
 			{
 				if (!_carriedInv.Slots[i].IsOccupied) continue;
-				if (_carriedInv.Slots[i].Type == ItemType.Plank) planks++;
-				else if (_carriedInv.Slots[i].Type == ItemType.CarBattery) batteries++;
-				else if (_carriedInv.Slots[i].Type == ItemType.Crowbar) crowbars++;
+				if (_carriedInv.Slots[i].Type == ItemType.CarBattery) batteries++;
 			}
 		}
 
-		Text = $"Carried: {planks} Planks | {batteries} Battery | {crowbars} Crowbar";
+		Text = $"Carried: {batteries} Battery";
 	}
 }

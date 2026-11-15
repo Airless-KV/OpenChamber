@@ -12,6 +12,7 @@ shader_type canvas_item;
 // - Oct 30, 2026 | air : Streamlined CRT scanlines and vignette without return statements
 // - Nov 13, 2026 | air : Implemented P43 green phosphor night vision with edge sharpening and grain
 // - Nov 14, 2026 | air : Added dynamic CRT analog glitch tearing and static snow distortion for entity vanish
+// - Nov 15, 2026 | air : Added low-light pedestal sensitivity to guarantee crisp NVG silhouettes in pitch darkness
 // =========================================================================================
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear_mipmap;
@@ -95,8 +96,9 @@ void fragment() {
 		float laplacian = (lum * 4.0) - (lum_up + lum_dn + lum_lf + lum_rt);
 		lum = clamp(lum + laplacian * edge_sharpness, 0.0, 3.0);
 
-		// Light amplification and gamma contrast curve to pull details from dark night
-		float amp = lum * light_amplification;
+		// Low-light sensitivity pedestal and amplification to pull details from dark night
+		float sensitive_lum = max(lum, 0.04);
+		float amp = sensitive_lum * light_amplification;
 		float enhanced_lum = pow(clamp(amp, 0.0, 4.0), contrast_gamma);
 
 		// Green phosphor palette mapping: deep dark shadow -> vibrant green midtone -> hot white-mint highlight

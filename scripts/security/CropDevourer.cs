@@ -12,6 +12,8 @@
 // - Nov 06, 2026 | air : Scaled model by 1.6x, added close perimeter waypoints (6-8m), enhanced amber glow, and continuous fence patrolling
 // - Nov 07, 2026 | air : Added AutoHideOnReady export and standalone preview support
 // - Nov 14, 2026 | air : Added Tween lifecycle protection and guard against post-deactivation loitering callbacks
+// - Nov 15, 2026 | air : Concealed pre-spawn loitering, masked body meshes to Visual Layer 2, and confined eye light cull mask
+// - Nov 15, 2026 | air : Added customizable editor LoiterSpotsContainer and perimeter Marker3D loitering for night phase
 // =========================================================================================
 using Godot;
 using System;
@@ -26,6 +28,7 @@ public partial class CropDevourer : Node3D
 	[Export] public Node3d GridManagerNode;
 	[Export] public GameManager GameManagerNode;
 	[Export] public bool AutoHideOnReady = true;
+	[Export] public Node3D LoiterSpotsContainer;
 
 	[ExportGroup("Devourer Timers")]
 	[Export] public float FirstSpawnDelay = 18.0f;
@@ -71,6 +74,30 @@ public partial class CropDevourer : Node3D
 		{
 			BuildProceduralVisuals();
 		}
+		else
+		{
+			foreach (var node in _visualRoot.FindChildren("*", "MeshInstance3D", true, false))
+			{
+				if (node is MeshInstance3D mesh)
+				{
+					if (mesh.Name.ToString().Contains("Eye"))
+					{
+						mesh.Layers = 1;
+					}
+					else
+					{
+						mesh.Layers = 2;
+					}
+				}
+			}
+		}
+
+		if (_eyeLight != null)
+		{
+			_eyeLight.LightCullMask = 1;
+			_eyeLight.OmniRange = 3.0f;
+			_eyeLight.LightEnergy = 1.0f;
+		}
 
 		Scale = new Vector3(1.6f, 1.6f, 1.6f);
 
@@ -81,8 +108,8 @@ public partial class CropDevourer : Node3D
 			CurrentState = State.Loitering;
 			if (_eyeLight != null)
 			{
-				_eyeLight.LightEnergy = 2.5f;
-				_eyeLight.OmniRange = 8.0f;
+				_eyeLight.LightEnergy = 1.0f;
+				_eyeLight.OmniRange = 3.0f;
 				_eyeLight.LightColor = new Color(1.0f, 0.72f, 0.15f);
 			}
 			return;
@@ -107,21 +134,41 @@ public partial class CropDevourer : Node3D
 		}
 	}
 
+	private Vector3 GetRandomLoiterPosition(out Vector3 rotationEuler)
+	{
+		if (LoiterSpotsContainer != null && LoiterSpotsContainer.GetChildCount() > 0)
+		{
+			var children = LoiterSpotsContainer.GetChildren();
+			int idx = _rng.Next(0, children.Count);
+			if (children[idx] is Node3D marker)
+			{
+				rotationEuler = marker.RotationDegrees;
+				return marker.GlobalPosition;
+			}
+		}
+		_currentLoiterIndex = _rng.Next(0, _loiterWaypoints.Length);
+		rotationEuler = Vector3.Zero;
+		return _loiterWaypoints[_currentLoiterIndex];
+	}
+
 	public void StartNightLoitering()
 	{
-		Visible = true;
 		Scale = new Vector3(1.6f, 1.6f, 1.6f);
 		CurrentState = State.Loitering;
 		_timer = FirstSpawnDelay;
 
-		_currentLoiterIndex = _rng.Next(0, _loiterWaypoints.Length);
-		GlobalPosition = _loiterWaypoints[_currentLoiterIndex];
-		LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
+		Vector3 pos = GetRandomLoiterPosition(out var rot);
+		GlobalPosition = pos;
+		if (rot != Vector3.Zero) RotationDegrees = rot;
+		else LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
+
+		Visible = true;
 
 		if (_eyeLight != null)
 		{
-			_eyeLight.LightEnergy = 2.5f;
-			_eyeLight.OmniRange = 8.0f;
+			_eyeLight.LightEnergy = 0.85f;
+			_eyeLight.OmniRange = 2.5f;
+			_eyeLight.LightCullMask = 1;
 			_eyeLight.LightColor = new Color(1.0f, 0.72f, 0.15f);
 		}
 	}
@@ -135,6 +182,7 @@ public partial class CropDevourer : Node3D
 		var body = new MeshInstance3D
 		{
 			Mesh = new BoxMesh { Size = new Vector3(0.9f, 0.6f, 1.4f) },
+			Layers = 2,
 			MaterialOverride = new StandardMaterial3D
 			{
 				AlbedoColor = new Color(0.08f, 0.07f, 0.09f),
@@ -148,6 +196,7 @@ public partial class CropDevourer : Node3D
 		var head = new MeshInstance3D
 		{
 			Mesh = new BoxMesh { Size = new Vector3(0.5f, 0.4f, 0.6f) },
+			Layers = 2,
 			Position = new Vector3(0, 0.55f, -0.85f),
 			MaterialOverride = body.MaterialOverride
 		};
@@ -157,8 +206,9 @@ public partial class CropDevourer : Node3D
 		_eyeLight = new OmniLight3D
 		{
 			LightColor = new Color(0.98f, 0.72f, 0.15f),
-			LightEnergy = 1.2f,
-			OmniRange = 4.5f,
+			LightEnergy = 1.0f,
+			LightCullMask = 1,
+			OmniRange = 3.0f,
 			Position = new Vector3(0, 0.6f, -1.05f)
 		};
 		_visualRoot.AddChild(_eyeLight);
@@ -243,16 +293,13 @@ public partial class CropDevourer : Node3D
 		var best = GridManagerNode.GetHighestTierPlantedCell();
 		if (!best.HasValue)
 		{
-			// No crops planted to eat; pace along the perimeter fence visibly
-			_currentLoiterIndex = (_currentLoiterIndex + 1) % _loiterWaypoints.Length;
-			Vector3 nextWp = _loiterWaypoints[_currentLoiterIndex];
-			if (_moveTween != null && _moveTween.IsValid()) _moveTween.Kill();
-			_moveTween = CreateTween();
-			_moveTween.TweenProperty(this, "global_position", nextWp, 3.5f)
-				.SetTrans(Tween.TransitionType.Quad)
-				.SetEase(Tween.EaseType.InOut);
-			LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
-			_timer = 10.0f;
+			// No crops planted to eat; loiter along the perimeter
+			Vector3 pos = GetRandomLoiterPosition(out var rot);
+			GlobalPosition = pos;
+			if (rot != Vector3.Zero) RotationDegrees = rot;
+			else LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
+			Visible = true;
+			_timer = 12.0f;
 			return;
 		}
 
@@ -260,11 +307,11 @@ public partial class CropDevourer : Node3D
 		int tier = GridManagerNode.GetCropTier(TargetCell.Value);
 		_targetWorldPos = GridManagerNode.GridToWorld(TargetCell.Value);
 
-		// Choose a spawn edge on the garden lawn
+		// Choose a spawn edge on the deep perimeter tree line
 		_spawnPos = new Vector3(
-			TargetCell.Value.X > 4 ? 24.0f : -24.0f,
+			TargetCell.Value.X > 4 ? 26.0f : -26.0f,
 			0.5f,
-			TargetCell.Value.Y > 4 ? 24.0f : -24.0f
+			TargetCell.Value.Y > 4 ? 26.0f : -26.0f
 		);
 
 		GlobalPosition = _spawnPos;
@@ -308,12 +355,11 @@ public partial class CropDevourer : Node3D
 	private void RetreatToPerimeter()
 	{
 		CurrentState = State.Fleeing;
-		_currentLoiterIndex = _rng.Next(0, _loiterWaypoints.Length);
-		Vector3 fleeTarget = _loiterWaypoints[_currentLoiterIndex];
+		Vector3 fleeTarget = GetRandomLoiterPosition(out var targetRot);
 
 		if (_moveTween != null && _moveTween.IsValid()) _moveTween.Kill();
 		_moveTween = CreateTween();
-		_moveTween.TweenProperty(this, "global_position", fleeTarget, 1.2f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		_moveTween.TweenProperty(this, "global_position", fleeTarget, 1.8f).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
 		_moveTween.Chain().TweenCallback(Callable.From(() =>
 		{
 			if (CurrentState == State.Inactive) return;
@@ -321,7 +367,9 @@ public partial class CropDevourer : Node3D
 			TargetCell = null;
 			_timer = SpawnInterval;
 			Scale = new Vector3(1.6f, 1.6f, 1.6f);
-			LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
+			Visible = true;
+			if (targetRot != Vector3.Zero) RotationDegrees = targetRot;
+			else LookAt(new Vector3(0, GlobalPosition.Y, 0), Vector3.Up);
 		}));
 	}
 
@@ -335,6 +383,7 @@ public partial class CropDevourer : Node3D
 		CurrentState = State.Inactive;
 		TargetCell = null;
 		_timer = SpawnInterval;
+		GlobalPosition = new Vector3(0, -100, 0);
 		if (_visualRoot != null)
 		{
 			_visualRoot.Position = Vector3.Zero;

@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://crow001"]
+
+[ext_resource type="Script" uid="uid://ck10rh18kxvvr" path="res://scripts/environment/SpookyCrow.cs" id="1_crow"]
+[ext_resource type="Texture2D" path="res://assets/textures/environment/creature_spooky_crow.png" id="2_tex"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_crow_eye"]
+albedo_color = Color(1, 0.08, 0.08, 1)
+emission_enabled = true
+emission = Color(1, 0.08, 0.08, 1)
+emission_energy_multiplier = 6.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_crow_eye"]
+radius = 0.035
+height = 0.07
+
+[node name="SpookyCrow" type="Node3D" node_paths=PackedStringArray("BillboardSprite", "EyeLight", "NightEyes", "VisualRoot")]
+script = ExtResource("1_crow")
+BillboardSprite = NodePath("VisualRoot/Sprite3D")
+EyeLight = NodePath("VisualRoot/EyeLight")
+NightEyes = NodePath("VisualRoot/NightEyes")
+VisualRoot = NodePath("VisualRoot")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="Sprite3D" type="Sprite3D" parent="VisualRoot"]
+layers = 4
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+pixel_size = 0.007
+texture = ExtResource("2_tex")
+
+[node name="NightEyes" type="Node3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.43, 0.15, 0.05)
+visible = false
+
+[node name="LeftEye" type="MeshInstance3D" parent="VisualRoot/NightEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0, 0)
+layers = 1
+material_override = SubResource("StandardMaterial3D_crow_eye")
+mesh = SubResource("SphereMesh_crow_eye")
+
+[node name="RightEye" type="MeshInstance3D" parent="VisualRoot/NightEyes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.045, 0, 0)
+layers = 1
+material_override = SubResource("StandardMaterial3D_crow_eye")
+mesh = SubResource("SphereMesh_crow_eye")
+
+[node name="EyeLight" type="OmniLight3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.43, 0.15, 0.12)
+light_color = Color(1, 0.05, 0.05, 1)
+light_energy = 0.85
+light_cull_mask = 1
+omni_range = 2.8

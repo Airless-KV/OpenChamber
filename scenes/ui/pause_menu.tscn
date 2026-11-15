@@ -50,7 +50,7 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("PauseContainer", "ButtonsContainer", "ResumeButton", "SettingsButton", "HowToPlayButton", "RestartButton", "TitleButton", "SettingsPanel", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "HowToPlayPanel", "CloseHowToPlayButton")]
+[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("PauseContainer", "ButtonsContainer", "ResumeButton", "SettingsButton", "HowToPlayButton", "ReplayTutorialButton", "RestartButton", "TitleButton", "SettingsPanel", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "HowToPlayPanel", "CloseHowToPlayButton")]
 process_mode = 3
 layer = 90
 visible = false
@@ -60,6 +60,7 @@ ButtonsContainer = NodePath("Container/MainPanel")
 ResumeButton = NodePath("Container/MainPanel/VBox/ResumeButton")
 SettingsButton = NodePath("Container/MainPanel/VBox/SettingsButton")
 HowToPlayButton = NodePath("Container/MainPanel/VBox/HowToPlayButton")
+ReplayTutorialButton = NodePath("Container/MainPanel/VBox/ReplayTutorialButton")
 RestartButton = NodePath("Container/MainPanel/VBox/RestartButton")
 TitleButton = NodePath("Container/MainPanel/VBox/TitleButton")
 SettingsPanel = NodePath("Container/SettingsPanel")
@@ -182,6 +183,15 @@ theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "HOW TO PLAY"
+
+[node name="ReplayTutorialButton" type="Button" parent="Container/MainPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "GUIDED TUTORIAL"
 
 [node name="RestartButton" type="Button" parent="Container/MainPanel/VBox"]
 custom_minimum_size = Vector2(0, 40)
@@ -617,7 +627,7 @@ theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 13
 text = "• Cabin CCTV Desk: Left Click accesses monitor (Right Click exits).
 • Cycle feeds with Left Click (or [TAB] / [1 - 4]).
-• Barricade bare openings with wooden planks (Hold Left Click 3s; Hold Right Click to remove)!
+• The Ani-Ani entity stands at the opening for 3 seconds in Stage 3 before attacking. Repel it with the Siren ([SPACE]) or Halogen Floodlights!
 • Survive 7 days and nights to win."
 autowrap_mode = 2
 
@@ -631,7 +641,7 @@ text = "CONTROLS CHEAT SHEET"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 13
-text = "[WASD] Move | Mouse Look | Left Click: Interact / Nail Plank | Right Click: Remove Plank / Cancel | [ESC] Pause"
+text = "[WASD] Move | Mouse Look | Left Click: Interact / Use | Right Click: Drop / Cancel | [ESC] Pause"
 autowrap_mode = 2
 
 [node name="CloseButton" type="Button" parent="Container/HowToPlayPanel/VBox"]

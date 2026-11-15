@@ -172,7 +172,6 @@ public partial class CarriedInventoryUI : CanvasLayer
 	{
 		return slot.Type switch
 		{
-			ItemType.Plank => new Color(0.88f, 0.68f, 0.45f),
 			ItemType.Seed => new Color(0.95f, 0.85f, 0.45f),
 			ItemType.CarBattery => slot.BatteryHealth switch
 			{

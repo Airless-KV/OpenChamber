@@ -12,6 +12,7 @@
 // - Nov 14, 2026 | air : Updated database interface documentation for open_chamber.db
 // - Nov 15, 2026 | air : Expanded settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
 // - Nov 15, 2026 | air : Added RenderScale, ScalingMode, MaxFps, and ShowFpsCounter to AudioSettings
+// - Nov 15, 2026 | air : Added IsTutorialCompleted and SetTutorialCompleted persistent tracking
 // =========================================================================================
 using Godot;
 using System;
@@ -29,6 +30,7 @@ public class PlayerProfile
 	public int TotalCoinsEarned { get; set; }
 	public int TotalMerges { get; set; }
 	public int TotalAttacksRepelled { get; set; }
+	public bool TutorialCompleted { get; set; } = false;
 }
 
 public class AudioSettings
@@ -174,6 +176,32 @@ public partial class SaveManager : Node
 			CurrentData.Profile.PlayerName = name.Trim();
 			DatabaseManager.SavePlayerProfile(CurrentData.Profile);
 		}
+	}
+
+	public static bool IsTutorialCompleted()
+	{
+		if (CurrentData?.Profile != null && CurrentData.Profile.TutorialCompleted)
+			return true;
+
+		if (FileAccess.FileExists("user://tutorial_state.json"))
+		{
+			using var f = FileAccess.Open("user://tutorial_state.json", FileAccess.ModeFlags.Read);
+			if (f != null && f.GetAsText().Contains("\"completed\":true"))
+				return true;
+		}
+		return false;
+	}
+
+	public static void SetTutorialCompleted(bool completed)
+	{
+		if (CurrentData?.Profile != null)
+		{
+			CurrentData.Profile.TutorialCompleted = completed;
+			DatabaseManager.SavePlayerProfile(CurrentData.Profile);
+		}
+
+		using var f = FileAccess.Open("user://tutorial_state.json", FileAccess.ModeFlags.Write);
+		f?.StoreString($"{{\"completed\":{(completed ? "true" : "false")}}}");
 	}
 
 	public static List<LeaderboardEntry> GetTopLeaderboard(int limit = 10) => DatabaseManager.GetTopLeaderboard(limit);

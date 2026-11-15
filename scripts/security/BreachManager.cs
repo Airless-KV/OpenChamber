@@ -4,6 +4,7 @@
 //                   - Directional monster approach alerts and CCTV stalking stages (Distant, Approaching, Imminent)
 //                   - Entrance security checks (doors/windows) & CCTV monitoring verification
 //                   - Barricade fortification absorption and defense resolution
+//                   - House attack trauma wobble and shockwave triggers for CameraPivot
 //                   - Audio warning stinger generation & defeat trigger
 // -----------------------------------------------------------------------------------------
 // Change Log:
@@ -22,6 +23,13 @@
 // - Nov 14, 2026 | air : Slower Ani-Ani plank tearing speed (3.0s interval matching placement) and 3-plank cap
 // - Nov 14, 2026 | air : Implemented 7s CCTV camera stare expulsion during approach and mandatory wooden planks at window
 // - Nov 14, 2026 | air : Extended approach stage durations (15s Distant, 15s Approaching, 30s total) and scaled cooldowns
+// - Nov 14, 2026 | air : Triggered house attack trauma shakes on CameraPivot during monster assault and plank tearing
+// - Nov 15, 2026 | air : Implemented 4-scenario 3D animated death scenes (CCTV ambush, house breach, wilderness, night wandering)
+// - Nov 15, 2026 | air : Aligned look targets with Ani-Ani face/horns (Y = +4.9m), 5.5s pacing, and decoupled blackout
+// - Nov 15, 2026 | air : Concealed dormant Ani-Ani staging during Hidden and delay phases to prevent in-view pop-ins
+// - Nov 15, 2026 | air : Replaced 7s CCTV stare expulsion with 30% power Siren mechanic scaring Ani-Ani
+// - Nov 15, 2026 | air : Positioned Ani-Ani in perimeter loiter spots during night downtime and attack resets
+// - Nov 15, 2026 | air : Removed barricades and added 3-second stage 3 stand timer before entity attack
 // =========================================================================================
 using Godot;
 using System;
@@ -36,11 +44,13 @@ public partial class BreachManager : Node
 
 	public enum AttackDirection { North = 0, East = 1, South = 2, West = 3 }
 	public enum StalkingStage { Hidden = 0, Distant = 1, Approaching = 2, Imminent = 3 }
+	public enum DeathScenario { HouseBreach = 0, CCTVAmbush = 1, WildernessConsumption = 2, CaughtOutsideNight = 3 }
 
 	[ExportGroup("Dependencies")]
 	[Export] public GameManager GameManagerNode;
 	[Export] public NighttCamera NightCameraNode;
 	[Export] public PlayerController PlayerNode;
+	[Export] public CameraPivot CameraPivotNode;
 	[Export] public Node3d GridManagerNode;
 	[Export] public JumpScareScreen JumpScareScreenNode;
 	[Export] public VictoryScreen VictoryScreenNode;
@@ -51,16 +61,10 @@ public partial class BreachManager : Node
 	[Export] public float FirstAttackDelay = 42.0f;
 	[Export] public float AttackInterval = 25.0f;
 	[Export] public float ReactionWindow = 7.0f;
-	[Export] public float CameraExpelRequiredDuration = 7.0f;
 	[Export] public float DistantStageDuration = 15.0f;
 	[Export] public float ApproachingStageDuration = 15.0f;
+	[Export] public float Stage3StandDuration = 3.0f;
 	[Export] public bool EnableOutdoorLoss = true;
-	[Export] public float BarricadeDelay = 6.0f;
-
-	[ExportGroup("Plank Shredding & Siege Settings")]
-	[Export(PropertyHint.Range, "0.5,10.0,0.1")] public float PlankTearInterval = 3.0f;
-	[Export(PropertyHint.Range, "1,3,1")] public int MinPlanksToTear = 1;
-	[Export(PropertyHint.Range, "1,3,1")] public int MaxPlanksToTear = 3;
 
 	[ExportGroup("Assault Cooldowns")]
 	[Export(PropertyHint.Range, "15.0,90.0,1.0")] public float MinRetreatCooldown = 42.0f;
@@ -72,12 +76,8 @@ public partial class BreachManager : Node
 	public float AttackCountdown { get; private set; }
 
 	private float _nextAttackTimer;
-	private float _cameraSpottedTimer;
 	private bool _isNight;
-	private bool _isTearingPlanks;
-	private float _tearTimer;
-	private int _planksQuotaToTear;
-	private int _planksTornSoFar;
+	private bool _isDeathSequenceRunning;
 	private readonly Random _rng = new();
 
 	private T Find<T>(string name) where T : class => GetTree().Root.FindChild(name, true, false) as T;
@@ -87,6 +87,7 @@ public partial class BreachManager : Node
 		GameManagerNode ??= Find<GameManager>("GameManager");
 		NightCameraNode ??= Find<NighttCamera>("NighttCamera");
 		PlayerNode ??= Find<PlayerController>("Player");
+		CameraPivotNode ??= Find<CameraPivot>("CameraPivot");
 		GridManagerNode ??= Find<Node3d>("GridManager");
 		JumpScareScreenNode ??= Find<JumpScareScreen>("JumpScareScreen");
 		VictoryScreenNode ??= Find<VictoryScreen>("VictoryScreen");
@@ -103,7 +104,7 @@ public partial class BreachManager : Node
 				if (_isNight)
 				{
 					_nextAttackTimer = FirstAttackDelay;
-					MonsterNode?.SetLurking(_rng.Next(0, 6));
+					MonsterNode?.SetLurking(_rng.Next(0, 12));
 				}
 				else
 				{
@@ -128,73 +129,26 @@ public partial class BreachManager : Node
 
 	public override void _Process(double delta)
 	{
-		if (GameManagerNode?.IsGameFinished == true || !_isNight) return;
+		if (_isDeathSequenceRunning || GameManagerNode?.IsGameFinished == true || !_isNight) return;
 		float dt = (float)delta;
 
 		if (EnableOutdoorLoss && PlayerNode != null && !PlayerNode.IsIndoors)
 		{
-			TriggerBreach("CAUGHT OUTSIDE! You stepped outside after sundown into the Ani-Ani's hunting grounds!");
+			TriggerBreach("CAUGHT OUTSIDE! You stepped outside after sundown into the Ani-Ani's hunting grounds!", DeathScenario.CaughtOutsideNight);
 			return;
 		}
 
 		if (IsMonsterAttacking)
 		{
-			if (_isTearingPlanks)
-			{
-				_tearTimer -= dt;
-				var lockable = GetOpeningForDirection(CurrentApproachDir);
-				string dirName = CurrentApproachDir.ToString().ToUpper();
-
-				if (lockable == null)
-				{
-					ResolveMonsterAttack();
-					return;
-				}
-
-				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SHREDDING {dirName}! ({lockable.PlanksPlaced} planks left) - Hold Left Click (1.5s) to reinforce!");
-
-				if (_tearTimer <= 0f)
-				{
-					_tearTimer = PlankTearInterval;
-
-					if (lockable.PlanksPlaced > 0)
-					{
-						lockable.TearSinglePlank();
-						_planksTornSoFar++;
-					}
-
-					if (lockable.PlanksPlaced <= 0)
-					{
-						// All planks torn down: immediate fatal security breach!
-						_isTearingPlanks = false;
-						TriggerBreach($"SECURITY BREACH! The Ani-Ani tore down all barricades and broke through the {dirName} entrance!");
-						return;
-					}
-
-					if (_planksTornSoFar >= _planksQuotaToTear && lockable.PlanksPlaced > 0)
-					{
-						// Monster reached tear quota and planks remain -> retreats into the woods!
-						TriggerMonsterRetreat($"[✓] ANI-ANI TORE {_planksTornSoFar} PLANKS AND RETREATED!");
-						return;
-					}
-				}
-				return;
-			}
-
 			AttackCountdown -= dt;
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {CurrentApproachDir.ToString().ToUpper()} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - BARRICADE WITH PLANKS!");
+			string dirName = CurrentApproachDir.ToString().ToUpper();
+			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - BLAST SIREN OR FLOODLIGHT!");
+			(CameraPivotNode ?? CameraPivot.Instance)?.AddTrauma(0.50f * dt);
 
-			var currentLockable = GetOpeningForDirection(CurrentApproachDir);
-			if (currentLockable != null && currentLockable.PlanksPlaced > 0)
+			if (AttackCountdown <= 0f)
 			{
-				_isTearingPlanks = true;
-				_planksQuotaToTear = _rng.Next(MinPlanksToTear, MaxPlanksToTear + 1);
-				_planksTornSoFar = 0;
-				_tearTimer = PlankTearInterval;
-				return;
+				ResolveMonsterAttack();
 			}
-
-			if (AttackCountdown <= 0f) ResolveMonsterAttack();
 			return;
 		}
 
@@ -203,7 +157,6 @@ public partial class BreachManager : Node
 		if (_nextAttackTimer <= totalApproachTime && CurrentStage == StalkingStage.Hidden)
 		{
 			CurrentApproachDir = (AttackDirection)_rng.Next(0, 4);
-			_cameraSpottedTimer = 0f;
 			SetStalkingStage(StalkingStage.Distant);
 		}
 		else if (_nextAttackTimer <= ApproachingStageDuration && CurrentStage == StalkingStage.Distant)
@@ -220,26 +173,17 @@ public partial class BreachManager : Node
 
 			if (isPlayerWatching)
 			{
-				_cameraSpottedTimer += dt;
-				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI SPOTTED ON CAM {camIndex} ({dirName})! EXPELLING: ({_cameraSpottedTimer:F1}s / {CameraExpelRequiredDuration:F1}s) - KEEP WATCH!");
-
-				if (_cameraSpottedTimer >= CameraExpelRequiredDuration)
+				string alert = $"[!] ANI-ANI SPOTTED ON CAM {camIndex} ({dirName})! Press [SPACE] to Sound Siren (30% PWR)";
+				HUDNode?.SetInteractionPrompt(alert);
+				var overlay = GetTree().Root.FindChild("CCTVOverlay", true, false) as CCTVOverlay;
+				if (overlay != null && overlay.Visible)
 				{
-					_cameraSpottedTimer = 0f;
-					TriggerMonsterRetreat($"[✓] ANI-ANI SPOTTED ON CCTV FOR {CameraExpelRequiredDuration:F1}s! EXPELLED BACK INTO THE WOODS!");
-					return;
+					overlay.ShowAlert(alert, 0.8f);
 				}
 			}
 			else
 			{
-				if (_cameraSpottedTimer > 0f)
-				{
-					HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! RETURN TO CAM {camIndex} TO EXPEL ({_cameraSpottedTimer:F1}s / {CameraExpelRequiredDuration:F1}s)!");
-				}
-				else
-				{
-					HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! MONITOR CAM {camIndex} FOR {CameraExpelRequiredDuration:F0}s TO EXPEL!");
-				}
+				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! Check CAM {camIndex} or sound Siren (30% PWR)!");
 			}
 		}
 
@@ -249,27 +193,31 @@ public partial class BreachManager : Node
 	private void ResetAttack()
 	{
 		IsMonsterAttacking = false;
-		_isTearingPlanks = false;
-		_planksTornSoFar = 0;
-		_cameraSpottedTimer = 0f;
-		if (_isNight && MonsterNode != null)
+		AttackCountdown = 0f;
+		CurrentStage = StalkingStage.Hidden;
+		if (_isNight)
 		{
-			int spot = _rng.Next(0, 6);
-			MonsterNode.SetLurking(spot);
-			CurrentStage = StalkingStage.Hidden;
+			MonsterNode?.SetLurking(_rng.Next(0, 12));
 		}
 		else
 		{
-			CurrentStage = StalkingStage.Hidden;
 			MonsterNode?.Deactivate();
-			EmitSignal(SignalName.StalkingStageChanged, (int)CurrentApproachDir, (int)CurrentStage);
 		}
+		EmitSignal(SignalName.StalkingStageChanged, (int)CurrentApproachDir, (int)CurrentStage);
 	}
 
 	private void SetStalkingStage(StalkingStage stage)
 	{
 		CurrentStage = stage;
-		MonsterNode?.SetStage((int)CurrentApproachDir, (int)CurrentStage);
+		if (stage == StalkingStage.Hidden)
+		{
+			if (_isNight) MonsterNode?.SetLurking(_rng.Next(0, 12));
+			else MonsterNode?.Deactivate();
+		}
+		else
+		{
+			MonsterNode?.SetStage((int)CurrentApproachDir, (int)CurrentStage);
+		}
 		EmitSignal(SignalName.StalkingStageChanged, (int)CurrentApproachDir, (int)CurrentStage);
 	}
 
@@ -277,47 +225,30 @@ public partial class BreachManager : Node
 	{
 		if (!_isNight || IsMonsterAttacking) return;
 		IsMonsterAttacking = true;
-		_cameraSpottedTimer = 0f;
+		AttackCountdown = Stage3StandDuration;
 
 		SetStalkingStage(StalkingStage.Imminent);
 
 		string dirName = CurrentApproachDir.ToString().ToUpper();
 		AudioManager.Sfx("warning_stinger");
+		(CameraPivotNode ?? CameraPivot.Instance)?.AddTrauma(0.65f);
 
-		var lockable = GetOpeningForDirection(CurrentApproachDir);
-		if (lockable != null && lockable.PlanksPlaced > 0)
-		{
-			_isTearingPlanks = true;
-			_planksQuotaToTear = _rng.Next(MinPlanksToTear, MaxPlanksToTear + 1);
-			_planksTornSoFar = 0;
-			_tearTimer = PlankTearInterval;
-			HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName}! Shredding barricades ({lockable.PlanksPlaced} planks)! Hold Left Click (1.5s) to reinforce!");
-			EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, PlankTearInterval * _planksQuotaToTear);
-			return;
-		}
-
-		// NO PLANKS AT THE WINDOW: Cannot be countered by camera once at the window!
-		_isTearingPlanks = false;
-		TriggerBreach($"SECURITY BREACH! The Ani-Ani reached the unbarricaded {dirName} opening! Bare openings cannot stop it once at the window!");
+		HUDNode?.SetInteractionPrompt($"[!] ANI-ANI AT {dirName} ENTRANCE! ({Mathf.CeilToInt(AttackCountdown)}s) - BLAST SIREN OR FLOODLIGHT!");
+		EmitSignal(SignalName.MonsterAttacking, (int)CurrentApproachDir, dirName, Stage3StandDuration);
 	}
 
 	public void ResolveMonsterAttack()
 	{
 		IsMonsterAttacking = false;
-		_isTearingPlanks = false;
-		_cameraSpottedTimer = 0f;
 		string dir = CurrentApproachDir.ToString().ToUpper();
 
-		// Bare entrance hit by monster with no barricades: fatal security breach!
-		TriggerBreach($"SECURITY BREACH! The Ani-Ani reached the unbarricaded {dir} opening! Wooden planks required at window!");
+		TriggerBreach($"SECURITY BREACH! The Ani-Ani attacked through the {dir} entrance after standing outside!", DeathScenario.HouseBreach);
 	}
 
 	public void TriggerMonsterRetreat(string reason)
 	{
 		IsMonsterAttacking = false;
-		_isTearingPlanks = false;
-		_planksTornSoFar = 0;
-		_cameraSpottedTimer = 0f;
+		AttackCountdown = 0f;
 
 		float cd = (float)_rng.NextDouble() * (MaxRetreatCooldown - MinRetreatCooldown) + MinRetreatCooldown;
 		_nextAttackTimer = cd;
@@ -330,6 +261,48 @@ public partial class BreachManager : Node
 		{
 			SetStalkingStage(StalkingStage.Hidden);
 		});
+	}
+
+	public bool RepelBySiren()
+	{
+		if (!_isNight) return false;
+		if (CurrentStage == StalkingStage.Hidden && !IsMonsterAttacking) return false;
+
+		string dirName = CurrentApproachDir.ToString().ToUpper();
+		TriggerMonsterRetreat($"[✓] SIREN BLASTED! ANI-ANI AT {dirName} SCARED AWAY INTO THE WOODS!");
+		return true;
+	}
+
+	public bool ActivateSiren(out string message)
+	{
+		var station = InteractableBatteryStation.GetStation(PowerSystemType.Siren)
+			?? InteractableBatteryStation.Instance;
+		if (station == null || !station.HasPower || station.BatteryHealth < 30)
+		{
+			int currentHp = station != null && station.HasBattery ? station.BatteryHealth : 0;
+			message = $"[!] INSUFFICIENT POWER! Siren requires 30% battery power (Current: {currentHp}%).";
+			AudioManager.Sfx("window_rattle", -2f);
+			return false;
+		}
+
+		station.ConsumePower(30);
+		AudioManager.Sfx("siren");
+		RoofSiren.Instance?.Activate(2.5f);
+
+		var cctv = GetTree().Root.FindChild("CCTVOverlay", true, false) as CCTVOverlay;
+		cctv?.TriggerCameraGlitch(0.45f);
+
+		if (RepelBySiren())
+		{
+			message = "[✓] SIREN BLASTED (-30% PWR)! ANI-ANI SCARED AWAY INTO THE WOODS!";
+		}
+		else
+		{
+			message = "[!] SIREN BLASTED (-30% PWR)! No active Ani-Ani threat in range.";
+		}
+
+		HUDNode?.SetInteractionPrompt(message);
+		return true;
 	}
 
 	public void RepelByFloodlight()
@@ -347,17 +320,284 @@ public partial class BreachManager : Node
 
 	public void TriggerBreach(string reason)
 	{
+		DeathScenario scenario = DeathScenario.HouseBreach;
+		if (NightCameraNode != null && NightCameraNode.IsNightMode)
+		{
+			scenario = DeathScenario.CCTVAmbush;
+		}
+		else if (PlayerNode != null && !PlayerNode.IsIndoors)
+		{
+			scenario = DeathScenario.CaughtOutsideNight;
+		}
+
+		TriggerBreach(reason, scenario);
+	}
+
+	public void TriggerBreach(string reason, DeathScenario scenario, Vector3? stalkerPos = null)
+	{
+		if (_isDeathSequenceRunning) return;
+		_isDeathSequenceRunning = true;
 		_isNight = false;
 		ResetAttack();
 		EmitSignal(SignalName.BreachOccurred, reason);
-		JumpScareScreenNode?.TriggerJumpScare(reason, GameManagerNode?.CurrentDay ?? 1, GameManagerNode?.Coins ?? 0);
+
+		// Lock player controls during cinematic death sequence
+		if (PlayerNode != null)
+		{
+			PlayerNode.IsMovementLocked = true;
+		}
+
+		HUDNode?.ClearInteractionPrompt();
+		JumpScareScreenNode?.StartDeathVisuals();
+
+		switch (scenario)
+		{
+			case DeathScenario.CCTVAmbush:
+				PlayCCTVAmbushSequence(reason);
+				break;
+			case DeathScenario.WildernessConsumption:
+				PlayWildernessConsumptionSequence(reason, stalkerPos);
+				break;
+			case DeathScenario.CaughtOutsideNight:
+				PlayCaughtOutsideSequence(reason);
+				break;
+			case DeathScenario.HouseBreach:
+			default:
+				PlayHouseBreachSequence(reason);
+				break;
+		}
+	}
+
+	private void PlayCCTVAmbushSequence(string reason)
+	{
+		// Force CCTV feed to collapse back into 1st person view
+		if (NightCameraNode != null && NightCameraNode.IsNightMode)
+		{
+			NightCameraNode.ApplyMode(false);
+		}
+
+		Vector3 cctvStationPos = new Vector3(-1.66f, 4.6f, -2.6f);
+		Vector3 ambushSpawnPos = cctvStationPos + new Vector3(0, 0, 1.8f);
+		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? cctvStationPos);
+
+		if (MonsterNode != null)
+		{
+			MonsterNode.GlobalPosition = ambushSpawnPos;
+			MonsterNode.RotationDegrees = new Vector3(0, 180f, 0);
+		}
+
+		// Point directly at the monster's face / glowing red eyes (Y = +4.9m above feet)
+		Vector3 lookTarget = MonsterNode != null ? MonsterNode.GetHeadPosition() : ambushSpawnPos + Vector3.Up * 4.9f;
+
+		AudioManager.Sfx("glass_shatter");
+		AudioManager.Sfx("warning_stinger");
+
+		CameraPivotNode?.PlayDeathSequence(
+			lookAtTarget: lookTarget,
+			targetRollDegrees: 45f,
+			targetHeightDrop: 1.25f,
+			snapDuration: 0.28f,
+			onLungeImpact: () =>
+			{
+				AudioManager.Sfx("door_pound");
+				AudioManager.Sfx("jumpscare_stinger");
+				JumpScareScreenNode?.TriggerImpactFlash();
+			},
+			onComplete: () =>
+			{
+				JumpScareScreenNode?.TriggerFadeToBlackout(1.0f, () =>
+				{
+					FinishDeathSequence(reason);
+				});
+			}
+		);
+
+		Vector3 lungeTarget = playerPos + new Vector3(0, 0, 0.45f);
+		MonsterNode?.PlayDeathLunge(
+			spawnPos: ambushSpawnPos,
+			targetPos: lungeTarget,
+			targetYaw: 180f,
+			lungeDuration: 1.25f,
+			onPeak: null,
+			onComplete: null
+		);
+	}
+
+	private void PlayHouseBreachSequence(string reason)
+	{
+		Vector3 breachPos = CurrentApproachDir switch
+		{
+			AttackDirection.North => new Vector3(-1.66f, 4.6f, -3.75f),
+			AttackDirection.East => new Vector3(2.09f, 4.6f, 0.0f),
+			AttackDirection.South => new Vector3(-1.66f, 4.6f, 3.75f),
+			AttackDirection.West => new Vector3(-5.41f, 4.6f, 0.0f),
+			_ => new Vector3(-1.66f, 4.6f, -3.75f)
+		};
+
+		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? Vector3.Zero);
+		Vector3 toPlayer = (playerPos - breachPos).Normalized();
+		float monsterYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
+
+		if (MonsterNode != null)
+		{
+			MonsterNode.GlobalPosition = breachPos;
+			MonsterNode.RotationDegrees = new Vector3(0, monsterYaw, 0);
+		}
+
+		// Point directly at the monster's face / glowing red eyes (Y = +4.9m above feet)
+		Vector3 lookTarget = MonsterNode != null ? MonsterNode.GetHeadPosition() : breachPos + Vector3.Up * 4.9f;
+		Vector3 lungeTarget = playerPos - toPlayer * 0.95f;
+		lungeTarget.Y = playerPos.Y;
+
+		AudioManager.Sfx("window_rattle");
+		AudioManager.Sfx("warning_stinger");
+
+		CameraPivotNode?.PlayDeathSequence(
+			lookAtTarget: lookTarget,
+			targetRollDegrees: -35f,
+			targetHeightDrop: 1.20f,
+			snapDuration: 0.32f,
+			onLungeImpact: () =>
+			{
+				AudioManager.Sfx("door_pound");
+				AudioManager.Sfx("jumpscare_stinger");
+				JumpScareScreenNode?.TriggerImpactFlash();
+			},
+			onComplete: () =>
+			{
+				JumpScareScreenNode?.TriggerFadeToBlackout(1.0f, () =>
+				{
+					FinishDeathSequence(reason);
+				});
+			}
+		);
+
+		MonsterNode?.PlayDeathLunge(
+			spawnPos: breachPos,
+			targetPos: lungeTarget,
+			targetYaw: monsterYaw,
+			lungeDuration: 1.35f,
+			onPeak: null,
+			onComplete: null
+		);
+	}
+
+	private void PlayWildernessConsumptionSequence(string reason, Vector3? stalkerPos)
+	{
+		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? Vector3.Zero);
+		Vector3 spawnPos = stalkerPos ?? (playerPos + (CameraPivotNode != null ? CameraPivotNode.GlobalBasis.Z * 11f : Vector3.Back * 11f));
+		spawnPos.Y = playerPos.Y;
+
+		Vector3 toPlayer = (playerPos - spawnPos).Normalized();
+		float monsterYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
+
+		if (MonsterNode != null)
+		{
+			MonsterNode.GlobalPosition = spawnPos;
+			MonsterNode.RotationDegrees = new Vector3(0, monsterYaw, 0);
+		}
+
+		// Point directly at the monster's face / glowing red eyes (Y = +4.9m above feet)
+		Vector3 lookTarget = MonsterNode != null ? MonsterNode.GetHeadPosition() : spawnPos + Vector3.Up * 4.9f;
+		Vector3 lungeTarget = playerPos - toPlayer * 0.95f;
+		lungeTarget.Y = playerPos.Y;
+
+		AudioManager.Sfx("foliage_rustle");
+		AudioManager.Sfx("monster_footsteps");
+
+		CameraPivotNode?.PlayDeathSequence(
+			lookAtTarget: lookTarget,
+			targetRollDegrees: 30f,
+			targetHeightDrop: 1.25f,
+			snapDuration: 0.38f,
+			onLungeImpact: () =>
+			{
+				AudioManager.Sfx("jumpscare_stinger");
+				JumpScareScreenNode?.TriggerImpactFlash();
+			},
+			onComplete: () =>
+			{
+				JumpScareScreenNode?.TriggerFadeToBlackout(1.0f, () =>
+				{
+					FinishDeathSequence(reason);
+				});
+			}
+		);
+
+		MonsterNode?.PlayDeathLunge(
+			spawnPos: spawnPos,
+			targetPos: lungeTarget,
+			targetYaw: monsterYaw,
+			lungeDuration: 1.45f,
+			onPeak: null,
+			onComplete: null
+		);
+	}
+
+	private void PlayCaughtOutsideSequence(string reason)
+	{
+		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? Vector3.Zero);
+		Vector3 playerFwd = PlayerNode != null ? -PlayerNode.GlobalTransform.Basis.Z : Vector3.Forward;
+
+		Vector3 spawnPos = playerPos + playerFwd * 4.5f;
+		spawnPos.Y = playerPos.Y;
+		Vector3 toPlayer = (playerPos - spawnPos).Normalized();
+		float monsterYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
+
+		if (MonsterNode != null)
+		{
+			MonsterNode.GlobalPosition = spawnPos;
+			MonsterNode.RotationDegrees = new Vector3(0, monsterYaw, 0);
+		}
+
+		// Point directly at the monster's face / glowing red eyes (Y = +4.9m above feet)
+		Vector3 lookTarget = MonsterNode != null ? MonsterNode.GetHeadPosition() : spawnPos + Vector3.Up * 4.9f;
+		Vector3 lungeTarget = playerPos - toPlayer * 0.95f;
+		lungeTarget.Y = playerPos.Y;
+
+		AudioManager.Sfx("warning_stinger");
+
+		CameraPivotNode?.PlayDeathSequence(
+			lookAtTarget: lookTarget,
+			targetRollDegrees: -40f,
+			targetHeightDrop: 1.20f,
+			snapDuration: 0.30f,
+			onLungeImpact: () =>
+			{
+				AudioManager.Sfx("door_pound");
+				AudioManager.Sfx("jumpscare_stinger");
+				JumpScareScreenNode?.TriggerImpactFlash();
+			},
+			onComplete: () =>
+			{
+				JumpScareScreenNode?.TriggerFadeToBlackout(1.0f, () =>
+				{
+					FinishDeathSequence(reason);
+				});
+			}
+		);
+
+		MonsterNode?.PlayDeathLunge(
+			spawnPos: spawnPos,
+			targetPos: lungeTarget,
+			targetYaw: monsterYaw,
+			lungeDuration: 1.35f,
+			onPeak: null,
+			onComplete: null
+		);
+	}
+
+	private void FinishDeathSequence(string reason)
+	{
+		JumpScareScreenNode?.ShowDefeatSummary(
+			reason,
+			GameManagerNode?.CurrentDay ?? 1,
+			GameManagerNode?.Coins ?? 0
+		);
 	}
 
 	public bool IsAnyEntranceOpen() =>
-		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen && !IsBarricaded(e));
-
-	private bool IsBarricaded(InteractableEntrance entrance) =>
-		GetTree().GetNodesInGroup("Lockables").OfType<LockableOpening>().Any(o => o.Entrance == entrance && o.PlanksPlaced > 0);
+		GetTree().GetNodesInGroup("Entrances").OfType<InteractableEntrance>().Any(e => e.IsOpen);
 
 	public bool IsPlayerNotLooking(AttackDirection direction) =>
 		NightCameraNode == null || !NightCameraNode.IsNightMode || NightCameraNode.CurrentNightIndex != (int)direction;

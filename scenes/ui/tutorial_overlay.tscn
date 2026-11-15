@@ -1,0 +1,430 @@
+[gd_scene format=3 uid="uid://c_tutorial_overlay_001"]
+
+[ext_resource type="Script" path="res://scripts/tutorial/TutorialManager.cs" id="1_tut_mgr"]
+[ext_resource type="Script" path="res://scripts/tutorial/TutorialWaypointArrow.cs" id="2_waypoint_arrow"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_modal_panel"]
+bg_color = Color(0.06, 0.05, 0.07, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.65, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_gold"]
+bg_color = Color(0.25, 0.18, 0.08, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.82, 0.25, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_gold_hover"]
+bg_color = Color(0.45, 0.32, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.95, 0.45, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_dark"]
+bg_color = Color(0.12, 0.1, 0.14, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.35, 0.45, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_dark_hover"]
+bg_color = Color(0.2, 0.16, 0.22, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.65, 0.6, 0.75, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quest_panel"]
+bg_color = Color(0.06, 0.05, 0.08, 0.93)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.8, 0.2, 0.85)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
+bg_color = Color(0.3, 0.22, 0.08, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.85, 0.3, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pointer"]
+bg_color = Color(0.08, 0.07, 0.1, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.85, 0.2, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_celeb"]
+bg_color = Color(0.05, 0.08, 0.06, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.9, 0.45, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="TutorialOverlay" type="CanvasLayer" node_paths=PackedStringArray("OnboardingModal", "StartTutorialButton", "SkipOnboardingButton", "QuestCard", "StepPillLabel", "StepTitleLabel", "StepDescLabel", "NextStepButton", "SkipTutorialButton", "CelebrationBanner", "CelebrationLoreLabel", "WaypointArrow")]
+layer = 45
+script = ExtResource("1_tut_mgr")
+OnboardingModal = NodePath("OnboardingModal")
+StartTutorialButton = NodePath("OnboardingModal/Center/Panel/Margin/VBox/Buttons/StartButton")
+SkipOnboardingButton = NodePath("OnboardingModal/Center/Panel/Margin/VBox/Buttons/SkipButton")
+QuestCard = NodePath("QuestCard")
+StepPillLabel = NodePath("QuestCard/Margin/VBox/TopBar/PillPanel/PillMargin/PillLabel")
+StepTitleLabel = NodePath("QuestCard/Margin/VBox/TitleLabel")
+StepDescLabel = NodePath("QuestCard/Margin/VBox/DescLabel")
+NextStepButton = NodePath("QuestCard/Margin/VBox/BottomBar/NextStepButton")
+SkipTutorialButton = NodePath("QuestCard/Margin/VBox/BottomBar/SkipButton")
+CelebrationBanner = NodePath("CelebrationBanner")
+CelebrationLoreLabel = NodePath("CelebrationBanner/Margin/VBox/LoreLabel")
+WaypointArrow = NodePath("WaypointArrow")
+
+[node name="WaypointArrow" type="Node3D" parent="." node_paths=PackedStringArray("ScreenPointerControl", "DistanceLabel", "ArrowVisual")]
+script = ExtResource("2_waypoint_arrow")
+ScreenPointerControl = NodePath("../ScreenPointer")
+DistanceLabel = NodePath("../ScreenPointer/Margin/HBox/DistanceLabel")
+ArrowVisual = NodePath("../ScreenPointer/Margin/HBox/ArrowIcon")
+
+[node name="ScreenPointer" type="PanelContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(170, 36)
+offset_right = 170.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pointer")
+
+[node name="Margin" type="MarginContainer" parent="ScreenPointer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 4
+
+[node name="HBox" type="HBoxContainer" parent="ScreenPointer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ArrowIcon" type="Label" parent="ScreenPointer/Margin/HBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+pivot_offset = Vector2(10, 10)
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "▼"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DistanceLabel" type="Label" parent="ScreenPointer/Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "OBJECTIVE • 15m"
+vertical_alignment = 1
+
+[node name="QuestCard" type="PanelContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(620, 130)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -310.0
+offset_top = 18.0
+offset_right = 310.0
+offset_bottom = 152.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_quest_panel")
+
+[node name="Margin" type="MarginContainer" parent="QuestCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="QuestCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="TopBar" type="HBoxContainer" parent="QuestCard/Margin/VBox"]
+layout_mode = 2
+
+[node name="PillPanel" type="PanelContainer" parent="QuestCard/Margin/VBox/TopBar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="PillMargin" type="MarginContainer" parent="QuestCard/Margin/VBox/TopBar/PillPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 2
+
+[node name="PillLabel" type="Label" parent="QuestCard/Margin/VBox/TopBar/PillPanel/PillMargin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.88, 0.35, 1)
+theme_override_font_sizes/font_size = 12
+text = "STEP 1 / 5"
+
+[node name="Spacer" type="Control" parent="QuestCard/Margin/VBox/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ToggleHint" type="Label" parent="QuestCard/Margin/VBox/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "[H] Toggle Guide"
+
+[node name="TitleLabel" type="Label" parent="QuestCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "CULTIVATE THE WALING-WALING"
+
+[node name="DescLabel" type="Label" parent="QuestCard/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.88, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "Equip your Level 1 Seed (Scroll Wheel to Slot 1) and [Left Click] or [E] on any empty chessboard tile to plant the cure."
+autowrap_mode = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="QuestCard/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Spacer" type="Control" parent="QuestCard/Margin/VBox/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NextStepButton" type="Button" parent="QuestCard/Margin/VBox/BottomBar"]
+custom_minimum_size = Vector2(110, 26)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_gold")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_gold_hover")
+text = "Next Step >"
+
+[node name="SkipButton" type="Button" parent="QuestCard/Margin/VBox/BottomBar"]
+custom_minimum_size = Vector2(100, 26)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_dark")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_dark_hover")
+text = "Skip Tutorial"
+
+[node name="OnboardingModal" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="OnboardingModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Center" type="CenterContainer" parent="OnboardingModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="OnboardingModal/Center"]
+custom_minimum_size = Vector2(780, 530)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_modal_panel")
+
+[node name="Margin" type="MarginContainer" parent="OnboardingModal/Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="OnboardingModal/Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ProtocolLabel" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.45, 0.2, 1)
+theme_override_font_sizes/font_size = 13
+text = "CLASSIFIED EXPEDITION PROTOCOL // CARABAO ISLAND // SUNKEN CANYON"
+horizontal_alignment = 1
+
+[node name="TitleLabel" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.88, 0.35, 1)
+theme_override_font_sizes/font_size = 24
+text = "THE WEEPING PLAGUE & THE WALING-WALING"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LoreContent" type="VBoxContainer" parent="OnboardingModal/Center/Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="LoreParagraph1" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox/Scroll/LoreContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.88, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "Ten years ago, the Weeping Plague began to choke humanity. You didn't venture down into Carabao Island's sunken abyss to be a hero. You came for the payout: harvest the cure, get filthy rich, and buy your way into the pristine citadels of the high lords while the rest of the world rots outside the gates."
+autowrap_mode = 2
+
+[node name="LoreParagraph2" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox/Scroll/LoreContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 14
+text = "• THE CURE (DAYTIME): Hidden deep in the canyon grows the glowing white flower known as the Waling-Waling. Plant fragile Level 1 seedlings on the chessboard dirt. Merge identical blooms to cultivate stronger, glowing strains of the cure, and haul your harvest to the trader's basket before dusk."
+autowrap_mode = 2
+
+[node name="LoreParagraph3" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox/Scroll/LoreContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "• THE SCAVENGER MERCHANT: The balloon trader holds the monopoly on your escape rope and intentionally bleeds you dry with extortionist taxes. In exchange for your blooms, he sells Before-Times relics: Seeds, CCTV Cameras, and Spark-Cell batteries."
+autowrap_mode = 2
+
+[node name="LoreParagraph4" type="Label" parent="OnboardingModal/Center/Panel/Margin/VBox/Scroll/LoreContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = "• THE HORROR (NIGHTFALL): Your safehouse is a rotting shack bolted high into a colossal transmission tower with torn-away doors and windows. When darkness falls, the twisted Ani-Ani awake. Nail heavy Yero slabs across openings, keep your Spark-Cells charged, and monitor camera feeds to survive until dawn."
+autowrap_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="OnboardingModal/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="StartButton" type="Button" parent="OnboardingModal/Center/Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(250, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_gold")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_gold_hover")
+text = "START GUIDED TUTORIAL"
+
+[node name="SkipButton" type="Button" parent="OnboardingModal/Center/Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_dark")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_dark_hover")
+text = "SKIP TO SURVIVAL"
+
+[node name="CelebrationBanner" type="PanelContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(650, 160)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -325.0
+offset_top = -80.0
+offset_right = 325.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_celeb")
+
+[node name="Margin" type="MarginContainer" parent="CelebrationBanner"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="CelebrationBanner/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Title" type="Label" parent="CelebrationBanner/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+theme_override_font_sizes/font_size = 22
+text = "★ TUTORIAL COMPLETE - EXPEDITION READY ★"
+horizontal_alignment = 1
+
+[node name="LoreLabel" type="Label" parent="CelebrationBanner/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "May your barricades hold firm. May your batteries keep their charge.
+Survive all 7 days, buy your ticket out... and let the rest of the world rot."
+horizontal_alignment = 1
+autowrap_mode = 2

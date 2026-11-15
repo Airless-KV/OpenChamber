@@ -8,6 +8,7 @@
 // - Oct 31, 2026 | anjivv : Implemented global audio playback singleton, BGM crossfade, ambient loops, and procedural synthesis
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/audio/
 // - Nov 06, 2026 | anjivv : Added dynamic GameManager phase tracking, pitched SFX playback, and procedural synthesis for footsteps, door pounds, and flower audio
+// - Nov 15, 2026 | air : Added procedural emergency warning siren synthesis under "siren"
 // =========================================================================================
 using Godot;
 using System;
@@ -491,6 +492,19 @@ public partial class AudioManager : Node
 				{
 					float env = 1f - t / 0.8f;
 					return (Mathf.Sin(t * Mathf.Tau * 110f) * 0.6f + Mathf.Sin(t * Mathf.Tau * 440f) * 0.3f) * env;
+				});
+
+			case "siren":
+				return MakeWav(2.5f, t =>
+				{
+					// Dual-tone emergency air-raid siren sweeping between 520Hz and 880Hz
+					float env = Mathf.Min(t / 0.15f, 1f) * Mathf.Clamp((2.5f - t) / 0.25f, 0f, 1f);
+					float sweep = Mathf.Sin(t * Mathf.Tau * 0.9f);
+					float f1 = 680f + 200f * sweep;
+					float f2 = f1 * 1.5f; // Perfect fifth overtone typical of mechanical siren rotors
+					float tone1 = Mathf.Sin(t * Mathf.Tau * f1);
+					float tone2 = Mathf.Sin(t * Mathf.Tau * f2) * 0.35f;
+					return (tone1 + tone2) * env * 0.85f;
 				});
 
 			case "monster_footsteps":

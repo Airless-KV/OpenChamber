@@ -21,11 +21,17 @@
 // - Nov 14, 2026 | air : Added Treehouse battery power drain (1% per 10s) and automatic signal cut on battery depletion
 // - Nov 14, 2026 | air : Increased CCTV battery power drain to 1% per second
 // - Nov 15, 2026 | air : Added FarPlane configuration (280m) to restrict CCTV frustum depth while preserving mountains
+// - Nov 15, 2026 | air : Rebalanced CCTV battery drain to 0.5% per second and mapped [SPACE] to emergency siren trigger
+// - Nov 15, 2026 | air : Buffed CCTV IRLight to 95m range, 65 deg angle, and Layer 7 mask for complete night coverage
+// - Nov 15, 2026 | air : Added static Instance and CCTVModeChanged signal to coordinate entity night stealth visibility
 // =========================================================================================
 using Godot;
 
 public partial class NighttCamera : Node3D
 {
+	[Signal] public delegate void CCTVModeChangedEventHandler(bool isCCTVActive);
+	public static NighttCamera Instance { get; private set; }
+
 	private Camera3D _dayCamera;
 	private Camera3D[] _nightCams;
 	private SpotLight3D[] _irLights;
@@ -46,6 +52,7 @@ public partial class NighttCamera : Node3D
 
 	public override void _Ready()
 	{
+		Instance = this;
 		_nightCams = new[] { GetNode<Camera3D>("North"), GetNode<Camera3D>("East"), GetNode<Camera3D>("South"), GetNode<Camera3D>("West") };
 		_irLights = new SpotLight3D[_nightCams.Length];
 		for (int i = 0; i < _nightCams.Length; i++)
@@ -59,16 +66,23 @@ public partial class NighttCamera : Node3D
 				{
 					Name = "IRLight",
 					LightColor = new Color(0.88f, 0.95f, 1.0f),
-					LightEnergy = 2.2f,
-					SpotRange = 45.0f,
-					SpotAngle = 48.0f,
-					SpotAttenuation = 1.2f,
+					LightEnergy = 3.8f,
+					LightCullMask = 7,
+					SpotRange = 95.0f,
+					SpotAngle = 65.0f,
+					SpotAttenuation = 1.0f,
 					Visible = false
 				};
 				_nightCams[i].AddChild(_irLights[i]);
 			}
 			else
 			{
+				_irLights[i].LightColor = new Color(0.88f, 0.95f, 1.0f);
+				_irLights[i].LightEnergy = 3.8f;
+				_irLights[i].LightCullMask = 7;
+				_irLights[i].SpotRange = 95.0f;
+				_irLights[i].SpotAngle = 65.0f;
+				_irLights[i].SpotAttenuation = 1.0f;
 				_irLights[i].Visible = false;
 			}
 		}
@@ -134,9 +148,28 @@ public partial class NighttCamera : Node3D
 			else if (k.Keycode is >= Key.Key1 and <= Key.Key4) SwitchNightCamera((int)k.Keycode - (int)Key.Key1);
 			else if (k.Keycode == Key.Tab) SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
 			else if (k.Keycode == Key.V) { ToggleNightVision(); GetViewport().SetInputAsHandled(); return; }
+			else if (k.Keycode == Key.Space) { TriggerSiren(); GetViewport().SetInputAsHandled(); return; }
 			else return;
 
 			GetViewport().SetInputAsHandled();
+		}
+	}
+
+	public void TriggerSiren()
+	{
+		var breach = GetTree().Root.FindChild("BreachManager", true, false) as BreachManager;
+		if (breach == null) return;
+
+		bool success = breach.ActivateSiren(out string message);
+		if (OverlayNode != null)
+		{
+			OverlayNode.ShowAlert(message);
+			var station = InteractableBatteryStation.GetStation(PowerSystemType.CCTV)
+				?? InteractableBatteryStation.Instance;
+			if (station != null && OverlayNode.StatusLabel != null)
+			{
+				OverlayNode.StatusLabel.Text = $"PWR: {station.BatteryHealth}% [CCTV]";
+			}
 		}
 	}
 
@@ -161,33 +194,35 @@ public partial class NighttCamera : Node3D
 	{
 		if (!IsNightMode) return;
 
-		var station = InteractableBatteryStation.Instance;
+		var station = InteractableBatteryStation.GetStation(PowerSystemType.CCTV)
+			?? InteractableBatteryStation.Instance;
 		if (station == null || !station.HasPower)
 		{
 			// Battery missing or died while watching CCTV
 			ApplyMode(false);
 			AudioManager.Sfx("banner_sting");
-			_hud?.SetInteractionPrompt("[!] CCTV SIGNAL LOST! Treehouse battery died (0% HP)!");
+			_hud?.SetInteractionPrompt("[!] CCTV SIGNAL LOST! CCTV PC Battery died or removed (0% HP)!");
 			return;
 		}
 
+		// CCTV drains at 0.5% per second (1% power every 2.0 seconds)
 		_cctvDrainTimer += (float)delta;
-		while (_cctvDrainTimer >= 1.0f)
+		while (_cctvDrainTimer >= 2.0f)
 		{
-			_cctvDrainTimer -= 1.0f;
+			_cctvDrainTimer -= 2.0f;
 			station.ConsumePower(1);
 			if (!station.HasPower)
 			{
 				ApplyMode(false);
 				AudioManager.Sfx("banner_sting");
-				_hud?.SetInteractionPrompt("[!] CCTV SIGNAL LOST! Treehouse battery died (0% HP)!");
+				_hud?.SetInteractionPrompt("[!] CCTV SIGNAL LOST! CCTV PC Battery died (0% HP)!");
 				return;
 			}
 		}
 
 		if (OverlayNode != null && OverlayNode.StatusLabel != null)
 		{
-			OverlayNode.StatusLabel.Text = $"PWR: {station.BatteryHealth}% [TREEHOUSE]";
+			OverlayNode.StatusLabel.Text = $"PWR: {station.BatteryHealth}% [CCTV]";
 		}
 	}
 
@@ -195,6 +230,7 @@ public partial class NighttCamera : Node3D
 	{
 		IsNightMode = night;
 		_cctvDrainTimer = 0f;
+		EmitSignal(SignalName.CCTVModeChanged, night);
 
 		if (_cameraPivot is CameraPivot cp)
 		{
@@ -210,10 +246,11 @@ public partial class NighttCamera : Node3D
 			OverlayNode?.ShowOverlay(_currentNightIndex);
 			SwitchNightCamera(_currentNightIndex);
 
-			var station = InteractableBatteryStation.Instance;
+			var station = InteractableBatteryStation.GetStation(PowerSystemType.CCTV)
+				?? InteractableBatteryStation.Instance;
 			if (station != null && OverlayNode?.StatusLabel != null)
 			{
-				OverlayNode.StatusLabel.Text = $"PWR: {station.BatteryHealth}% [TREEHOUSE]";
+				OverlayNode.StatusLabel.Text = $"PWR: {station.BatteryHealth}% [CCTV]";
 			}
 		}
 		else

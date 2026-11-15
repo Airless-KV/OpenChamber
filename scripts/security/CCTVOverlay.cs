@@ -16,6 +16,7 @@
 // - Nov 13, 2026 | air : Integrated green phosphor night vision shader parameter controls and OSD indicator
 // - Nov 14, 2026 | air : Corrected channel names for CAM 02 (East Perimeter) and CAM 03 (South Porch & Door)
 // - Nov 14, 2026 | air : Implemented TriggerCameraGlitch for CRT analog static bursts and entity vanish
+// - Nov 15, 2026 | air : Added AlertLabel OSD banner and updated controls for [SPACE] siren trigger
 // =========================================================================================
 using Godot;
 using System;
@@ -31,6 +32,7 @@ public partial class CCTVOverlay : CanvasLayer
 	[Export] public Label StatusLabel;
 	[Export] public Label ExitLabel;
 	[Export] public ColorRect ScanlinesRect;
+	[Export] public Label AlertLabel;
 
 	public static readonly string[] ChannelNames =
 	{
@@ -45,6 +47,7 @@ public partial class CCTVOverlay : CanvasLayer
 	private float _clockTimer = 1.0f;
 	private bool _isNightVision = true;
 	private Tween _glitchTween;
+	private Tween _alertTween;
 
 	public bool IsNightVision => _isNightVision;
 
@@ -59,6 +62,7 @@ public partial class CCTVOverlay : CanvasLayer
 		StatusLabel ??= GetNodeOrNull<Label>("Container/Footer/RightCol/StatusLabel");
 		ExitLabel ??= GetNodeOrNull<Label>("Container/Footer/RightCol/ExitLabel");
 		ScanlinesRect ??= GetNodeOrNull<ColorRect>("Container/Scanlines");
+		AlertLabel ??= GetNodeOrNull<Label>("Container/AlertLabel");
 
 		SetNightVision(true);
 		SetChannel(0);
@@ -155,8 +159,28 @@ public partial class CCTVOverlay : CanvasLayer
 		_currentChannel = Mathf.Clamp(channelIndex, 0, ChannelNames.Length - 1);
 		if (ChannelLabel != null) ChannelLabel.Text = ChannelNames[_currentChannel];
 		UpdateStatusDisplay();
-		if (ControlsLabel != null) ControlsLabel.Text = "[L-CLICK / TAB] SWITCH CAM  [V] NVG";
+		if (ControlsLabel != null) ControlsLabel.Text = "[L-CLICK / TAB] CAM  [SPACE] SIREN (30%)  [V] NVG";
 		if (ExitLabel != null) ExitLabel.Text = "[R-CLICK / ESC] EXIT DESK";
+	}
+
+	public void ShowAlert(string text, float duration = 3.5f)
+	{
+		if (AlertLabel == null) return;
+		AlertLabel.Text = text;
+		AlertLabel.Visible = true;
+		AlertLabel.Modulate = Colors.White;
+
+		if (_alertTween != null && _alertTween.IsValid())
+			_alertTween.Kill();
+
+		_alertTween = CreateTween();
+		_alertTween.TweenInterval(duration);
+		_alertTween.TweenProperty(AlertLabel, "modulate:a", 0.0f, 0.4f);
+		_alertTween.TweenCallback(Callable.From(() =>
+		{
+			AlertLabel.Visible = false;
+			AlertLabel.Modulate = Colors.White;
+		}));
 	}
 
 	private void UpdateStatusDisplay()

@@ -20,6 +20,8 @@
 //                        range culling per user direction to restore full landscape visuals
 // - Nov 15, 2026 | air : Enabled hardware visibility ranges (35m flora / 55m bush / 75m prop / 160m tree),
 //                        disabled billboard shadow casting, and optimized LOD margins for Intel HD 620
+// - Nov 15, 2026 | air : Restored full forest density (2800 outer / 450 mid), extended streaming to 185m/215m,
+//                        increased tree canopy scale (1.15-1.65), and exempted trees from distance culling
 // =========================================================================================
 using Godot;
 using System;
@@ -70,8 +72,8 @@ public partial class FoliageGenerator : Node3D
 	[ExportGroup("Dynamic Spatial Streaming")]
 	[Export] public bool EnableDynamicStreaming { get; set; } = true;
 	[Export] public float CellSize { get; set; } = 32.0f;
-	[Export] public float LoadRadius { get; set; } = 135.0f;
-	[Export] public float UnloadRadius { get; set; } = 160.0f;
+	[Export] public float LoadRadius { get; set; } = 185.0f;
+	[Export] public float UnloadRadius { get; set; } = 215.0f;
 	[Export] public float StreamCheckInterval { get; set; } = 0.15f;
 	[Export] public float MinMoveDistanceThreshold { get; set; } = 3.0f;
 
@@ -223,14 +225,14 @@ public partial class FoliageGenerator : Node3D
 			for (int i = 0; i < OuterTreeCount; i++)
 			{
 				Vector3 pos = SampleFoliagePosition(rng, MidMeadowOuterRadius, OuterForestRadius, TreeBufferMargin);
-				AddInstanceData(rng, 0, TreePrefabs.Length, pos, 0.85f, 1.25f);
+				AddInstanceData(rng, 0, TreePrefabs.Length, pos, 1.15f, 1.65f);
 			}
 
 			// 2. Mid Meadow Trees
 			for (int i = 0; i < MidTreeCount; i++)
 			{
 				Vector3 pos = SampleFoliagePosition(rng, FarmClearanceRadius, MidMeadowOuterRadius, TreeBufferMargin);
-				AddInstanceData(rng, 1, TreePrefabs.Length, pos, 0.8f, 1.15f);
+				AddInstanceData(rng, 1, TreePrefabs.Length, pos, 0.95f, 1.35f);
 			}
 		}
 
@@ -415,7 +417,9 @@ public partial class FoliageGenerator : Node3D
 					// Disable dynamic shadow casting on 2.5D billboard sprites to eliminate thousands of shadow cascade passes
 					sprite.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
 
-					if (EnableVisibilityRanges)
+					// Trees (0 = OuterTree, 1 = MidTree) remain visible across the full horizon to preserve the dense forest skyline.
+					// Hardware distance culling is applied strictly to ground clutter (flora, bushes, rocks, props).
+					if (EnableVisibilityRanges && data.Category != 0 && data.Category != 1)
 					{
 						float endDist = data.Category switch
 						{
@@ -423,7 +427,7 @@ public partial class FoliageGenerator : Node3D
 							3 => BushVisibilityEnd,      // Bushes (55m)
 							2 => RockVisibilityEnd,      // Rocks (75m)
 							5 => PropVisibilityEnd,      // Props (75m)
-							_ => TreeVisibilityEnd       // Trees (115m)
+							_ => 0f
 						};
 						float margin = data.Category switch
 						{

@@ -3,60 +3,208 @@
 [ext_resource type="Script" uid="uid://l7wq7k5uoli0" path="res://scripts/interaction/InteractableFloodlightSwitch.cs" id="1_flood"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_stand"]
-size = Vector3(0.4, 1.2, 0.4)
+size = Vector3(0.5, 1.4, 0.5)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stand"]
-albedo_color = Color(0.2, 0.2, 0.22, 1)
-metallic = 0.8
-roughness = 0.3
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal_dark"]
+albedo_color = Color(0.14, 0.15, 0.17, 1)
+metallic = 0.85
+roughness = 0.35
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_stand_pole"]
-top_radius = 0.04
-bottom_radius = 0.04
-height = 1.23862
+[sub_resource type="CylinderMesh" id="CylinderMesh_tripod_leg"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.65
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_housing"]
-albedo_color = Color(0.85, 0.65, 0.12, 1)
-metallic = 0.3
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole_base"]
+top_radius = 0.035
+bottom_radius = 0.035
+height = 0.24172363
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yoke"]
+albedo_color = Color(0.18, 0.2, 0.22, 1)
+metallic = 0.7
 roughness = 0.4
 
-[sub_resource type="BoxMesh" id="BoxMesh_housing"]
-size = Vector3(0.25, 0.25, 0.35)
+[sub_resource type="BoxMesh" id="BoxMesh_collar"]
+size = Vector3(0.08, 0.05, 0.08)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lever"]
-albedo_color = Color(0.9, 0.2, 0.1, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pole_chrome"]
+albedo_color = Color(0.4, 0.42, 0.45, 1)
+metallic = 0.95
+roughness = 0.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole_telescope"]
+top_radius = 0.025
+bottom_radius = 0.025
+height = 0.65
+
+[sub_resource type="BoxMesh" id="BoxMesh_yoke_base"]
+size = Vector3(0.32, 0.04, 0.05)
+
+[sub_resource type="BoxMesh" id="BoxMesh_yoke_arm"]
+size = Vector3(0.03, 0.25, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lamp_chassis"]
+albedo_color = Color(0.85, 0.55, 0.1, 1)
+metallic = 0.4
 roughness = 0.4
 
-[sub_resource type="BoxMesh" id="BoxMesh_lever"]
-size = Vector3(0.06, 0.12, 0.06)
+[sub_resource type="BoxMesh" id="BoxMesh_lamp_body"]
+size = Vector3(0.28, 0.24, 0.24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fin"]
+albedo_color = Color(0.1, 0.1, 0.12, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_fin"]
+size = Vector3(0.26, 0.22, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cowl"]
+albedo_color = Color(0.12, 0.13, 0.15, 1)
+metallic = 0.6
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_cowl"]
+size = Vector3(0.3, 0.26, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lens"]
+albedo_color = Color(0.95, 0.96, 0.9, 1)
+roughness = 0.1
+emission_enabled = true
+emission = Color(0.15, 0.15, 0.12, 1)
+emission_energy_multiplier = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_lens"]
+size = Vector3(0.25, 0.21, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ctrl_box"]
+albedo_color = Color(0.22, 0.23, 0.25, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_ctrl_box"]
+size = Vector3(0.14, 0.18, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lever_arm"]
+albedo_color = Color(0.9, 0.15, 0.12, 1)
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_lever_arm"]
+size = Vector3(0.03, 0.1, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ind_led"]
+albedo_color = Color(0.2, 0.9, 0.3, 1)
+emission_enabled = true
+emission = Color(0.2, 0.9, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_ind_led"]
+radius = 0.012
+height = 0.024
 
 [node name="FloodlightStand" type="StaticBody3D" unique_id=741829101 node_paths=PackedStringArray("ExteriorFloodlight", "SwitchLever")]
 script = ExtResource("1_flood")
 ExteriorFloodlight = NodePath("SpotLight3D")
-SwitchLever = NodePath("Housing/Lever")
+SwitchLever = NodePath("ControlBox/LeverArm")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=741829102]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 shape = SubResource("BoxShape3D_stand")
 
-[node name="PoleMesh" type="MeshInstance3D" parent="." unique_id=741829103]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.21931002, 0)
-material_override = SubResource("StandardMaterial3D_stand")
-mesh = SubResource("CylinderMesh_stand_pole")
+[node name="TripodBase" type="Node3D" parent="." unique_id=325022165]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
 
-[node name="Housing" type="MeshInstance3D" parent="." unique_id=741829104]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
-material_override = SubResource("StandardMaterial3D_housing")
-mesh = SubResource("BoxMesh_housing")
+[node name="Leg1" type="MeshInstance3D" parent="TripodBase" unique_id=1832479468]
+transform = Transform3D(-0.9929795, 0.05150789, -0.106483676, 0.09865093, 0.85732394, -0.50523555, 0.06526744, -0.5121932, -0.8563863, 0, 0.15, 0.18)
+material_override = SubResource("StandardMaterial3D_metal_dark")
+mesh = SubResource("CylinderMesh_tripod_leg")
 
-[node name="Lever" type="MeshInstance3D" parent="Housing" unique_id=741829105]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0, 0)
-material_override = SubResource("StandardMaterial3D_lever")
-mesh = SubResource("BoxMesh_lever")
+[node name="Leg2" type="MeshInstance3D" parent="TripodBase" unique_id=1617326852]
+transform = Transform3D(0.8239898, -0.4482058, -0.34662893, -0.2571923, -0.8409775, 0.476035, -0.5048688, -0.30309737, -0.80823225, -0.16, 0.15, -0.1)
+material_override = SubResource("StandardMaterial3D_metal_dark")
+mesh = SubResource("CylinderMesh_tripod_leg")
+
+[node name="Leg3" type="MeshInstance3D" parent="TripodBase" unique_id=370764126]
+transform = Transform3D(-0.55712354, -0.41521484, 0.7191733, -1.4901161e-08, 0.8660251, 0.50000006, -0.8304293, 0.27856222, -0.48248333, 0.16, 0.15, -0.1)
+material_override = SubResource("StandardMaterial3D_metal_dark")
+mesh = SubResource("CylinderMesh_tripod_leg")
+
+[node name="PoleLower" type="MeshInstance3D" parent="." unique_id=469266443]
+transform = Transform3D(0.9999694, -0.0076845437, 0.0014589559, 0.007689356, 0.99996483, -0.0033216039, -0.0014333592, 0.00333273, 0.99999344, -0.0012925277, -0.07086907, 0.0005608173)
+material_override = SubResource("StandardMaterial3D_metal_dark")
+mesh = SubResource("CylinderMesh_pole_base")
+
+[node name="AdjustmentCollar" type="MeshInstance3D" parent="." unique_id=1984035025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = SubResource("StandardMaterial3D_yoke")
+mesh = SubResource("BoxMesh_collar")
+
+[node name="PoleUpper" type="MeshInstance3D" parent="." unique_id=939381630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32, 0)
+material_override = SubResource("StandardMaterial3D_pole_chrome")
+mesh = SubResource("CylinderMesh_pole_telescope")
+
+[node name="YokeAssembly" type="Node3D" parent="." unique_id=1823363006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+
+[node name="YokeCrossbar" type="MeshInstance3D" parent="YokeAssembly" unique_id=2116944435]
+material_override = SubResource("StandardMaterial3D_yoke")
+mesh = SubResource("BoxMesh_yoke_base")
+
+[node name="YokeLeft" type="MeshInstance3D" parent="YokeAssembly" unique_id=1702570812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_yoke")
+mesh = SubResource("BoxMesh_yoke_arm")
+
+[node name="YokeRight" type="MeshInstance3D" parent="YokeAssembly" unique_id=445237867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_yoke")
+mesh = SubResource("BoxMesh_yoke_arm")
+
+[node name="LampHead" type="Node3D" parent="." unique_id=1424803321]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77, 0)
+
+[node name="LampBody" type="MeshInstance3D" parent="LampHead" unique_id=173747675]
+material_override = SubResource("StandardMaterial3D_lamp_chassis")
+mesh = SubResource("BoxMesh_lamp_body")
+
+[node name="CoolingFins" type="MeshInstance3D" parent="LampHead" unique_id=851687376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.13)
+material_override = SubResource("StandardMaterial3D_fin")
+mesh = SubResource("BoxMesh_fin")
+
+[node name="LensVisor" type="MeshInstance3D" parent="LampHead" unique_id=345897804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.13)
+material_override = SubResource("StandardMaterial3D_cowl")
+mesh = SubResource("BoxMesh_cowl")
+
+[node name="LensMesh" type="MeshInstance3D" parent="LampHead" unique_id=1015799794]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.155)
+material_override = SubResource("StandardMaterial3D_lens")
+mesh = SubResource("BoxMesh_lens")
+
+[node name="ControlBox" type="Node3D" parent="." unique_id=454351186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.08)
+
+[node name="BoxBody" type="MeshInstance3D" parent="ControlBox" unique_id=2075444518]
+material_override = SubResource("StandardMaterial3D_ctrl_box")
+mesh = SubResource("BoxMesh_ctrl_box")
+
+[node name="LeverArm" type="MeshInstance3D" parent="ControlBox" unique_id=177343686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0, 0)
+material_override = SubResource("StandardMaterial3D_lever_arm")
+mesh = SubResource("BoxMesh_lever_arm")
+
+[node name="StatusLED" type="MeshInstance3D" parent="ControlBox" unique_id=1066091575]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.05, 0.065)
+material_override = SubResource("StandardMaterial3D_ind_led")
+mesh = SubResource("SphereMesh_ind_led")
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=741829106]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.77, -0.22)
 visible = false
 light_color = Color(1, 0.96, 0.85, 1)
 light_energy = 9.0
+light_cull_mask = 7
 spot_range = 45.0
 spot_angle = 50.0

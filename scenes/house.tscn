@@ -1,16 +1,15 @@
 [gd_scene format=3 uid="uid://dht0npv3gkdtm"]
 
 [ext_resource type="PackedScene" uid="uid://dvym53fidtkja" path="res://scenes/interaction/barricade.tscn" id="1_barricade"]
-[ext_resource type="PackedScene" path="res://scenes/interaction/cctv_station.tscn" id="2_cctv_scene"]
+[ext_resource type="PackedScene" uid="uid://o8ywtkxfpi25" path="res://scenes/interaction/cctv_station.tscn" id="2_cctv_scene"]
 [ext_resource type="PackedScene" uid="uid://bifhy8nkvfhcp" path="res://scenes/interaction/floodlight_stand.tscn" id="3_flood_scene"]
 [ext_resource type="Script" uid="uid://q87o2178awg3" path="res://scripts/interaction/InteractableLadder.cs" id="4_ladder_script"]
-[ext_resource type="Script" uid="uid://c8m7v1pq4ayt4" path="res://scripts/interaction/InteractableBatteryStation.cs" id="5_battery_station"]
 [ext_resource type="Script" uid="uid://ck8y2qpw4m31x" path="res://scripts/interaction/WorldItem.cs" id="6_world_item"]
+[ext_resource type="PackedScene" uid="uid://cxmvo8mshfd5j" path="res://scenes/security/roof_siren.tscn" id="7_roof_siren"]
+[ext_resource type="PackedScene" uid="uid://pqktktowuuq" path="res://scenes/interaction/freezer.tscn" id="8_freezer"]
+[ext_resource type="PackedScene" uid="uid://c5e7b8w3k1pxq" path="res://scenes/interaction/workbench.tscn" id="9_workbench"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(5.6, 0.2, 5.6)
-
-[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_floor"]
 size = Vector3(5.6, 0.2, 5.6)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
@@ -20,10 +19,10 @@ roughness = 0.8
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(5.6, 0.3260742, 5.6)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_roof"]
-size = Vector3(6.4, 0.22, 6.5)
+[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_floor"]
+size = Vector3(5.6, 0.2, 5.6)
 
-[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_roof"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_roof"]
 size = Vector3(6.4, 0.22, 6.5)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_roof"]
@@ -32,6 +31,9 @@ metallic = 0.35
 roughness = 0.65
 
 [sub_resource type="BoxMesh" id="BoxMesh_roof"]
+size = Vector3(6.4, 0.22, 6.5)
+
+[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_roof"]
 size = Vector3(6.4, 0.22, 6.5)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
@@ -82,7 +84,7 @@ albedo_color = Color(0.4, 0.26, 0.16, 1)
 roughness = 0.75
 
 [sub_resource type="BoxMesh" id="BoxMesh_porch"]
-size = Vector3(2, 0.16, 0.9)
+size = Vector3(2.4854736, 0.16, 0.9)
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_trunk"]
 height = 3.2
@@ -192,44 +194,48 @@ emission_energy_multiplier = 3.0
 radius = 0.045
 height = 0.04
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_batterystation"]
-size = Vector3(0.9, 0.7, 0.6)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ceiling_mount"]
+albedo_color = Color(0.14, 0.14, 0.16, 1)
+metallic = 0.85
+roughness = 0.35
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_batterystation_base"]
-albedo_color = Color(0.24, 0.26, 0.3, 1)
-metallic = 0.4
-roughness = 0.5
+[sub_resource type="CylinderMesh" id="CylinderMesh_ceiling_mount"]
+top_radius = 0.09
+bottom_radius = 0.09
+height = 0.04
 
-[sub_resource type="BoxMesh" id="BoxMesh_batterystation_base"]
-size = Vector3(0.85, 0.65, 0.55)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bulb_socket"]
+albedo_color = Color(0.72, 0.55, 0.22, 1)
+metallic = 0.8
+roughness = 0.3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_carbattery_body"]
-albedo_color = Color(0.14, 0.15, 0.17, 1)
-roughness = 0.6
+[sub_resource type="CylinderMesh" id="CylinderMesh_bulb_socket"]
+top_radius = 0.042
+bottom_radius = 0.046
+height = 0.08
 
-[sub_resource type="BoxMesh" id="BoxMesh_carbattery_body"]
-size = Vector3(0.55, 0.36, 0.32)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_carbattery_posterm"]
-albedo_color = Color(0.85, 0.15, 0.15, 1)
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_carbattery_term"]
-top_radius = 0.045
-bottom_radius = 0.05
-height = 0.09
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_carbattery_negterm"]
-albedo_color = Color(0.18, 0.38, 0.88, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_batterystation_led"]
-albedo_color = Color(0.2, 0.05, 0.05, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bulb_glass"]
+transparency = 1
+albedo_color = Color(1, 0.95, 0.8, 0.85)
+roughness = 0.15
 emission_enabled = true
-emission = Color(0.2, 0.05, 0.05, 1)
-emission_energy_multiplier = 0.5
+emission = Color(1, 0.88, 0.65, 1)
+emission_energy_multiplier = 2.5
 
-[sub_resource type="SphereMesh" id="SphereMesh_batterystation_led"]
-radius = 0.05
-height = 0.1
+[sub_resource type="SphereMesh" id="SphereMesh_bulb_glass"]
+radius = 0.065
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bulb_filament"]
+albedo_color = Color(1, 0.9, 0.4, 1)
+emission_enabled = true
+emission = Color(1, 0.9, 0.5, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_bulb_filament"]
+top_radius = 0.008
+bottom_radius = 0.008
+height = 0.04
 
 [node name="HouseInterior" type="Node3D" unique_id=2116933957]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.2, 0)
@@ -245,7 +251,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06303716, 0)
 material_override = SubResource("StandardMaterial3D_floor")
 mesh = SubResource("BoxMesh_floor")
 
-[node name="FloorOccluder" type="OccluderInstance3D" parent="Floor"]
+[node name="FloorOccluder" type="OccluderInstance3D" parent="Floor" unique_id=1210469295]
 occluder = SubResource("BoxOccluder3D_floor")
 
 [node name="Roof" type="StaticBody3D" parent="." unique_id=741829301]
@@ -259,7 +265,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 7.450581e-09, 0, -7.450581e-09, 1, 0, 0.0
 material_override = SubResource("StandardMaterial3D_roof")
 mesh = SubResource("BoxMesh_roof")
 
-[node name="RoofOccluder" type="OccluderInstance3D" parent="Roof"]
+[node name="RoofOccluder" type="OccluderInstance3D" parent="Roof" unique_id=807803934]
 occluder = SubResource("BoxOccluder3D_roof")
 
 [node name="WallEast_Left" type="StaticBody3D" parent="." unique_id=325107282]
@@ -377,7 +383,7 @@ material_override = SubResource("StandardMaterial3D_wall")
 mesh = SubResource("BoxMesh_wall_south_gable")
 
 [node name="FrontDoor" parent="." unique_id=1560520502 instance=ExtResource("1_barricade")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1.1, 2.75)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1.186053, 2.75)
 EntranceTypeName = "Front Opening"
 AttackDirection = 2
 
@@ -427,7 +433,7 @@ EntranceTypeName = "West Opening"
 AttackDirection = 3
 
 [node name="CCTVStation" parent="." unique_id=944499830 instance=ExtResource("2_cctv_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0.02822727)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45124543, 0.39517152, -1.9771404)
 
 [node name="SouthPorch" type="StaticBody3D" parent="." unique_id=948232158]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 3.2)
@@ -436,6 +442,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 3.2)
 shape = SubResource("BoxShape3D_porch")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SouthPorch" unique_id=948232160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.019470215, 0, 0)
 material_override = SubResource("StandardMaterial3D_wood")
 mesh = SubResource("BoxMesh_porch")
 
@@ -724,7 +731,7 @@ material_override = SubResource("StandardMaterial3D_elbow")
 mesh = SubResource("CylinderMesh_mast_elbow")
 
 [node name="MastSegment2" type="MeshInstance3D" parent="CCTVMast" unique_id=948232240]
-transform = Transform3D(0.951056, -0.309017, 0, 0.309017, 0.951056, 0, 0, 0, 1, -0.04475844, 2.1800003, 0)
+transform = Transform3D(0.95105594, -0.30901694, 0, 0.30901694, 0.95105594, 0, 0, 0, 1, -0.04475844, 2.1800003, 0)
 material_override = SubResource("StandardMaterial3D_mast")
 mesh = SubResource("CylinderMesh_mast_segment2")
 
@@ -739,7 +746,7 @@ material_override = SubResource("StandardMaterial3D_mast")
 mesh = SubResource("CylinderMesh_mast_segment3")
 
 [node name="CamHeadNorth" type="MeshInstance3D" parent="CCTVMast" unique_id=948232189]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0.0545429, 4.0673485, -0.15669635)
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0.0545429, 4.0673485, -0.15669635)
 material_override = SubResource("StandardMaterial3D_cam_body")
 mesh = SubResource("BoxMesh_cam_body")
 
@@ -749,7 +756,7 @@ material_override = SubResource("StandardMaterial3D_cam_lens")
 mesh = SubResource("SphereMesh_cam_lens")
 
 [node name="CamHeadEast" type="MeshInstance3D" parent="CCTVMast" unique_id=948232191]
-transform = Transform3D(0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 1, 0, 0, 0.22750628, 3.770588, 0.020319581)
+transform = Transform3D(-4.371139e-08, 0.5, -0.8660254, 0, 0.8660254, 0.5, 1, 2.1855694e-08, -3.7855173e-08, 0.22750628, 3.770588, 0.020319581)
 material_override = SubResource("StandardMaterial3D_cam_body")
 mesh = SubResource("BoxMesh_cam_body")
 
@@ -759,7 +766,7 @@ material_override = SubResource("StandardMaterial3D_cam_lens")
 mesh = SubResource("SphereMesh_cam_lens")
 
 [node name="CamHeadSouth" type="MeshInstance3D" parent="CCTVMast" unique_id=948232193]
-transform = Transform3D(-1, 0, 0, 0, 0.7071068, 0.7071068, 0, 0.7071068, -0.7071068, -0.022987723, 3.983451, 0.15185177)
+transform = Transform3D(-1, 4.371139e-08, -7.5710346e-08, 0, 0.8660254, 0.5, 8.742278e-08, 0.5, -0.8660254, -0.022987723, 3.983451, 0.15185177)
 material_override = SubResource("StandardMaterial3D_cam_body")
 mesh = SubResource("BoxMesh_cam_body")
 
@@ -769,7 +776,7 @@ material_override = SubResource("StandardMaterial3D_cam_lens")
 mesh = SubResource("SphereMesh_cam_lens")
 
 [node name="CamHeadWest" type="MeshInstance3D" parent="CCTVMast" unique_id=948232195]
-transform = Transform3D(0, -0.7071068, 0.7071068, 0, 0.7071068, 0.7071068, -1, 0, 0, -0.003968835, 4.3111095, 0)
+transform = Transform3D(-4.371139e-08, -0.5, 0.8660254, 0, 0.8660254, 0.5, -1, 2.1855694e-08, -3.7855173e-08, -0.003968835, 4.3111095, 0)
 material_override = SubResource("StandardMaterial3D_cam_body")
 mesh = SubResource("BoxMesh_cam_body")
 
@@ -778,85 +785,68 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.16)
 material_override = SubResource("StandardMaterial3D_cam_lens")
 mesh = SubResource("SphereMesh_cam_lens")
 
-[node name="CeilingLight" type="OmniLight3D" parent="." unique_id=1211396729]
+[node name="RoofSiren" parent="." unique_id=948232301 instance=ExtResource("7_roof_siren")]
+transform = Transform3D(-1, 8.7422755e-08, 0, 3.821371e-15, 4.3711378e-08, -0.99999976, -8.742278e-08, -0.99999976, -4.3711378e-08, -0.027673006, 2.806565, 3.1406634)
+
+[node name="CeilingPendant" type="Node3D" parent="." unique_id=1211396801]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+
+[node name="CeilingMount" type="MeshInstance3D" parent="CeilingPendant" unique_id=1211396802]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("StandardMaterial3D_ceiling_mount")
+mesh = SubResource("CylinderMesh_ceiling_mount")
+
+[node name="BulbSocket" type="MeshInstance3D" parent="CeilingPendant" unique_id=1211396804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.20721912, 0)
+material_override = SubResource("StandardMaterial3D_bulb_socket")
+mesh = SubResource("CylinderMesh_bulb_socket")
+
+[node name="BulbGlass" type="MeshInstance3D" parent="CeilingPendant" unique_id=1211396805]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11978197, 0)
+material_override = SubResource("StandardMaterial3D_bulb_glass")
+mesh = SubResource("SphereMesh_bulb_glass")
+
+[node name="BulbFilament" type="MeshInstance3D" parent="CeilingPendant" unique_id=1211396806]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11409855, 0)
+material_override = SubResource("StandardMaterial3D_bulb_filament")
+mesh = SubResource("CylinderMesh_bulb_filament")
+
+[node name="CeilingLight" type="OmniLight3D" parent="." unique_id=1211396729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8064382, 0)
 light_color = Color(1, 0.85, 0.65, 1)
 light_energy = 1.4
+light_cull_mask = 1
 omni_range = 6.0
 omni_attenuation = 1.5
 
 [node name="EastFloodlightStand" parent="." unique_id=741829101 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("3_flood_scene")]
-transform = Transform3D(5.3759507e-08, -0.11493714, -0.99337274, 8.684339e-08, -0.9933727, 0.11493715, -0.9999999, -9.244683e-08, -4.34217e-08, 2.387405, 2.2905822, 0)
+transform = Transform3D(-4.3711385e-08, 0, -0.99999994, 0, 0.9999999, 0, 0.9999999, 0, -4.3711385e-08, 2.3879352, 0.84095526, -0.0018662214)
 RequiredEntrance = NodePath("../EastWindow")
 
 [node name="NorthFloodlightStand" parent="." unique_id=741829111 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("3_flood_scene")]
-transform = Transform3D(-1, 8.742278e-08, 0, -8.6462514e-08, -0.9890159, 0.1478094, 1.2921908e-08, 0.1478094, 0.9890159, 0, 2.2424085, -2.434701)
+transform = Transform3D(0.97019124, 0, -0.2423411, 0, 1, 0, 0.2423411, 0, 0.97019124, -0.62271845, 0.7054241, -2.3707912)
 RequiredEntrance = NodePath("../NorthWindow")
 Direction = 0
 
 [node name="SouthFloodlightStand" parent="." unique_id=741829121 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("3_flood_scene")]
-transform = Transform3D(1, 8.742278e-08, -8.742278e-08, 8.742278e-08, -1, 0, -8.742278e-08, -7.642742e-15, -1, 0, 2.482634, 2.2518816)
+transform = Transform3D(-0.98105425, 0, -0.19373338, 0, 1, 0, 0.19373338, 0, -0.98105425, -0.90990865, 0.7057526, 3.3093283)
 RequiredEntrance = NodePath("../FrontDoor")
 Direction = 2
 
 [node name="WestFloodlightStand" parent="." unique_id=741829131 node_paths=PackedStringArray("RequiredEntrance") instance=ExtResource("3_flood_scene")]
-transform = Transform3D(5.3001287e-08, 0.10626408, 0.9943379, -8.6927784e-08, -0.9943379, 0.10626408, 1, -9.206773e-08, -4.3463892e-08, -2.4112825, 2.2074811, 0)
+transform = Transform3D(-4.3711385e-08, 0, 1.0000001, 0, 1, 0, -0.99999994, 0, -4.3711392e-08, -2.3084664, 0.8908465, 0.16709298)
 RequiredEntrance = NodePath("../WestWindow")
 Direction = 3
 
-[node name="BatteryStation" type="StaticBody3D" parent="." unique_id=849201923 node_paths=PackedStringArray("BatteryVisual", "LedIndicator", "StatusLabel", "IndicatorLight")]
-transform = Transform3D(0.7071068, 0, -0.7071068, 0, 1, 0, 0.7071068, 0, 0.7071068, 2.1, 0.35, -2.1)
-script = ExtResource("5_battery_station")
-BatteryVisual = NodePath("InstalledBatteryVisual")
-LedIndicator = NodePath("LedIndicator")
-StatusLabel = NodePath("StatusLabel")
-IndicatorLight = NodePath("IndicatorLight")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BatteryStation" unique_id=849201925]
-shape = SubResource("BoxShape3D_batterystation")
-
-[node name="BaseBox" type="MeshInstance3D" parent="BatteryStation" unique_id=849201926]
-material_override = SubResource("StandardMaterial3D_batterystation_base")
-mesh = SubResource("BoxMesh_batterystation_base")
-
-[node name="InstalledBatteryVisual" type="Node3D" parent="BatteryStation" unique_id=849201927]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.34, 0)
-visible = false
-
-[node name="BatteryBody" type="MeshInstance3D" parent="BatteryStation/InstalledBatteryVisual" unique_id=849201928]
-material_override = SubResource("StandardMaterial3D_carbattery_body")
-mesh = SubResource("BoxMesh_carbattery_body")
-
-[node name="PosTerminal" type="MeshInstance3D" parent="BatteryStation/InstalledBatteryVisual" unique_id=849201929]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.21, 0)
-material_override = SubResource("StandardMaterial3D_carbattery_posterm")
-mesh = SubResource("CylinderMesh_carbattery_term")
-
-[node name="NegTerminal" type="MeshInstance3D" parent="BatteryStation/InstalledBatteryVisual" unique_id=849201930]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.21, 0)
-material_override = SubResource("StandardMaterial3D_carbattery_negterm")
-mesh = SubResource("CylinderMesh_carbattery_term")
-
-[node name="LedIndicator" type="MeshInstance3D" parent="BatteryStation" unique_id=849201931]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.22, 0.28)
-material_override = SubResource("StandardMaterial3D_batterystation_led")
-mesh = SubResource("SphereMesh_batterystation_led")
-
-[node name="IndicatorLight" type="OmniLight3D" parent="BatteryStation" unique_id=849201932]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.22, 0.32)
-light_color = Color(0.95, 0.2, 0.2, 1)
-light_energy = 0.5
-omni_range = 1.5
-
-[node name="StatusLabel" type="Label3D" parent="BatteryStation" unique_id=849201933]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.62, 0)
-billboard = 2
-modulate = Color(0.9, 0.4, 0.4, 1)
-text = "[POWER STATION: EMPTY]
-Insert Car Battery"
-font_size = 26
-
 [node name="StarterCarBattery" type="StaticBody3D" parent="." unique_id=849201924]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0.2, -1.6)
+collision_layer = 2
+collision_mask = 0
 script = ExtResource("6_world_item")
-ItemType = 3
+ItemType = 2
+
+[node name="CryoFreezer" parent="." unique_id=987654321 instance=ExtResource("8_freezer")]
+transform = Transform3D(0.7759668, 0, 0.6307738, 0, 1, 0, -0.6307738, 0, 0.7759668, -1.8847836, 0, -1.8)
+
+[node name="SeedWorkbench" parent="." unique_id=987654401 instance=ExtResource("9_workbench")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 1.7189499, 0, 2.15273)

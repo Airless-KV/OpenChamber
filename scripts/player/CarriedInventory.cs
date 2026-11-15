@@ -10,6 +10,12 @@
 // - Nov 13, 2026 | air : Implemented 3-slot carried inventory, Space grab/drop, and scroll cycling
 // - Nov 13, 2026 | air : Added CarBattery tracking with battery health preservation and 3D hand viewmodel
 // - Nov 14, 2026 | air : Added ItemType.Crowbar viewmodel and slot display name
+// - Nov 15, 2026 | air : Restricted drop floor raycast mask to Layer 1 (World) to prevent stacking on item colliders
+// - Nov 15, 2026 | air : Removed Plank and Crowbar viewmodels and display names
+// - Nov 15, 2026 | air : Added flower FreshnessTimer shelf life countdown, decay, and wilting
+// - Nov 15, 2026 | air : Added Space bar handling for Cryo-Freezer pick up and placement
+// - Nov 15, 2026 | air : Added ConsumeItemAt method for direct slot transfer to Cryo-Freezer chest
+// - Nov 15, 2026 | air : Updated GetDisplayName to show Level {FlowerTier} Seed
 // =========================================================================================
 using Godot;
 using System;
@@ -27,17 +33,16 @@ public partial class CarriedInventory : Node
 		public ItemType Type;
 		public int FlowerTier;
 		public int BatteryHealth;
+		public float FreshnessTimer;
 
 		public string GetDisplayName()
 		{
 			if (!IsOccupied) return "[Empty]";
 			return Type switch
 			{
-				ItemType.Plank => "Wooden Plank",
-				ItemType.Seed => "Level 1 Seed",
-				ItemType.Flower => WorldItem.FlowerNames[Mathf.Clamp(FlowerTier - 1, 0, 4)],
+				ItemType.Seed => $"Level {Mathf.Clamp(FlowerTier, 1, 5)} Seed",
+				ItemType.Flower => $"{WorldItem.FlowerNames[Mathf.Clamp(FlowerTier - 1, 0, 4)]} ({Mathf.CeilToInt(FreshnessTimer)}s)",
 				ItemType.CarBattery => $"Car Battery ({BatteryHealth}%)",
-				ItemType.Crowbar => "Rusted Crowbar",
 				_ => "Item"
 			};
 		}
@@ -125,19 +130,45 @@ public partial class CarriedInventory : Node
 
 	public override void _Process(double delta)
 	{
+		float dt = (float)delta;
+
+		// Decay freshness of carried flowers
+		bool inventoryChanged = false;
+		for (int i = 0; i < MaxSlots; i++)
+		{
+			if (Slots[i].IsOccupied && Slots[i].Type == ItemType.Flower)
+			{
+				Slots[i].FreshnessTimer -= dt;
+				if (Slots[i].FreshnessTimer <= 0f)
+				{
+					int wiltedTier = Slots[i].FlowerTier;
+					Slots[i] = default;
+					inventoryChanged = true;
+					var hud = GetTree()?.Root.FindChild("HUD", true, false) as HUDManager;
+					hud?.SetInteractionPrompt($"[!] A carried Tier {wiltedTier} Flower wilted away!");
+					AudioManager.Sfx("foliage_rustle", -2f);
+				}
+			}
+		}
+
+		if (inventoryChanged)
+		{
+			OnInventoryUpdated();
+		}
+
 		if (_handViewModelRoot == null || Player == null) return;
 
 		float speed = Player.Velocity.Length();
 		if (speed > 0.1f && Player.IsOnFloor())
 		{
-			_walkBobTimer += (float)delta * (speed * 1.5f);
+			_walkBobTimer += dt * (speed * 1.5f);
 			float bobX = Mathf.Sin(_walkBobTimer * 0.5f) * 0.015f;
 			float bobY = Mathf.Sin(_walkBobTimer) * 0.02f;
 			_handViewModelRoot.Position = new Vector3(0.35f + bobX, -0.28f + bobY, -0.55f);
 		}
 		else
 		{
-			_handViewModelRoot.Position = _handViewModelRoot.Position.Lerp(new Vector3(0.35f, -0.28f, -0.55f), (float)delta * 8f);
+			_handViewModelRoot.Position = _handViewModelRoot.Position.Lerp(new Vector3(0.35f, -0.28f, -0.55f), dt * 8f);
 		}
 	}
 
@@ -157,14 +188,29 @@ public partial class CarriedInventory : Node
 
 	private void HandleSpaceAction()
 	{
-		// 1. If holding a flower and aiming at the balloon shop: sell it!
+		// 1. If currently carrying a Cryo-Freezer, Space places it down
+		if (InteractableFreezer.HeldFreezerInstance != null)
+		{
+			InteractableFreezer.HeldFreezerInstance.PlaceDownFreezer(Player);
+			return;
+		}
+
+		// 2. If holding a flower and aiming at the balloon shop: sell it!
 		if (Slots[ActiveSlot].IsOccupied && Slots[ActiveSlot].Type == ItemType.Flower && IsTargetingShop())
 		{
 			SellActiveFlower();
 			return;
 		}
 
-		// 2. Grabbing targeted world item
+		// 3. If aiming at a Cryo-Freezer, Space picks it up
+		InteractableFreezer targetedFreezer = FindTargetedFreezer();
+		if (targetedFreezer != null)
+		{
+			targetedFreezer.PickUpFreezer(Player);
+			return;
+		}
+
+		// 4. Grabbing targeted world item
 		WorldItem targetedItem = FindTargetedWorldItem();
 		if (targetedItem != null)
 		{
@@ -174,6 +220,41 @@ public partial class CarriedInventory : Node
 		{
 			TryDropActiveItem();
 		}
+	}
+
+	public InteractableFreezer FindTargetedFreezer()
+	{
+		Camera3D cam = GetViewport().GetCamera3D();
+		if (cam == null) return null;
+
+		var space = Player?.GetWorld3D()?.DirectSpaceState;
+		if (space == null) return null;
+
+		Vector3 origin = cam.GlobalPosition;
+		Vector3 dir = -cam.GlobalTransform.Basis.Z.Normalized();
+
+		var exclude = Player != null ? new Godot.Collections.Array<Rid> { Player.GetRid() } : null;
+
+		var hit = space.IntersectRay(new PhysicsRayQueryParameters3D
+		{
+			From = origin,
+			To = origin + dir * 4.0f,
+			Exclude = exclude
+		});
+
+		if (hit.Count > 0 && hit["collider"].Obj is GodotObject col)
+		{
+			if (col is InteractableFreezer f) return f;
+			if (col is Node n)
+			{
+				for (Node cur = n; cur != null; cur = cur.GetParent())
+				{
+					if (cur is InteractableFreezer freezer) return freezer;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	public bool IsTargetingShop()
@@ -281,7 +362,8 @@ public partial class CarriedInventory : Node
 				IsOccupied = true,
 				Type = item.ItemType,
 				FlowerTier = item.FlowerTier,
-				BatteryHealth = item.BatteryHealth
+				BatteryHealth = item.BatteryHealth,
+				FreshnessTimer = item.ItemType == ItemType.Flower ? item.FreshnessTimer : 0f
 			};
 			item.QueueFree();
 			AudioManager.Sfx("coin_collect", -4f);
@@ -299,7 +381,8 @@ public partial class CarriedInventory : Node
 					IsOccupied = true,
 					Type = item.ItemType,
 					FlowerTier = item.FlowerTier,
-					BatteryHealth = item.BatteryHealth
+					BatteryHealth = item.BatteryHealth,
+					FreshnessTimer = item.ItemType == ItemType.Flower ? item.FreshnessTimer : 0f
 				};
 				item.QueueFree();
 				AudioManager.Sfx("coin_collect", -4f);
@@ -313,6 +396,7 @@ public partial class CarriedInventory : Node
 		ItemType dropType = Slots[ActiveSlot].Type;
 		int dropTier = Slots[ActiveSlot].FlowerTier;
 		int dropBatteryHealth = Slots[ActiveSlot].BatteryHealth;
+		float dropFreshness = Slots[ActiveSlot].FreshnessTimer;
 
 		// Pick up new item into active slot
 		Slots[ActiveSlot] = new SlotData
@@ -320,13 +404,14 @@ public partial class CarriedInventory : Node
 			IsOccupied = true,
 			Type = item.ItemType,
 			FlowerTier = item.FlowerTier,
-			BatteryHealth = item.BatteryHealth
+			BatteryHealth = item.BatteryHealth,
+			FreshnessTimer = item.ItemType == ItemType.Flower ? item.FreshnessTimer : 0f
 		};
 		item.QueueFree();
 
 		// Spawn previous held item at ground position
 		Node root = GetTree().CurrentScene ?? (Node)this;
-		WorldItem.Spawn(root, swapPos, dropType, dropTier, dropBatteryHealth);
+		WorldItem.Spawn(root, swapPos, dropType, dropTier, dropBatteryHealth, dropFreshness);
 
 		AudioManager.Sfx("door_thud", -2f);
 		OnInventoryUpdated();
@@ -347,14 +432,15 @@ public partial class CarriedInventory : Node
 			dropPos += forward * 1.3f + new Vector3(0, 0.4f, 0);
 		}
 
-		// Raycast down to find ground level
+		// Raycast down to find ground level (Layer 1 World only, ignoring items)
 		var space = Player?.GetWorld3D()?.DirectSpaceState;
 		if (space != null)
 		{
 			var floorHit = space.IntersectRay(new PhysicsRayQueryParameters3D
 			{
 				From = dropPos + new Vector3(0, 1.0f, 0),
-				To = dropPos - new Vector3(0, 3.0f, 0)
+				To = dropPos - new Vector3(0, 3.0f, 0),
+				CollisionMask = 1
 			});
 			if (floorHit.Count > 0)
 			{
@@ -365,23 +451,26 @@ public partial class CarriedInventory : Node
 		ItemType type = Slots[ActiveSlot].Type;
 		int tier = Slots[ActiveSlot].FlowerTier;
 		int batteryHealth = Slots[ActiveSlot].BatteryHealth;
+		float freshness = Slots[ActiveSlot].FreshnessTimer;
 
 		Slots[ActiveSlot] = default;
 
 		Node root = GetTree().CurrentScene ?? (Node)this;
-		WorldItem.Spawn(root, dropPos, type, tier, batteryHealth);
+		WorldItem.Spawn(root, dropPos, type, tier, batteryHealth, freshness);
 
 		AudioManager.Sfx("door_thud", -5f);
 		OnInventoryUpdated();
 		return true;
 	}
 
-	public bool AddItem(ItemType type, int tier = 1, int batteryHealth = 100)
+	public bool AddItem(ItemType type, int tier = 1, int batteryHealth = 100, float freshness = -1f)
 	{
+		float shelfLife = freshness >= 0f ? freshness : WorldItem.GetMaxShelfLife(tier);
+
 		// First check active slot
 		if (!Slots[ActiveSlot].IsOccupied)
 		{
-			Slots[ActiveSlot] = new SlotData { IsOccupied = true, Type = type, FlowerTier = tier, BatteryHealth = batteryHealth };
+			Slots[ActiveSlot] = new SlotData { IsOccupied = true, Type = type, FlowerTier = tier, BatteryHealth = batteryHealth, FreshnessTimer = shelfLife };
 			OnInventoryUpdated();
 			return true;
 		}
@@ -391,7 +480,7 @@ public partial class CarriedInventory : Node
 		{
 			if (!Slots[i].IsOccupied)
 			{
-				Slots[i] = new SlotData { IsOccupied = true, Type = type, FlowerTier = tier, BatteryHealth = batteryHealth };
+				Slots[i] = new SlotData { IsOccupied = true, Type = type, FlowerTier = tier, BatteryHealth = batteryHealth, FreshnessTimer = shelfLife };
 				OnInventoryUpdated();
 				return true;
 			}
@@ -416,6 +505,17 @@ public partial class CarriedInventory : Node
 		if (HasActiveBattery(out batteryHealth))
 		{
 			Slots[ActiveSlot] = default;
+			OnInventoryUpdated();
+			return true;
+		}
+		return false;
+	}
+
+	public bool SetHeldBatteryHealth(int batteryHealth)
+	{
+		if (Slots[ActiveSlot].IsOccupied && Slots[ActiveSlot].Type == ItemType.CarBattery)
+		{
+			Slots[ActiveSlot].BatteryHealth = Mathf.Clamp(batteryHealth, 0, 100);
 			OnInventoryUpdated();
 			return true;
 		}
@@ -469,6 +569,15 @@ public partial class CarriedInventory : Node
 		return Slots[ActiveSlot].IsOccupied && Slots[ActiveSlot].Type == type;
 	}
 
+	public bool ConsumeItemAt(int slotIndex)
+	{
+		if (slotIndex < 0 || slotIndex >= MaxSlots) return false;
+		if (!Slots[slotIndex].IsOccupied) return false;
+		Slots[slotIndex] = default;
+		OnInventoryUpdated();
+		return true;
+	}
+
 	public bool ConsumeActiveItem()
 	{
 		if (!Slots[ActiveSlot].IsOccupied) return false;
@@ -520,15 +629,6 @@ public partial class CarriedInventory : Node
 		var slot = Slots[ActiveSlot];
 		switch (slot.Type)
 		{
-			case ItemType.Plank:
-				var plankMesh = new MeshInstance3D();
-				plankMesh.Mesh = new BoxMesh { Size = new Vector3(0.6f, 0.08f, 0.22f) };
-				var plankMat = new StandardMaterial3D { AlbedoColor = new Color(0.58f, 0.38f, 0.22f), Roughness = 0.8f };
-				plankMesh.MaterialOverride = plankMat;
-				plankMesh.RotationDegrees = new Vector3(10, 25, -15);
-				_handViewModelRoot.AddChild(plankMesh);
-				break;
-
 			case ItemType.Seed:
 				var seedMesh = new MeshInstance3D();
 				seedMesh.Mesh = new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.14f, Height = 0.22f };
@@ -600,49 +700,6 @@ public partial class CarriedInventory : Node
 
 				batteryRoot.RotationDegrees = new Vector3(15, 20, -10);
 				_handViewModelRoot.AddChild(batteryRoot);
-				break;
-
-			case ItemType.Crowbar:
-				var crowbarRoot = new Node3D();
-				var rustMat = new StandardMaterial3D
-				{
-					AlbedoColor = new Color(0.38f, 0.24f, 0.18f),
-					Metallic = 0.75f,
-					Roughness = 0.65f
-				};
-
-				// Held crowbar shaft
-				var cbShaft = new MeshInstance3D();
-				cbShaft.Mesh = new CylinderMesh { TopRadius = 0.018f, BottomRadius = 0.018f, Height = 0.55f };
-				cbShaft.MaterialOverride = rustMat;
-				cbShaft.Position = new Vector3(0f, 0.1f, -0.1f);
-				crowbarRoot.AddChild(cbShaft);
-
-				// Hook curve
-				var cbHook = new MeshInstance3D();
-				cbHook.Mesh = new CylinderMesh { TopRadius = 0.016f, BottomRadius = 0.016f, Height = 0.16f };
-				cbHook.MaterialOverride = rustMat;
-				cbHook.Position = new Vector3(0.08f, 0.32f, -0.15f);
-				cbHook.RotationDegrees = new Vector3(-35f, 0f, -40f);
-				crowbarRoot.AddChild(cbHook);
-
-				// Claw chisel head
-				var cbClaw = new MeshInstance3D();
-				cbClaw.Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.012f, 0.06f) };
-				cbClaw.MaterialOverride = rustMat;
-				cbClaw.Position = new Vector3(0.12f, 0.36f, -0.18f);
-				cbClaw.RotationDegrees = new Vector3(-35f, 0f, -40f);
-				crowbarRoot.AddChild(cbClaw);
-
-				// Straight chisel end
-				var cbChisel = new MeshInstance3D();
-				cbChisel.Mesh = new BoxMesh { Size = new Vector3(0.045f, 0.012f, 0.055f) };
-				cbChisel.MaterialOverride = rustMat;
-				cbChisel.Position = new Vector3(-0.02f, -0.16f, -0.05f);
-				crowbarRoot.AddChild(cbChisel);
-
-				crowbarRoot.RotationDegrees = new Vector3(25, -35, 20);
-				_handViewModelRoot.AddChild(crowbarRoot);
 				break;
 		}
 	}

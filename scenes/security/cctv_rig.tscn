@@ -6,53 +6,57 @@
 script = ExtResource("1_nightcam")
 
 [node name="North" type="Camera3D" parent="." unique_id=444078514]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, -1.605457, 11.714261, -0.2698334)
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, -1.605457, 11.714261, -0.2698334)
 fov = 80.0
 far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="North" unique_id=1390124267]
 visible = false
 light_color = Color(0.88, 0.95, 1, 1)
-light_energy = 2.2
-spot_range = 45.0
-spot_attenuation = 1.2
-spot_angle = 48.0
+light_energy = 3.8
+light_cull_mask = 7
+spot_range = 95.0
+spot_attenuation = 1.0
+spot_angle = 65.0
 
 [node name="East" type="Camera3D" parent="." unique_id=200874105]
-transform = Transform3D(0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 1, 0, 0, -1.3193566, 11.4175, 0.0203196)
+transform = Transform3D(0, 0.49967143, -0.8662151, 0, 0.8662151, 0.49967143, 1, 0, 0, -1.3193566, 11.4175, 0.0203196)
 fov = 80.0
 far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="East" unique_id=1613021599]
 visible = false
 light_color = Color(0.88, 0.95, 1, 1)
-light_energy = 2.2
-spot_range = 45.0
-spot_attenuation = 1.2
-spot_angle = 48.0
+light_energy = 3.8
+light_cull_mask = 7
+spot_range = 95.0
+spot_attenuation = 1.0
+spot_angle = 65.0
 
 [node name="South" type="Camera3D" parent="." unique_id=807088708]
-transform = Transform3D(-1, 0, 0, 0, 0.7071068, 0.7071068, 0, 0.7071068, -0.7071068, -1.6829877, 11.630364, 0.2649888)
+transform = Transform3D(-1, 4.371139e-08, -7.5710346e-08, 0, 0.8660254, 0.5, 8.742278e-08, 0.5, -0.8660254, -1.6829877, 11.630364, 0.2649888)
 fov = 80.0
 far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="South" unique_id=43654759]
 visible = false
 light_color = Color(0.88, 0.95, 1, 1)
-light_energy = 2.2
-spot_range = 45.0
-spot_attenuation = 1.2
-spot_angle = 48.0
+light_energy = 3.8
+light_cull_mask = 7
+spot_range = 95.0
+spot_attenuation = 1.0
+spot_angle = 65.0
 
 [node name="West" type="Camera3D" parent="." unique_id=737325008]
-transform = Transform3D(0, -0.7071068, 0.7071068, 0, 0.7071068, 0.7071068, -1, 0, 0, -1.777106, 11.958022, 0)
+transform = Transform3D(-4.371139e-08, -0.5, 0.8660254, 0, 0.8660254, 0.5, -1, 2.1855694e-08, -3.7855173e-08, -1.777106, 11.958022, 0)
 fov = 80.0
 far = 280.0
 
 [node name="IRLight" type="SpotLight3D" parent="West" unique_id=609647932]
 visible = false
 light_color = Color(0.88, 0.95, 1, 1)
-light_energy = 2.2
-spot_range = 45.0
-spot_attenuation = 1.2
-spot_angle = 48.0
+light_energy = 3.8
+light_cull_mask = 7
+spot_range = 95.0
+spot_attenuation = 1.0
+spot_angle = 65.0

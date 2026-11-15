@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://cxmvo8mshfd5j"]
+
+[ext_resource type="Script" uid="uid://c73pr55jalwpk" path="res://scripts/security/RoofSiren.cs" id="1_roofsiren"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_housing"]
+albedo_color = Color(0.85, 0.62, 0.12, 1)
+metallic = 0.25
+roughness = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_housing"]
+top_radius = 0.16
+bottom_radius = 0.16
+height = 0.24
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_strobe"]
+albedo_color = Color(0.95, 0.12, 0.12, 1)
+roughness = 0.2
+emission_enabled = true
+emission = Color(1, 0.1, 0.1, 1)
+emission_energy_multiplier = 0.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_strobe"]
+top_radius = 0.06
+bottom_radius = 0.09
+height = 0.14
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_horn"]
+albedo_color = Color(0.16, 0.18, 0.2, 1)
+metallic = 0.7
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_horn"]
+top_radius = 0.11
+bottom_radius = 0.04
+height = 0.24
+
+[node name="RoofSiren" type="Node3D" unique_id=1246052720 node_paths=PackedStringArray("StrobeLight", "StrobeDome", "RotorHorns")]
+script = ExtResource("1_roofsiren")
+StrobeLight = NodePath("StrobeLight")
+StrobeDome = NodePath("Rotor/StrobeDome")
+RotorHorns = NodePath("Rotor")
+
+[node name="Rotor" type="Node3D" parent="." unique_id=96141252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.63, 0)
+
+[node name="MotorBody" type="MeshInstance3D" parent="Rotor" unique_id=978750500]
+material_override = SubResource("StandardMaterial3D_housing")
+mesh = SubResource("CylinderMesh_housing")
+
+[node name="StrobeDome" type="MeshInstance3D" parent="Rotor" unique_id=302177953]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+material_override = SubResource("StandardMaterial3D_strobe")
+mesh = SubResource("CylinderMesh_strobe")
+
+[node name="HornNorth" type="MeshInstance3D" parent="Rotor" unique_id=1631207589]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.2)
+material_override = SubResource("StandardMaterial3D_horn")
+mesh = SubResource("CylinderMesh_horn")
+
+[node name="HornSouth" type="MeshInstance3D" parent="Rotor" unique_id=1345954486]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0.2)
+material_override = SubResource("StandardMaterial3D_horn")
+mesh = SubResource("CylinderMesh_horn")
+
+[node name="HornEast" type="MeshInstance3D" parent="Rotor" unique_id=2098897316]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0.2, 0, 0)
+material_override = SubResource("StandardMaterial3D_horn")
+mesh = SubResource("CylinderMesh_horn")
+
+[node name="HornWest" type="MeshInstance3D" parent="Rotor" unique_id=1205670616]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, -0.2, 0, 0)
+material_override = SubResource("StandardMaterial3D_horn")
+mesh = SubResource("CylinderMesh_horn")
+
+[node name="StrobeLight" type="OmniLight3D" parent="." unique_id=102120707]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+visible = false
+light_color = Color(1, 0.12, 0.12, 1)
+light_energy = 0.0
+omni_range = 18.0
+omni_attenuation = 1.2
