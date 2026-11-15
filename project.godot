@@ -10,9 +10,9 @@ config_version=5
 
 [application]
 
-config/name="Open Chamber"
+config/name="Open Chamber (Lite Edition)"
 run/main_scene="res://scenes/ui/main_menu.tscn"
-config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -22,8 +22,8 @@ AudioManager="*res://scripts/audio/AudioManager.cs"
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/size/mode="windowed"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
@@ -62,11 +62,11 @@ place_barricade={
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
-lights_and_shadows/directional_shadow/size=2048
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
-scaling_3d/mode=1
-scaling_3d/scale=0.75
-scaling_3d/fsr_sharpness=0.2
-lights_and_shadows/positional_shadow/size=1024
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+lights_and_shadows/directional_shadow/size=1024
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
+scaling_3d/mode=0
+scaling_3d/scale=0.60
+lights_and_shadows/positional_shadow/size=512

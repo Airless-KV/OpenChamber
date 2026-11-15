@@ -43,16 +43,16 @@ public class AudioSettings
 
 	// Display & Video
 	public bool Fullscreen { get; set; }
-	public int ResolutionWidth { get; set; } = 1920;
-	public int ResolutionHeight { get; set; } = 1080;
+	public int ResolutionWidth { get; set; } = 1280;
+	public int ResolutionHeight { get; set; } = 720;
 	public int AspectScaling { get; set; } = 0; // 0 = Expand, 1 = Keep, 2 = KeepWidth, 3 = KeepHeight
 	public bool VSync { get; set; } = true;
-	public float RenderScale { get; set; } = 1.0f; // 0.5f to 1.0f (3D viewport resolution scaling)
+	public float RenderScale { get; set; } = 0.60f; // 0.25f to 1.0f (3D viewport resolution scaling)
 	public int ScalingMode { get; set; } = 0; // 0 = Bilinear (Zero Overhead), 1 = FSR 1.0
 	public int MaxFps { get; set; } = 60; // 0 = Unlimited, 30, 60, 90, 120, etc.
 	public bool ShowFpsCounter { get; set; } = false;
-	public string RenderingMethod { get; set; } = "forward_plus"; // "forward_plus", "mobile", "gl_compatibility"
-	public bool LiteMode { get; set; } = false;
+	public string RenderingMethod { get; set; } = "gl_compatibility"; // "forward_plus", "mobile", "gl_compatibility"
+	public bool LiteMode { get; set; } = true;
 	public float Fov { get; set; } = 75.0f;
 
 	// Controls & Accessibility
