@@ -15,6 +15,7 @@
 // - Nov 15, 2026 | air : Added _isSyncingUI guard in SettingsBinder to prevent control binding feedback loop
 // - Nov 15, 2026 | air : Added Rendering Backend selector, Lite Mode preset, GPU info detector, and restart trigger in SettingsBinder
 // - Nov 15, 2026 | air : Prevented FSR1 mode warning under OpenGL Compatibility renderer by defaulting to Bilinear
+// - Nov 15, 2026 | air : Fixed asynchronous fullscreen race condition and prevented WindowSetSize during Fullscreen mode
 // =========================================================================================
 using Godot;
 
@@ -327,8 +328,14 @@ public static class SettingsBinder
 			sceneTree.Root.ContentScaleSize = new Vector2I(1920, 1080);
 		}
 
+		SaveManager.CurrentData.Audio.ResolutionWidth = width;
+		SaveManager.CurrentData.Audio.ResolutionHeight = height;
+		SaveManager.SaveDirect();
+
 		var currentMode = DisplayServer.WindowGetMode();
-		bool isFullscreen = currentMode == DisplayServer.WindowMode.Fullscreen || currentMode == DisplayServer.WindowMode.ExclusiveFullscreen;
+		bool isFullscreen = (SaveManager.CurrentData?.Audio?.Fullscreen == true) ||
+		                    currentMode == DisplayServer.WindowMode.Fullscreen ||
+		                    currentMode == DisplayServer.WindowMode.ExclusiveFullscreen;
 
 		if (!isFullscreen)
 		{
@@ -344,10 +351,6 @@ public static class SettingsBinder
 				Mathf.Max(0, (screen.Y - height) / 2)
 			));
 		}
-
-		SaveManager.CurrentData.Audio.ResolutionWidth = width;
-		SaveManager.CurrentData.Audio.ResolutionHeight = height;
-		SaveManager.SaveDirect();
 
 		ApplyEffective3DRenderScale(sceneTree);
 	}
@@ -366,7 +369,7 @@ public static class SettingsBinder
 				1 => Window.ContentScaleAspectEnum.Keep,
 				2 => Window.ContentScaleAspectEnum.KeepWidth,
 				3 => Window.ContentScaleAspectEnum.KeepHeight,
-				_ => Window.ContentScaleAspectEnum.Expand
+				_ => Window.ContentScaleAspectEnum.Keep
 			};
 			sceneTree.Root.ContentScaleAspect = aspect;
 		}
@@ -380,6 +383,9 @@ public static class SettingsBinder
 		int w = SaveManager.CurrentData?.Audio?.ResolutionWidth ?? 1920;
 		int h = SaveManager.CurrentData?.Audio?.ResolutionHeight ?? 1080;
 		if (w <= 0 || h <= 0) { w = 1920; h = 1080; }
+
+		SaveManager.CurrentData.Audio.Fullscreen = isFullscreen;
+		SaveManager.SaveDirect();
 
 		if (isFullscreen)
 		{
@@ -401,9 +407,6 @@ public static class SettingsBinder
 			sceneTree.Root.ContentScaleMode = Window.ContentScaleModeEnum.CanvasItems;
 			sceneTree.Root.ContentScaleSize = new Vector2I(1920, 1080);
 		}
-
-		SaveManager.CurrentData.Audio.Fullscreen = isFullscreen;
-		SaveManager.SaveDirect();
 
 		ApplyEffective3DRenderScale(sceneTree);
 	}
@@ -483,8 +486,8 @@ public static class SettingsBinder
 			tree.Root.ContentScaleSize = new Vector2I(1920, 1080);
 		}
 
-		ApplyFullscreen(s.Fullscreen, tree);
 		ApplyResolution(w, h, tree);
+		ApplyFullscreen(s.Fullscreen, tree);
 		ApplyAspectScaling(s.AspectScaling, tree);
 		ApplyVSync(s.VSync);
 		ApplyRenderScale(s.RenderScale, s.ScalingMode, tree);
