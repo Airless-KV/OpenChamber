@@ -14,6 +14,7 @@
 // - Nov 15, 2026 | air : Expanded 3D render scale range down to 25% for ultra low-spec optimization
 // - Nov 15, 2026 | air : Added _isSyncingUI guard in SettingsBinder to prevent control binding feedback loop
 // - Nov 15, 2026 | air : Added Rendering Backend selector, Lite Mode preset, GPU info detector, and restart trigger in SettingsBinder
+// - Nov 15, 2026 | air : Prevented FSR1 mode warning under OpenGL Compatibility renderer by defaulting to Bilinear
 // =========================================================================================
 using Godot;
 
@@ -279,7 +280,8 @@ public static class SettingsBinder
 			effectiveScale = Mathf.Clamp(resRatio * userScale, 0.15f, 1.0f);
 		}
 
-		sceneTree.Root.Scaling3DMode = scalingMode == 1 
+		bool isForwardPlus = RenderingServer.GetCurrentRenderingMethod() == "forward_plus";
+		sceneTree.Root.Scaling3DMode = (scalingMode == 1 && isForwardPlus)
 			? Viewport.Scaling3DModeEnum.Fsr 
 			: Viewport.Scaling3DModeEnum.Bilinear;
 		sceneTree.Root.Scaling3DScale = effectiveScale;
