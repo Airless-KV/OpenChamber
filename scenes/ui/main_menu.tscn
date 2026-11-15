@@ -97,7 +97,7 @@ ShowFpsCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/Displa
 FovSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovSlider")
 FovValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovVal")
 BackendOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/BackendOption")
-ApplyLitePresetButton = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox/ApplyLitePresetBtn")
+ApplyLitePresetButton = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetBox/ApplyLitePresetBtn")
 GpuInfoLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/GpuInfoLabel")
 RestartNoticeContainer = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox")
 RestartNowButton = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox/RestartNowBtn")
@@ -367,17 +367,17 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
 [node name="Panel" type="Panel" parent="Modals/SettingsModal" unique_id=473006086]
-custom_minimum_size = Vector2(660, 560)
+custom_minimum_size = Vector2(720, 640)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -330.0
-offset_top = -280.0
-offset_right = 330.0
-offset_bottom = 280.0
+offset_left = -360.0
+offset_top = -320.0
+offset_right = 360.0
+offset_bottom = 320.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -388,12 +388,12 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 30.0
-offset_top = 22.0
+offset_top = 20.0
 offset_right = -30.0
-offset_bottom = -22.0
+offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Modals/SettingsModal/Panel/VBox" unique_id=1801617475]
 layout_mode = 2
@@ -432,7 +432,7 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "CONTROLS & ACCESS"
 
 [node name="ContentContainer" type="Control" parent="Modals/SettingsModal/Panel/VBox"]
-custom_minimum_size = Vector2(0, 420)
+custom_minimum_size = Vector2(0, 480)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -630,7 +630,8 @@ layout_mode = 2
 
 [node name="TogglesHBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 24
+alignment = 1
 
 [node name="FullscreenCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox" unique_id=158047970]
 layout_mode = 2
@@ -648,27 +649,31 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Show FPS Counter"
 
-[node name="LitePresetHBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
+[node name="LitePresetBox" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 4
+alignment = 1
 
-[node name="ApplyLitePresetBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
-custom_minimum_size = Vector2(240, 30)
+[node name="ApplyLitePresetBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetBox"]
+custom_minimum_size = Vector2(280, 32)
 layout_mode = 2
+size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0.35, 0.95, 0.55, 1)
 theme_override_font_sizes/font_size = 14
 text = "⚡ Apply Lite Preset (720p / OpenGL)"
 
-[node name="LitePresetLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
+[node name="LitePresetLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.75, 0.7, 1)
-theme_override_font_sizes/font_size = 13
-text = "Optimizes for low-end laptops (720p, 60% Bilinear, Compatibility renderer)."
+theme_override_font_sizes/font_size = 12
+text = "Optimizes for low-end laptops (720p, 60% Bilinear scale, Compatibility renderer)."
+horizontal_alignment = 1
 
 [node name="RestartNoticeBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 12
+alignment = 1
 
 [node name="RestartNoticeLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox"]
 layout_mode = 2
@@ -686,8 +691,9 @@ text = "Restart Now"
 [node name="GpuInfoLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.7, 0.85, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "System: Detecting GPU..."
+horizontal_alignment = 1
 
 [node name="ControlsCategory" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer"]
 visible = false

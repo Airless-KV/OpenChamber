@@ -19,5 +19,6 @@
 # Exported builds & OS junk
 build/
 exports/
+override.cfg
 .DS_Store
 Thumbs.db
