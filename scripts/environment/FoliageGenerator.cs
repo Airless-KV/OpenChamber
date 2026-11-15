@@ -22,6 +22,7 @@
 //                        disabled billboard shadow casting, and optimized LOD margins for Intel HD 620
 // - Nov 15, 2026 | air : Restored full forest density (2800 outer / 450 mid), extended streaming to 185m/215m,
 //                        increased tree canopy scale (1.15-1.65), and exempted trees from distance culling
+// - Nov 15, 2026 | air : Added dynamic LiteMode density halving and streaming radius clamp for low-end hardware
 // =========================================================================================
 using Godot;
 using System;
@@ -124,6 +125,19 @@ public partial class FoliageGenerator : Node3D
 		if (AutoDetectChessboard)
 		{
 			DetectChessboardBounds();
+		}
+
+		if (SaveManager.CurrentData?.Audio?.LiteMode == true)
+		{
+			OuterTreeCount = Mathf.Max(60, OuterTreeCount / 2);
+			MidTreeCount = Mathf.Max(30, MidTreeCount / 2);
+			BushCount = Mathf.Max(25, BushCount / 2);
+			FloraCount = Mathf.Max(30, FloraCount / 2);
+			RockCount = Mathf.Max(20, RockCount / 2);
+			PropCount = Mathf.Max(15, PropCount / 2);
+			LoadRadius = Mathf.Min(LoadRadius, 130.0f);
+			UnloadRadius = Mathf.Min(UnloadRadius, 160.0f);
+			TreeVisibilityEnd = Mathf.Min(TreeVisibilityEnd, 110.0f);
 		}
 
 		if (AutoGenerateOnReady)

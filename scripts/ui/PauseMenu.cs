@@ -13,6 +13,7 @@
 // - Nov 15, 2026 | air : Expanded in-game settings panel with tabbed audio, display, resolution, aspect scaling, and controls
 // - Nov 15, 2026 | air : Added 3D render scale, scaling mode, max FPS, and FPS counter controls
 // - Nov 15, 2026 | air : Added ReplayTutorialButton integration for in-game tutorial relaunch
+// - Nov 15, 2026 | air : Added rendering backend option, Lite preset button, GPU info label, and restart trigger
 // =========================================================================================
 using Godot;
 
@@ -57,6 +58,11 @@ public partial class PauseMenu : CanvasLayer
 	[Export] public CheckBox ShowFpsCheck;
 	[Export] public HSlider FovSlider;
 	[Export] public Label FovValLabel;
+	[Export] public OptionButton BackendOption;
+	[Export] public Button ApplyLitePresetButton;
+	[Export] public Label GpuInfoLabel;
+	[Export] public Control RestartNoticeContainer;
+	[Export] public Button RestartNowButton;
 
 	// Controls & Accessibility
 	[Export] public HSlider SensitivitySlider;
@@ -115,7 +121,12 @@ public partial class PauseMenu : CanvasLayer
 			FovSlider, FovValLabel,
 			SensitivitySlider, SensitivityValLabel,
 			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
-			ResetDefaultsButton
+			ResetDefaultsButton,
+			BackendOption,
+			ApplyLitePresetButton,
+			GpuInfoLabel,
+			RestartNoticeContainer,
+			RestartNowButton
 		);
 		ShowMainButtons();
 	}
@@ -184,7 +195,10 @@ public partial class PauseMenu : CanvasLayer
 			ShowFpsCheck,
 			FovSlider, FovValLabel,
 			SensitivitySlider, SensitivityValLabel,
-			InvertYCheck, HeadbobCheck, ScreenShakeCheck
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
+			BackendOption,
+			GpuInfoLabel,
+			RestartNoticeContainer
 		);
 	}
 }

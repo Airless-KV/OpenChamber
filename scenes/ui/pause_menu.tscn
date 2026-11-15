@@ -50,7 +50,7 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("PauseContainer", "ButtonsContainer", "ResumeButton", "SettingsButton", "HowToPlayButton", "ReplayTutorialButton", "RestartButton", "TitleButton", "SettingsPanel", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "HowToPlayPanel", "CloseHowToPlayButton")]
+[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("PauseContainer", "ButtonsContainer", "ResumeButton", "SettingsButton", "HowToPlayButton", "ReplayTutorialButton", "RestartButton", "TitleButton", "SettingsPanel", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "HowToPlayPanel", "CloseHowToPlayButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
 process_mode = 3
 layer = 90
 visible = false
@@ -87,6 +87,11 @@ MaxFpsOption = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCa
 ShowFpsCheck = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/TogglesHBox/ShowFpsCheck")
 FovSlider = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid/FovSlider")
 FovValLabel = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid/FovVal")
+BackendOption = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid/BackendOption")
+ApplyLitePresetButton = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/LitePresetHBox/ApplyLitePresetBtn")
+GpuInfoLabel = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/GpuInfoLabel")
+RestartNoticeContainer = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox")
+RestartNowButton = NodePath("Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox/RestartNowBtn")
 SensitivitySlider = NodePath("Container/SettingsPanel/VBox/ContentContainer/ControlsCategory/Grid/SensSlider")
 SensitivityValLabel = NodePath("Container/SettingsPanel/VBox/ContentContainer/ControlsCategory/Grid/SensVal")
 InvertYCheck = NodePath("Container/SettingsPanel/VBox/ContentContainer/ControlsCategory/TogglesVBox/InvertYCheck")
@@ -459,6 +464,20 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 
+[node name="BackendLabel" type="Label" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Rendering Backend"
+
+[node name="BackendOption" type="OptionButton" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(240, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackendSpacer" type="Control" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
 [node name="TogglesHBox" type="HBoxContainer" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
 theme_override_constants/separation = 20
@@ -478,6 +497,47 @@ text = "V-Sync (Vertical Sync)"
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Show FPS Counter"
+
+[node name="LitePresetHBox" type="HBoxContainer" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ApplyLitePresetBtn" type="Button" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
+custom_minimum_size = Vector2(240, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.95, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚡ Apply Lite Preset (720p / OpenGL)"
+
+[node name="LitePresetLabel" type="Label" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.7, 1)
+theme_override_font_sizes/font_size = 13
+text = "Optimizes for low-end laptops (720p, 60% Bilinear, Compatibility renderer)."
+
+[node name="RestartNoticeBox" type="HBoxContainer" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RestartNoticeLabel" type="Label" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚠️ Rendering backend change pending. Restart required to apply."
+
+[node name="RestartNowBtn" type="Button" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox"]
+custom_minimum_size = Vector2(130, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "Restart Now"
+
+[node name="GpuInfoLabel" type="Label" parent="Container/SettingsPanel/VBox/ContentContainer/DisplayCategory"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.7, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "System: Detecting GPU..."
 
 [node name="ControlsCategory" type="VBoxContainer" parent="Container/SettingsPanel/VBox/ContentContainer"]
 visible = false

@@ -13,6 +13,7 @@
 // - Nov 15, 2026 | air : Fixed resolution coupling to 3D Viewport scaling and locked UI base canvas to 1080p
 // - Nov 15, 2026 | air : Expanded 3D render scale range down to 25% for ultra low-spec optimization
 // - Nov 15, 2026 | air : Added _isSyncingUI guard in SettingsBinder to prevent control binding feedback loop
+// - Nov 15, 2026 | air : Added Rendering Backend selector, Lite Mode preset, GPU info detector, and restart trigger in SettingsBinder
 // =========================================================================================
 using Godot;
 
@@ -145,6 +146,94 @@ public static class SettingsBinder
 		(0, "Bilinear (Zero Overhead - Recommended)"),
 		(1, "AMD FSR 1.0 (Edge Contrast Sharpening)")
 	};
+
+	public static readonly (string Method, string Label)[] RenderingMethodOptions =
+	{
+		("gl_compatibility", "Compatibility (OpenGL 3.3 — Lite / Weak Hardware)"),
+		("forward_plus",     "Forward+ (Vulkan / D3D12 — High End Desktop)"),
+		("mobile",           "Mobile (Vulkan Mobile — Balanced)")
+	};
+
+	public static void PopulateRenderingMethods(OptionButton optionBtn)
+	{
+		if (optionBtn == null) return;
+		optionBtn.Clear();
+		for (int i = 0; i < RenderingMethodOptions.Length; i++)
+		{
+			optionBtn.AddItem(RenderingMethodOptions[i].Label, i);
+		}
+	}
+
+	public static string GetActiveGPUInfo()
+	{
+		string adapter = RenderingServer.GetVideoAdapterName();
+		if (string.IsNullOrWhiteSpace(adapter)) adapter = "Standard Graphics Adapter";
+		string currentMethod = RenderingServer.GetCurrentRenderingMethod();
+		string friendlyMethod = currentMethod switch
+		{
+			"gl_compatibility" => "Compatibility (OpenGL 3.3)",
+			"forward_plus" => "Forward+ (Vulkan)",
+			"mobile" => "Mobile (Vulkan)",
+			_ => currentMethod
+		};
+		return $"System: {adapter}  |  Active Engine Backend: {friendlyMethod}";
+	}
+
+	public static void ApplyRenderingBackend(string method, SceneTree tree = null)
+	{
+		var s = SaveManager.CurrentData?.Audio;
+		if (s != null)
+		{
+			s.RenderingMethod = method;
+			SaveManager.SaveDirect();
+		}
+
+		try
+		{
+			ProjectSettings.SetSetting("rendering/renderer/rendering_method", method);
+			var cfg = new ConfigFile();
+			if (FileAccess.FileExists("override.cfg"))
+			{
+				cfg.Load("override.cfg");
+			}
+			cfg.SetValue("rendering", "renderer/rendering_method", method);
+			cfg.Save("override.cfg");
+		}
+		catch (System.Exception ex)
+		{
+			GD.PrintErr($"[SettingsBinder] Error updating override.cfg: {ex.Message}");
+		}
+
+		OS.SetRestartOnExit(true, new string[] { "--rendering-method", method });
+	}
+
+	public static void ApplyLitePreset(SceneTree tree = null)
+	{
+		var s = SaveManager.CurrentData?.Audio;
+		if (s == null) return;
+
+		s.LiteMode = true;
+		s.ResolutionWidth = 1280;
+		s.ResolutionHeight = 720;
+		s.AspectScaling = 0;
+		s.RenderScale = 0.60f;
+		s.ScalingMode = 0; // Bilinear zero overhead
+		s.MaxFps = 60;
+		s.VSync = true;
+		s.RenderingMethod = "gl_compatibility";
+
+		SaveManager.SaveDirect();
+		ApplyAllSettings(tree);
+		ApplyRenderingBackend("gl_compatibility", tree);
+	}
+
+	public static void RestartGameNow(SceneTree tree = null)
+	{
+		var sceneTree = tree ?? Engine.GetMainLoop() as SceneTree;
+		string method = SaveManager.CurrentData?.Audio?.RenderingMethod ?? "gl_compatibility";
+		OS.SetRestartOnExit(true, new string[] { "--rendering-method", method });
+		sceneTree?.Quit();
+	}
 
 	public static void PopulateMaxFps(OptionButton optionBtn)
 	{
@@ -418,12 +507,18 @@ public static class SettingsBinder
 		HSlider fovSlider, Label fovLabel,
 		HSlider sensSlider, Label sensLabel,
 		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck,
-		Button resetDefaultsBtn)
+		Button resetDefaultsBtn,
+		OptionButton backendOption = null,
+		Button applyLitePresetBtn = null,
+		Label gpuInfoLabel = null,
+		Control restartNoticeBox = null,
+		Button restartNowBtn = null)
 	{
 		PopulateResolutions(resOption);
 		PopulateAspectModes(aspectOption);
 		PopulateScalingModes(scalingModeOption);
 		PopulateMaxFps(maxFpsOption);
+		if (backendOption != null) PopulateRenderingMethods(backendOption);
 
 		void SwitchTab(int tab)
 		{
@@ -566,6 +661,56 @@ public static class SettingsBinder
 			shakeCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyScreenShake(toggled); };
 		}
 
+		if (backendOption != null)
+		{
+			backendOption.ItemSelected += (idx) =>
+			{
+				if (_isSyncingUI) return;
+				if (idx >= 0 && idx < RenderingMethodOptions.Length)
+				{
+					string chosen = RenderingMethodOptions[idx].Method;
+					ApplyRenderingBackend(chosen, tree);
+					string current = RenderingServer.GetCurrentRenderingMethod();
+					if (restartNoticeBox != null)
+					{
+						restartNoticeBox.Visible = (chosen != current);
+					}
+				}
+			};
+		}
+
+		if (applyLitePresetBtn != null)
+		{
+			applyLitePresetBtn.Pressed += () =>
+			{
+				ApplyLitePreset(tree);
+				SyncFullUI(
+					masterSlider, masterLabel,
+					musicSlider, musicLabel,
+					sfxSlider, sfxLabel,
+					resOption, aspectOption,
+					fullscreenCheck, vsyncCheck,
+					renderScaleSlider, renderScaleLabel,
+					scalingModeOption, maxFpsOption, showFpsCheck,
+					fovSlider, fovLabel,
+					sensSlider, sensLabel,
+					invertYCheck, headbobCheck, shakeCheck,
+					backendOption, gpuInfoLabel, restartNoticeBox
+				);
+				string chosen = SaveManager.CurrentData?.Audio?.RenderingMethod ?? "gl_compatibility";
+				string current = RenderingServer.GetCurrentRenderingMethod();
+				if (restartNoticeBox != null)
+				{
+					restartNoticeBox.Visible = (chosen != current);
+				}
+			};
+		}
+
+		if (restartNowBtn != null)
+		{
+			restartNowBtn.Pressed += () => RestartGameNow(tree);
+		}
+
 		if (resetDefaultsBtn != null)
 		{
 			resetDefaultsBtn.Pressed += () =>
@@ -581,7 +726,8 @@ public static class SettingsBinder
 					scalingModeOption, maxFpsOption, showFpsCheck,
 					fovSlider, fovLabel,
 					sensSlider, sensLabel,
-					invertYCheck, headbobCheck, shakeCheck
+					invertYCheck, headbobCheck, shakeCheck,
+					backendOption, gpuInfoLabel, restartNoticeBox
 				);
 			};
 		}
@@ -596,7 +742,8 @@ public static class SettingsBinder
 			scalingModeOption, maxFpsOption, showFpsCheck,
 			fovSlider, fovLabel,
 			sensSlider, sensLabel,
-			invertYCheck, headbobCheck, shakeCheck
+			invertYCheck, headbobCheck, shakeCheck,
+			backendOption, gpuInfoLabel, restartNoticeBox
 		);
 	}
 
@@ -617,6 +764,8 @@ public static class SettingsBinder
 		s.ScalingMode = 0;
 		s.MaxFps = 60;
 		s.ShowFpsCounter = false;
+		s.RenderingMethod = "forward_plus";
+		s.LiteMode = false;
 		s.Fov = 75.0f;
 		s.MouseSensitivity = 0.0035f;
 		s.InvertY = false;
@@ -639,13 +788,41 @@ public static class SettingsBinder
 		CheckBox showFpsCheck,
 		HSlider fovSlider, Label fovLabel,
 		HSlider sensSlider, Label sensLabel,
-		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck)
+		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck,
+		OptionButton backendOption = null,
+		Label gpuInfoLabel = null,
+		Control restartNoticeBox = null)
 	{
 		_isSyncingUI = true;
 		try
 		{
 			var s = SaveManager.CurrentData?.Audio;
 			if (s == null) return;
+
+			if (backendOption != null)
+			{
+				int selIdx = 0;
+				for (int i = 0; i < RenderingMethodOptions.Length; i++)
+				{
+					if (RenderingMethodOptions[i].Method == s.RenderingMethod)
+					{
+						selIdx = i;
+						break;
+					}
+				}
+				backendOption.Select(selIdx);
+			}
+
+			if (gpuInfoLabel != null)
+			{
+				gpuInfoLabel.Text = GetActiveGPUInfo();
+			}
+
+			if (restartNoticeBox != null)
+			{
+				string current = RenderingServer.GetCurrentRenderingMethod();
+				restartNoticeBox.Visible = (s.RenderingMethod != current);
+			}
 
 			if (masterSlider != null) masterSlider.Value = s.MasterVolume * 100.0f;
 			if (musicSlider != null) musicSlider.Value = s.MusicVolume * 100.0f;

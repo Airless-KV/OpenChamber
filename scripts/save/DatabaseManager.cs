@@ -10,6 +10,7 @@
 // - Nov 14, 2026 | air : Updated database filename to open_chamber.db with automatic migration from illusion_of_choice.db
 // - Nov 15, 2026 | air : Expanded audio_settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
 // - Nov 15, 2026 | air : Added render_scale, scaling_mode, max_fps, and show_fps_counter persistence
+// - Nov 15, 2026 | air : Added rendering_method and lite_mode schema migrations and persistence
 // =========================================================================================
 using Godot;
 using Microsoft.Data.Sqlite;
@@ -149,7 +150,9 @@ public static class DatabaseManager
 			"ALTER TABLE audio_settings ADD COLUMN render_scale REAL NOT NULL DEFAULT 1.0;",
 			"ALTER TABLE audio_settings ADD COLUMN scaling_mode INTEGER NOT NULL DEFAULT 0;",
 			"ALTER TABLE audio_settings ADD COLUMN max_fps INTEGER NOT NULL DEFAULT 60;",
-			"ALTER TABLE audio_settings ADD COLUMN show_fps_counter INTEGER NOT NULL DEFAULT 0;"
+			"ALTER TABLE audio_settings ADD COLUMN show_fps_counter INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE audio_settings ADD COLUMN rendering_method TEXT NOT NULL DEFAULT 'forward_plus';",
+			"ALTER TABLE audio_settings ADD COLUMN lite_mode INTEGER NOT NULL DEFAULT 0;"
 		};
 
 		foreach (var colSql in columns)
@@ -424,7 +427,8 @@ public static class DatabaseManager
 				SELECT master_volume, music_volume, sfx_volume, fullscreen,
 				       resolution_width, resolution_height, aspect_scaling,
 				       vsync, fov, mouse_sensitivity, invert_y, headbob, screen_shake,
-				       render_scale, scaling_mode, max_fps, show_fps_counter
+				       render_scale, scaling_mode, max_fps, show_fps_counter,
+				       rendering_method, lite_mode
 				FROM audio_settings WHERE id = 1;
 			";
 			using var reader = cmd.ExecuteReader();
@@ -448,7 +452,9 @@ public static class DatabaseManager
 					RenderScale = reader.FieldCount > 13 ? (float)reader.GetDouble(13) : 1.0f,
 					ScalingMode = reader.FieldCount > 14 ? reader.GetInt32(14) : 0,
 					MaxFps = reader.FieldCount > 15 ? reader.GetInt32(15) : 60,
-					ShowFpsCounter = reader.FieldCount > 16 && reader.GetInt32(16) == 1
+					ShowFpsCounter = reader.FieldCount > 16 && reader.GetInt32(16) == 1,
+					RenderingMethod = reader.FieldCount > 17 && !reader.IsDBNull(17) ? reader.GetString(17) : "forward_plus",
+					LiteMode = reader.FieldCount > 18 && !reader.IsDBNull(18) && reader.GetInt32(18) == 1
 				};
 			}
 			return new AudioSettings();
@@ -483,7 +489,9 @@ public static class DatabaseManager
 					render_scale = $renderScale,
 					scaling_mode = $scalingMode,
 					max_fps = $maxFps,
-					show_fps_counter = $showFps
+					show_fps_counter = $showFps,
+					rendering_method = $renderMethod,
+					lite_mode = $liteMode
 				WHERE id = 1;
 			";
 			cmd.Parameters.AddWithValue("$master", settings.MasterVolume);
@@ -503,6 +511,8 @@ public static class DatabaseManager
 			cmd.Parameters.AddWithValue("$scalingMode", settings.ScalingMode);
 			cmd.Parameters.AddWithValue("$maxFps", settings.MaxFps);
 			cmd.Parameters.AddWithValue("$showFps", settings.ShowFpsCounter ? 1 : 0);
+			cmd.Parameters.AddWithValue("$renderMethod", string.IsNullOrWhiteSpace(settings.RenderingMethod) ? "forward_plus" : settings.RenderingMethod);
+			cmd.Parameters.AddWithValue("$liteMode", settings.LiteMode ? 1 : 0);
 			cmd.ExecuteNonQuery();
 		}
 	}

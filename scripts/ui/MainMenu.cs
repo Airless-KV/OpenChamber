@@ -11,6 +11,7 @@
 // - Oct 31, 2026 | air : Streamlined audio volume settings using shared AudioSettingsBinder
 // - Oct 31, 2026 | air : Parameterized leaderboard row construction and consolidated modal navigation
 // - Nov 15, 2026 | air : Expanded settings modal with tabbed audio, display, resolution, aspect scaling, and controls
+// - Nov 15, 2026 | air : Added rendering backend option, Lite preset button, GPU info label, and restart trigger
 // =========================================================================================
 using Godot;
 
@@ -60,6 +61,11 @@ public partial class MainMenu : Control
 	[Export] public CheckBox ShowFpsCheck;
 	[Export] public HSlider FovSlider;
 	[Export] public Label FovValLabel;
+	[Export] public OptionButton BackendOption;
+	[Export] public Button ApplyLitePresetButton;
+	[Export] public Label GpuInfoLabel;
+	[Export] public Control RestartNoticeContainer;
+	[Export] public Button RestartNowButton;
 
 	// Controls & Accessibility
 	[Export] public HSlider SensitivitySlider;
@@ -111,7 +117,12 @@ public partial class MainMenu : Control
 			FovSlider, FovValLabel,
 			SensitivitySlider, SensitivityValLabel,
 			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
-			ResetDefaultsButton
+			ResetDefaultsButton,
+			BackendOption,
+			ApplyLitePresetButton,
+			GpuInfoLabel,
+			RestartNoticeContainer,
+			RestartNowButton
 		);
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += () => HideModal(SettingsModal);
 		if (CloseLeaderboardButton != null) CloseLeaderboardButton.Pressed += () => HideModal(LeaderboardModal);
@@ -172,7 +183,10 @@ public partial class MainMenu : Control
 			ShowFpsCheck,
 			FovSlider, FovValLabel,
 			SensitivitySlider, SensitivityValLabel,
-			InvertYCheck, HeadbobCheck, ScreenShakeCheck
+			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
+			BackendOption,
+			GpuInfoLabel,
+			RestartNoticeContainer
 		);
 		ShowModal(SettingsModal);
 	}

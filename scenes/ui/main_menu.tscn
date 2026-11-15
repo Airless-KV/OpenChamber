@@ -53,7 +53,7 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton")]
+[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -96,6 +96,11 @@ MaxFpsOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/Displa
 ShowFpsCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/TogglesHBox/ShowFpsCheck")
 FovSlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovSlider")
 FovValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/FovVal")
+BackendOption = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid/BackendOption")
+ApplyLitePresetButton = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox/ApplyLitePresetBtn")
+GpuInfoLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/GpuInfoLabel")
+RestartNoticeContainer = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox")
+RestartNowButton = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox/RestartNowBtn")
 SensitivitySlider = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid/SensSlider")
 SensitivityValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/Grid/SensVal")
 InvertYCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/InvertYCheck")
@@ -609,6 +614,20 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 
+[node name="BackendLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Rendering Backend"
+
+[node name="BackendOption" type="OptionButton" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(250, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackendSpacer" type="Control" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/Grid"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
 [node name="TogglesHBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
 layout_mode = 2
 theme_override_constants/separation = 20
@@ -628,6 +647,47 @@ text = "V-Sync (Vertical Sync)"
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Show FPS Counter"
+
+[node name="LitePresetHBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ApplyLitePresetBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
+custom_minimum_size = Vector2(240, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.95, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚡ Apply Lite Preset (720p / OpenGL)"
+
+[node name="LitePresetLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/LitePresetHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.7, 1)
+theme_override_font_sizes/font_size = 13
+text = "Optimizes for low-end laptops (720p, 60% Bilinear, Compatibility renderer)."
+
+[node name="RestartNoticeBox" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RestartNoticeLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚠️ Rendering backend change pending. Restart required to apply."
+
+[node name="RestartNowBtn" type="Button" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory/RestartNoticeBox"]
+custom_minimum_size = Vector2(130, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "Restart Now"
+
+[node name="GpuInfoLabel" type="Label" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/DisplayCategory"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.7, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "System: Detecting GPU..."
 
 [node name="ControlsCategory" type="VBoxContainer" parent="Modals/SettingsModal/Panel/VBox/ContentContainer"]
 visible = false

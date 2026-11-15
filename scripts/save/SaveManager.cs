@@ -13,6 +13,7 @@
 // - Nov 15, 2026 | air : Expanded settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
 // - Nov 15, 2026 | air : Added RenderScale, ScalingMode, MaxFps, and ShowFpsCounter to AudioSettings
 // - Nov 15, 2026 | air : Added IsTutorialCompleted and SetTutorialCompleted persistent tracking
+// - Nov 15, 2026 | air : Added RenderingMethod and LiteMode options for low-end hardware support
 // =========================================================================================
 using Godot;
 using System;
@@ -50,6 +51,8 @@ public class AudioSettings
 	public int ScalingMode { get; set; } = 0; // 0 = Bilinear (Zero Overhead), 1 = FSR 1.0
 	public int MaxFps { get; set; } = 60; // 0 = Unlimited, 30, 60, 90, 120, etc.
 	public bool ShowFpsCounter { get; set; } = false;
+	public string RenderingMethod { get; set; } = "forward_plus"; // "forward_plus", "mobile", "gl_compatibility"
+	public bool LiteMode { get; set; } = false;
 	public float Fov { get; set; } = 75.0f;
 
 	// Controls & Accessibility
