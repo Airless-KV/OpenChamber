@@ -4,6 +4,8 @@
 //                   - Local database schema migration, table initialization, and seeding
 //                   - Local leaderboard queries, rank calculation, and persistent match history
 //                   - Player profile statistics and system settings persistence
+//                   - Relational normalization (players, match_sessions, match_stat_details)
+//                   - CRUD, multi-table JOINs, and analytical aggregate query functions
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 06, 2026 | air : Created SQLite database layer with local leaderboards and profiles
@@ -11,6 +13,7 @@
 // - Nov 15, 2026 | air : Expanded audio_settings schema with resolution, aspect scaling, FOV, VSync, sensitivity, and accessibility
 // - Nov 15, 2026 | air : Added render_scale, scaling_mode, max_fps, and show_fps_counter persistence
 // - Nov 15, 2026 | air : Added rendering_method and lite_mode schema migrations and persistence
+// - Nov 16, 2026 | air : Normalized schema with players, match_sessions, and match_stat_details; added CRUD, JOIN, and aggregate queries
 // =========================================================================================
 using Godot;
 using Microsoft.Data.Sqlite;
@@ -66,7 +69,17 @@ public static class DatabaseManager
 			using var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
 				PRAGMA journal_mode = WAL;
+				PRAGMA foreign_keys = ON;
 
+				-- 1. Normalized players entity (3NF)
+				CREATE TABLE IF NOT EXISTS players (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					player_name TEXT NOT NULL UNIQUE,
+					created_at TEXT NOT NULL,
+					updated_at TEXT NOT NULL
+				);
+
+				-- 2. Single-profile summary cache for fast startup
 				CREATE TABLE IF NOT EXISTS player_profile (
 					id INTEGER PRIMARY KEY CHECK (id = 1),
 					player_name TEXT NOT NULL DEFAULT 'Survivor',
@@ -81,6 +94,7 @@ public static class DatabaseManager
 					updated_at TEXT NOT NULL
 				);
 
+				-- 3. System audio, display, and controls configuration
 				CREATE TABLE IF NOT EXISTS audio_settings (
 					id INTEGER PRIMARY KEY CHECK (id = 1),
 					master_volume REAL NOT NULL DEFAULT 1.0,
@@ -102,8 +116,10 @@ public static class DatabaseManager
 					show_fps_counter INTEGER NOT NULL DEFAULT 0
 				);
 
+				-- 4. Leaderboard records (relational link to players)
 				CREATE TABLE IF NOT EXISTS leaderboard (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					player_id INTEGER DEFAULT 1,
 					player_name TEXT NOT NULL,
 					score INTEGER NOT NULL,
 					day_reached INTEGER NOT NULL,
@@ -115,6 +131,7 @@ public static class DatabaseManager
 				CREATE INDEX IF NOT EXISTS idx_leaderboard_score 
 				ON leaderboard (score DESC, day_reached DESC);
 
+				-- 5. Persistent save slots
 				CREATE TABLE IF NOT EXISTS save_slots (
 					slot_id INTEGER PRIMARY KEY,
 					slot_name TEXT NOT NULL,
@@ -122,6 +139,31 @@ public static class DatabaseManager
 					coins INTEGER NOT NULL DEFAULT 0,
 					board_state_json TEXT,
 					saved_at TEXT NOT NULL
+				);
+
+				-- 6. Match session records for deep analytics
+				CREATE TABLE IF NOT EXISTS match_sessions (
+					session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					player_id INTEGER NOT NULL DEFAULT 1,
+					final_day INTEGER NOT NULL,
+					final_score INTEGER NOT NULL,
+					survived INTEGER NOT NULL,
+					coins_earned INTEGER NOT NULL,
+					attacks_repelled INTEGER NOT NULL,
+					merges_performed INTEGER NOT NULL,
+					session_start TEXT NOT NULL,
+					session_end TEXT NOT NULL
+				);
+
+				-- 7. Per-night detailed incident telemetry (1:N with match_sessions)
+				CREATE TABLE IF NOT EXISTS match_stat_details (
+					detail_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					session_id INTEGER NOT NULL,
+					night_number INTEGER NOT NULL,
+					crops_lost INTEGER NOT NULL DEFAULT 0,
+					planks_used INTEGER NOT NULL DEFAULT 0,
+					breaches_occurred INTEGER NOT NULL DEFAULT 0,
+					FOREIGN KEY (session_id) REFERENCES match_sessions(session_id) ON DELETE CASCADE
 				);
 			";
 			cmd.ExecuteNonQuery();
@@ -152,7 +194,8 @@ public static class DatabaseManager
 			"ALTER TABLE audio_settings ADD COLUMN max_fps INTEGER NOT NULL DEFAULT 60;",
 			"ALTER TABLE audio_settings ADD COLUMN show_fps_counter INTEGER NOT NULL DEFAULT 0;",
 			"ALTER TABLE audio_settings ADD COLUMN rendering_method TEXT NOT NULL DEFAULT 'forward_plus';",
-			"ALTER TABLE audio_settings ADD COLUMN lite_mode INTEGER NOT NULL DEFAULT 0;"
+			"ALTER TABLE audio_settings ADD COLUMN lite_mode INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE leaderboard ADD COLUMN player_id INTEGER DEFAULT 1;"
 		};
 
 		foreach (var colSql in columns)
@@ -172,6 +215,25 @@ public static class DatabaseManager
 
 	private static void SeedInitialDataIfEmpty(SqliteConnection conn)
 	{
+		// Seed default players record if missing (3NF normalized anchor)
+		using (var checkPlayersCmd = conn.CreateCommand())
+		{
+			checkPlayersCmd.CommandText = "SELECT COUNT(*) FROM players WHERE id = 1;";
+			long count = (long)(checkPlayersCmd.ExecuteScalar() ?? 0L);
+			if (count == 0)
+			{
+				using var insertPlayer = conn.CreateCommand();
+				string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+				insertPlayer.CommandText = @"
+					INSERT OR IGNORE INTO players (id, player_name, created_at, updated_at)
+					VALUES (1, 'Survivor', $created, $updated);
+				";
+				insertPlayer.Parameters.AddWithValue("$created", now);
+				insertPlayer.Parameters.AddWithValue("$updated", now);
+				insertPlayer.ExecuteNonQuery();
+			}
+		}
+
 		// Seed default profile if missing
 		using (var checkProfileCmd = conn.CreateCommand())
 		{
@@ -526,11 +588,15 @@ public static class DatabaseManager
 			using var conn = new SqliteConnection(GetConnectionString());
 			conn.Open();
 
+			// Ensure player exists in normalized players table
+			int playerId = EnsurePlayerExists(conn, entry.PlayerName);
+
 			using var insertCmd = conn.CreateCommand();
 			insertCmd.CommandText = @"
-				INSERT INTO leaderboard (player_name, score, day_reached, survived, coins, created_at)
-				VALUES ($name, $score, $day, $survived, $coins, $created);
+				INSERT INTO leaderboard (player_id, player_name, score, day_reached, survived, coins, created_at)
+				VALUES ($playerId, $name, $score, $day, $survived, $coins, $created);
 			";
+			insertCmd.Parameters.AddWithValue("$playerId", playerId);
 			insertCmd.Parameters.AddWithValue("$name", entry.PlayerName);
 			insertCmd.Parameters.AddWithValue("$score", entry.Score);
 			insertCmd.Parameters.AddWithValue("$day", entry.DayReached);
@@ -550,6 +616,31 @@ public static class DatabaseManager
 			long rank = (long)(rankCmd.ExecuteScalar() ?? 1L);
 			return (int)rank;
 		}
+	}
+
+	private static int EnsurePlayerExists(SqliteConnection conn, string playerName)
+	{
+		string resolved = string.IsNullOrWhiteSpace(playerName) ? "Survivor" : playerName.Trim();
+		using var selectCmd = conn.CreateCommand();
+		selectCmd.CommandText = "SELECT id FROM players WHERE player_name = $name LIMIT 1;";
+		selectCmd.Parameters.AddWithValue("$name", resolved);
+		var res = selectCmd.ExecuteScalar();
+		if (res != null && res != DBNull.Value)
+		{
+			return Convert.ToInt32(res);
+		}
+
+		using var insertCmd = conn.CreateCommand();
+		string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+		insertCmd.CommandText = @"
+			INSERT INTO players (player_name, created_at, updated_at)
+			VALUES ($name, $created, $updated);
+			SELECT last_insert_rowid();
+		";
+		insertCmd.Parameters.AddWithValue("$name", resolved);
+		insertCmd.Parameters.AddWithValue("$created", now);
+		insertCmd.Parameters.AddWithValue("$updated", now);
+		return Convert.ToInt32(insertCmd.ExecuteScalar() ?? 1);
 	}
 
 	public static List<LeaderboardEntry> GetTopLeaderboard(int limit = 10)
@@ -678,4 +769,339 @@ public static class DatabaseManager
 			return (false, "", 1, 0, "", "");
 		}
 	}
+
+	// =========================================================================================
+	// EXPANDED RELATIONAL QUERIES: CRUD, JOINS, AND AGGREGATES
+	// =========================================================================================
+
+	/// <summary>
+	/// Relational JOIN query: joins leaderboard with players table.
+	/// Supports optional victory filter (survived = 1) and customizable limits.
+	/// </summary>
+	public static List<LeaderboardEntry> GetLeaderboardWithPlayerJoin(bool? onlyVictories = null, int limit = 10)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			var list = new List<LeaderboardEntry>();
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			string whereClause = onlyVictories.HasValue 
+				? "WHERE l.survived = " + (onlyVictories.Value ? "1" : "0") 
+				: "";
+
+			cmd.CommandText = $@"
+				SELECT COALESCE(p.player_name, l.player_name) AS resolved_name,
+				       l.score, l.day_reached, l.survived, l.coins, l.created_at
+				FROM leaderboard l
+				LEFT JOIN players p ON l.player_id = p.id
+				{whereClause}
+				ORDER BY l.score DESC, l.day_reached DESC, l.id ASC
+				LIMIT $limit;
+			";
+			cmd.Parameters.AddWithValue("$limit", limit);
+
+			using var reader = cmd.ExecuteReader();
+			while (reader.Read())
+			{
+				list.Add(new LeaderboardEntry
+				{
+					PlayerName = reader.GetString(0),
+					Score = reader.GetInt32(1),
+					DayReached = reader.GetInt32(2),
+					Survived = reader.GetInt32(3) == 1,
+					Coins = reader.GetInt32(4),
+					Date = reader.GetString(5)
+				});
+			}
+			return list;
+		}
+	}
+
+	/// <summary>
+	/// Aggregate query: calculates summary statistics (COUNT, SUM, MAX, AVG)
+	/// across all recorded leaderboard matches in SQLite.
+	/// </summary>
+	public static LeaderboardStatsReport GetLeaderboardStatsReport()
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT 
+					COUNT(*) AS total_runs,
+					SUM(CASE WHEN survived = 1 THEN 1 ELSE 0 END) AS total_victories,
+					COALESCE(MAX(score), 0) AS high_score,
+					COALESCE(ROUND(AVG(score), 1), 0.0) AS avg_score,
+					COALESCE(SUM(coins), 0) AS total_coins
+				FROM leaderboard;
+			";
+
+			using var reader = cmd.ExecuteReader();
+			if (reader.Read())
+			{
+				int totalRuns = reader.GetInt32(0);
+				int totalWins = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+				int highScore = reader.GetInt32(2);
+				double avgScore = reader.GetDouble(3);
+				int totalCoins = reader.GetInt32(4);
+				double winRate = totalRuns > 0 ? Math.Round((double)totalWins / totalRuns * 100.0, 1) : 0.0;
+
+				return new LeaderboardStatsReport(totalRuns, totalWins, highScore, avgScore, totalCoins, winRate);
+			}
+			return new LeaderboardStatsReport(0, 0, 0, 0.0, 0, 0.0);
+		}
+	}
+
+	/// <summary>
+	/// Parameterized search query using SQL LIKE pattern matching to find entries by callsign.
+	/// </summary>
+	public static List<LeaderboardEntry> SearchLeaderboardByName(string query, int limit = 10)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			var list = new List<LeaderboardEntry>();
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT COALESCE(p.player_name, l.player_name) AS resolved_name,
+				       l.score, l.day_reached, l.survived, l.coins, l.created_at
+				FROM leaderboard l
+				LEFT JOIN players p ON l.player_id = p.id
+				WHERE l.player_name LIKE $pattern OR p.player_name LIKE $pattern
+				ORDER BY l.score DESC, l.day_reached DESC
+				LIMIT $limit;
+			";
+			cmd.Parameters.AddWithValue("$pattern", $"%{query}%");
+			cmd.Parameters.AddWithValue("$limit", limit);
+
+			using var reader = cmd.ExecuteReader();
+			while (reader.Read())
+			{
+				list.Add(new LeaderboardEntry
+				{
+					PlayerName = reader.GetString(0),
+					Score = reader.GetInt32(1),
+					DayReached = reader.GetInt32(2),
+					Survived = reader.GetInt32(3) == 1,
+					Coins = reader.GetInt32(4),
+					Date = reader.GetString(5)
+				});
+			}
+			return list;
+		}
+	}
+
+	/// <summary>
+	/// CRUD Delete operation: deletes a specific entry by its primary key ID.
+	/// </summary>
+	public static bool DeleteLeaderboardEntry(int entryId)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = "DELETE FROM leaderboard WHERE id = $id;";
+			cmd.Parameters.AddWithValue("$id", entryId);
+			int rows = cmd.ExecuteNonQuery();
+			return rows > 0;
+		}
+	}
+
+	/// <summary>
+	/// CRUD Delete operation: clears user records while keeping benchmark defaults.
+	/// </summary>
+	public static int ClearUserLeaderboard()
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = "DELETE FROM leaderboard WHERE created_at != 'Legacy Record';";
+			return cmd.ExecuteNonQuery();
+		}
+	}
+
+	/// <summary>
+	/// CRUD Insert operation: logs a deep match session and its per-night telemetry details.
+	/// </summary>
+	public static int RecordMatchSession(
+		string playerName, 
+		int finalDay, 
+		int finalScore, 
+		bool survived, 
+		int coinsEarned, 
+		int attacksRepelled, 
+		int mergesPerformed,
+		List<(int night, int cropsLost, int planksUsed, int breaches)> nightDetails = null)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			int playerId = EnsurePlayerExists(conn, playerName);
+			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				INSERT INTO match_sessions (
+					player_id, final_day, final_score, survived, coins_earned,
+					attacks_repelled, merges_performed, session_start, session_end
+				) VALUES (
+					$playerId, $day, $score, $survived, $coins,
+					$repelled, $merges, $start, $end
+				);
+				SELECT last_insert_rowid();
+			";
+			cmd.Parameters.AddWithValue("$playerId", playerId);
+			cmd.Parameters.AddWithValue("$day", finalDay);
+			cmd.Parameters.AddWithValue("$score", finalScore);
+			cmd.Parameters.AddWithValue("$survived", survived ? 1 : 0);
+			cmd.Parameters.AddWithValue("$coins", coinsEarned);
+			cmd.Parameters.AddWithValue("$repelled", attacksRepelled);
+			cmd.Parameters.AddWithValue("$merges", mergesPerformed);
+			cmd.Parameters.AddWithValue("$start", now);
+			cmd.Parameters.AddWithValue("$end", now);
+
+			long sessionId = Convert.ToInt64(cmd.ExecuteScalar() ?? 0);
+
+			if (nightDetails != null && nightDetails.Count > 0 && sessionId > 0)
+			{
+				foreach (var detail in nightDetails)
+				{
+					using var detailCmd = conn.CreateCommand();
+					detailCmd.CommandText = @"
+						INSERT INTO match_stat_details (session_id, night_number, crops_lost, planks_used, breaches_occurred)
+						VALUES ($sessionId, $night, $crops, $planks, $breaches);
+					";
+					detailCmd.Parameters.AddWithValue("$sessionId", sessionId);
+					detailCmd.Parameters.AddWithValue("$night", detail.night);
+					detailCmd.Parameters.AddWithValue("$crops", detail.cropsLost);
+					detailCmd.Parameters.AddWithValue("$planks", detail.planksUsed);
+					detailCmd.Parameters.AddWithValue("$breaches", detail.breaches);
+					detailCmd.ExecuteNonQuery();
+				}
+			}
+
+			return (int)sessionId;
+		}
+	}
+
+	/// <summary>
+	/// Multi-table JOIN query: retrieves match sessions joined with their detailed night incidents.
+	/// </summary>
+	public static List<MatchSessionSummary> GetRecentMatchSessionsWithDetails(int limit = 10)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			var sessions = new List<MatchSessionSummary>();
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT s.session_id, p.player_name, s.final_day, s.final_score, s.survived, 
+				       s.coins_earned, s.attacks_repelled, s.merges_performed, s.session_end
+				FROM match_sessions s
+				INNER JOIN players p ON s.player_id = p.id
+				ORDER BY s.session_id DESC
+				LIMIT $limit;
+			";
+			cmd.Parameters.AddWithValue("$limit", limit);
+
+			using (var reader = cmd.ExecuteReader())
+			{
+				while (reader.Read())
+				{
+					sessions.Add(new MatchSessionSummary
+					{
+						SessionId = reader.GetInt32(0),
+						PlayerName = reader.GetString(1),
+						FinalDay = reader.GetInt32(2),
+						FinalScore = reader.GetInt32(3),
+						Survived = reader.GetInt32(4) == 1,
+						CoinsEarned = reader.GetInt32(5),
+						AttacksRepelled = reader.GetInt32(6),
+						MergesPerformed = reader.GetInt32(7),
+						Timestamp = reader.GetString(8)
+					});
+				}
+			}
+
+			// For each session, fetch per-night incident aggregates
+			foreach (var s in sessions)
+			{
+				using var detailCmd = conn.CreateCommand();
+				detailCmd.CommandText = @"
+					SELECT night_number, crops_lost, planks_used, breaches_occurred
+					FROM match_stat_details
+					WHERE session_id = $sessionId
+					ORDER BY night_number ASC;
+				";
+				detailCmd.Parameters.AddWithValue("$sessionId", s.SessionId);
+				using var detailReader = detailCmd.ExecuteReader();
+				while (detailReader.Read())
+				{
+					s.NightDetails.Add(new NightDetailRecord
+					{
+						NightNumber = detailReader.GetInt32(0),
+						CropsLost = detailReader.GetInt32(1),
+						PlanksUsed = detailReader.GetInt32(2),
+						BreachesOccurred = detailReader.GetInt32(3)
+					});
+				}
+			}
+
+			return sessions;
+		}
+	}
+}
+
+public record LeaderboardStatsReport(
+	int TotalRuns,
+	int TotalVictories,
+	int HighScore,
+	double AvgScore,
+	int TotalCoins,
+	double WinRatePercentage
+);
+
+public class MatchSessionSummary
+{
+	public int SessionId { get; set; }
+	public string PlayerName { get; set; }
+	public int FinalDay { get; set; }
+	public int FinalScore { get; set; }
+	public bool Survived { get; set; }
+	public int CoinsEarned { get; set; }
+	public int AttacksRepelled { get; set; }
+	public int MergesPerformed { get; set; }
+	public string Timestamp { get; set; }
+	public List<NightDetailRecord> NightDetails { get; set; } = new();
+}
+
+public class NightDetailRecord
+{
+	public int NightNumber { get; set; }
+	public int CropsLost { get; set; }
+	public int PlanksUsed { get; set; }
+	public int BreachesOccurred { get; set; }
 }

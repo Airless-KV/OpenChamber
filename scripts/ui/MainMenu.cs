@@ -13,6 +13,7 @@
 // - Nov 15, 2026 | air : Expanded settings modal with tabbed audio, display, resolution, aspect scaling, and controls
 // - Nov 15, 2026 | air : Added rendering backend option, Lite preset button, GPU info label, and restart trigger
 // - Nov 16, 2026 | air : Added Are You Sure confirmation modal before launching interactive tutorial level
+// - Nov 16, 2026 | air : Added SQL query filtering bar, callsign search, and aggregate stats to leaderboard modal
 // =========================================================================================
 using Godot;
 
@@ -83,6 +84,9 @@ public partial class MainMenu : Control
 	[Export] public Label LifetimeStatsLabel;
 	[Export] public VBoxContainer LeaderboardRowsContainer;
 	[Export] public Button CloseLeaderboardButton;
+	[Export] public Button FilterAllButton;
+	[Export] public Button FilterVictoriesButton;
+	[Export] public LineEdit LeaderboardSearchInput;
 
 	[ExportGroup("How To Play Modal")]
 	[Export] public Control HowToPlayModal;
@@ -136,6 +140,13 @@ public partial class MainMenu : Control
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += () => HideModal(SettingsModal);
 		if (CloseLeaderboardButton != null) CloseLeaderboardButton.Pressed += () => HideModal(LeaderboardModal);
 		if (CloseHowToPlayButton != null) CloseHowToPlayButton.Pressed += () => HideModal(HowToPlayModal);
+
+		if (FilterAllButton != null) FilterAllButton.Pressed += () => LoadLeaderboardData(null);
+		if (FilterVictoriesButton != null) FilterVictoriesButton.Pressed += () => LoadLeaderboardData(true);
+		if (LeaderboardSearchInput != null)
+		{
+			LeaderboardSearchInput.TextChanged += text => LoadLeaderboardData(null, text);
+		}
 
 		UpdateProfileDisplay();
 		CloseAllModals();
@@ -213,24 +224,55 @@ public partial class MainMenu : Control
 
 	private void OnLeaderboardPressed()
 	{
-		var data = SaveManager.CurrentData;
-		if (LifetimeStatsLabel != null)
-			LifetimeStatsLabel.Text = $"GAMES: {data.Profile.TotalGamesPlayed}  |  VICTORIES: {data.Profile.TotalVictories}  |  BEST DAY: {data.Profile.HighestDayReached}  |  HIGH SCORE: {data.Profile.AllTimeHighScore}";
+		if (LeaderboardSearchInput != null) LeaderboardSearchInput.Text = "";
+		LoadLeaderboardData(null);
+		ShowModal(LeaderboardModal);
+	}
 
+	private void LoadLeaderboardData(bool? onlyVictories = null, string searchQuery = "")
+	{
+		// 1. Dynamic Aggregate Query from SQLite
+		var stats = SaveManager.GetLeaderboardStats();
+		if (LifetimeStatsLabel != null)
+		{
+			LifetimeStatsLabel.Text = $"RUNS: {stats.TotalRuns}  |  WINS: {stats.TotalVictories} ({stats.WinRatePercentage:0.0}%)  |  AVG SCORE: {stats.AvgScore:0.0}  |  HIGH SCORE: {stats.HighScore}";
+		}
+
+		// 2. Query execution based on user filter/search
+		System.Collections.Generic.List<LeaderboardEntry> entries;
+		if (!string.IsNullOrWhiteSpace(searchQuery))
+		{
+			entries = SaveManager.SearchLeaderboard(searchQuery.Trim(), 20);
+		}
+		else
+		{
+			entries = SaveManager.GetLeaderboardByFilter(onlyVictories, 20);
+		}
+
+		// 3. Render table rows (adjusted column widths to eliminate horizontal overflow)
 		if (LeaderboardRowsContainer != null)
 		{
 			foreach (Node c in LeaderboardRowsContainer.GetChildren()) c.QueueFree();
-			LeaderboardRowsContainer.AddChild(CreateRow(true, new(0.9f, 0.75f, 0.2f), ("#", 45), ("CALLSIGN", 220), ("SCORE", 110), ("DAY", 90), ("STATUS", 120), ("DATE", 160)));
+			LeaderboardRowsContainer.AddChild(CreateRow(true, new(0.9f, 0.75f, 0.2f), ("#", 36), ("CALLSIGN", 210), ("SCORE", 100), ("DAY", 85), ("STATUS", 115), ("DATE", 150)));
+
+			if (entries.Count == 0)
+			{
+				var emptyRow = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+				var emptyLbl = new Label { Text = "No matching records found.", CustomMinimumSize = new(696, 32), HorizontalAlignment = HorizontalAlignment.Center };
+				emptyLbl.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.6f));
+				emptyRow.AddChild(emptyLbl);
+				LeaderboardRowsContainer.AddChild(emptyRow);
+				return;
+			}
 
 			int rank = 1;
-			foreach (var e in data.Leaderboard)
+			foreach (var e in entries)
 			{
 				Color col = e.Survived ? new Color(0.4f, 0.95f, 0.5f) : new Color(0.85f, 0.85f, 0.85f);
-				LeaderboardRowsContainer.AddChild(CreateRow(false, col, ($"{rank:00}", 45), (e.PlayerName, 220), (e.Score.ToString(), 110), ($"Day {e.DayReached}", 90), (e.Survived ? "SURVIVED" : "BREACHED", 120), (e.Date, 160)));
+				LeaderboardRowsContainer.AddChild(CreateRow(false, col, ($"{rank:00}", 36), (e.PlayerName, 210), (e.Score.ToString(), 100), ($"Day {e.DayReached}", 85), (e.Survived ? "SURVIVED" : "BREACHED", 115), (e.Date, 150)));
 				rank++;
 			}
 		}
-		ShowModal(LeaderboardModal);
 	}
 
 	private static HBoxContainer CreateRow(bool header, Color color, params (string text, float width)[] cells)

@@ -53,7 +53,7 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton", "TutorialConfirmModal", "ConfirmTutorialButton", "CancelTutorialButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
+[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "FilterAllButton", "FilterVictoriesButton", "LeaderboardSearchInput", "HowToPlayModal", "CloseHowToPlayButton", "TutorialConfirmModal", "ConfirmTutorialButton", "CancelTutorialButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -112,6 +112,9 @@ LeaderboardModal = NodePath("Modals/LeaderboardModal")
 LifetimeStatsLabel = NodePath("Modals/LeaderboardModal/Panel/VBox/StatsSummary")
 LeaderboardRowsContainer = NodePath("Modals/LeaderboardModal/Panel/VBox/Scroll/RowsContainer")
 CloseLeaderboardButton = NodePath("Modals/LeaderboardModal/Panel/VBox/CloseButton")
+FilterAllButton = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/FilterAllBtn")
+FilterVictoriesButton = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/FilterVictoriesBtn")
+LeaderboardSearchInput = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/SearchInput")
 HowToPlayModal = NodePath("Modals/HowToPlayModal")
 CloseHowToPlayButton = NodePath("Modals/HowToPlayModal/Panel/VBox/CloseButton")
 TutorialConfirmModal = NodePath("Modals/TutorialConfirmModal")
@@ -785,17 +788,17 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
 [node name="Panel" type="Panel" parent="Modals/LeaderboardModal" unique_id=470879786]
-custom_minimum_size = Vector2(760, 520)
+custom_minimum_size = Vector2(800, 540)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -380.0
-offset_top = -260.0
-offset_right = 380.0
-offset_bottom = 260.0
+offset_left = -400.0
+offset_top = -270.0
+offset_right = 400.0
+offset_bottom = 270.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -805,13 +808,13 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 30.0
-offset_top = 25.0
-offset_right = -30.0
-offset_bottom = -25.0
+offset_left = 25.0
+offset_top = 20.0
+offset_right = -25.0
+offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Modals/LeaderboardModal/Panel/VBox" unique_id=1269776440]
 layout_mode = 2
@@ -827,13 +830,42 @@ theme_override_font_sizes/font_size = 13
 text = "GAMES PLAYED: 0 | VICTORIES: 0 | BEST DAY: 1 | HIGH SCORE: 0"
 horizontal_alignment = 1
 
+[node name="QueryBar" type="HBoxContainer" parent="Modals/LeaderboardModal/Panel/VBox" unique_id=1189283741]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FilterAllBtn" type="Button" parent="Modals/LeaderboardModal/Panel/VBox/QueryBar" unique_id=1189283742]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "ALL RUNS"
+
+[node name="FilterVictoriesBtn" type="Button" parent="Modals/LeaderboardModal/Panel/VBox/QueryBar" unique_id=1189283743]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "VICTORIES ONLY"
+
+[node name="SearchInput" type="LineEdit" parent="Modals/LeaderboardModal/Panel/VBox/QueryBar" unique_id=1189283744]
+custom_minimum_size = Vector2(200, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+placeholder_text = "Search callsign (SQL LIKE)..."
+clear_button_enabled = true
+
 [node name="HSeparator" type="HSeparator" parent="Modals/LeaderboardModal/Panel/VBox" unique_id=2112727296]
 layout_mode = 2
 
 [node name="Scroll" type="ScrollContainer" parent="Modals/LeaderboardModal/Panel/VBox" unique_id=1463997300]
-custom_minimum_size = Vector2(0, 310)
+custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="RowsContainer" type="VBoxContainer" parent="Modals/LeaderboardModal/Panel/VBox/Scroll" unique_id=1839291042]
 layout_mode = 2

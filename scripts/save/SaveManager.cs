@@ -14,6 +14,7 @@
 // - Nov 15, 2026 | air : Added RenderScale, ScalingMode, MaxFps, and ShowFpsCounter to AudioSettings
 // - Nov 15, 2026 | air : Added IsTutorialCompleted and SetTutorialCompleted persistent tracking
 // - Nov 15, 2026 | air : Added RenderingMethod and LiteMode options for low-end hardware support
+// - Nov 16, 2026 | air : Added wrappers for relational JOINs, query filtering, callsign search, and aggregate stats
 // =========================================================================================
 using Godot;
 using System;
@@ -208,6 +209,21 @@ public partial class SaveManager : Node
 	}
 
 	public static List<LeaderboardEntry> GetTopLeaderboard(int limit = 10) => DatabaseManager.GetTopLeaderboard(limit);
+
+	public static List<LeaderboardEntry> GetLeaderboardByFilter(bool? onlyVictories = null, int limit = 10) =>
+		DatabaseManager.GetLeaderboardWithPlayerJoin(onlyVictories, limit);
+
+	public static LeaderboardStatsReport GetLeaderboardStats() =>
+		DatabaseManager.GetLeaderboardStatsReport();
+
+	public static List<LeaderboardEntry> SearchLeaderboard(string query, int limit = 10) =>
+		DatabaseManager.SearchLeaderboardByName(query, limit);
+
+	public static bool DeleteLeaderboardEntry(int entryId) =>
+		DatabaseManager.DeleteLeaderboardEntry(entryId);
+
+	public static int ClearUserLeaderboard() =>
+		DatabaseManager.ClearUserLeaderboard();
 
 	public static List<LeaderboardEntry> GetMatchHistory(int limit = 50) => DatabaseManager.GetAllMatchHistory(limit);
 
