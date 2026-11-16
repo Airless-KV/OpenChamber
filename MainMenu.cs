@@ -90,6 +90,7 @@ public partial class MainMenu : Control
 	public override void _Ready()
 	{
 		MenuTitleFont.Apply(this);
+		MenuSubtitleFont.Apply(this);
 		MenuCCTV.Attach(this);
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 
