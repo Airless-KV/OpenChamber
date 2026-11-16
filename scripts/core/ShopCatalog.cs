@@ -12,6 +12,7 @@
 // - Nov 15, 2026 | air : Removed Plank and Crowbar item definitions following barricade decommission
 // - Nov 15, 2026 | air : Added Cryo-Freezer item definition for flower preservation
 // - Nov 15, 2026 | air : Increased seed price from 1 to 100 coins
+// - Nov 15, 2026 | air : Preserved dummy entries for Plank, Barrier, and Axe to prevent HUD WireShopButton NullReferenceException
 // =========================================================================================
 using System.Collections.Generic;
 
@@ -34,6 +35,9 @@ public static class ShopCatalog
 
 	private static readonly Dictionary<string, ShopItem> _items = new()
 	{
+		{ PlankId, new ShopItem { Id = PlankId, DisplayName = "Plank", Price = 2, Description = "Barricade plank." } },
+		{ BarrierId, new ShopItem { Id = BarrierId, DisplayName = "Barrier", Price = 5, Description = "Defense barrier." } },
+		{ AxeId, new ShopItem { Id = AxeId, DisplayName = "Axe", Price = 10, Description = "Woodcutting axe." } },
 		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 100, Description = "Plantable seed to cultivate valuable flowers." } },
 		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 5, Description = "Powers cabin halogen floodlights to blind night monsters." } },
 		{ FreezerId, new ShopItem { Id = FreezerId, DisplayName = "Cryo-Freezer Box", Price = 8, Description = "Preserves up to 10 harvested flowers. Requires a Car Battery (burns 1% per 5s)." } }

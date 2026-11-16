@@ -25,6 +25,7 @@
 // - Nov 15, 2026 | air : Added PlayDeathLunge for 3D animated death scene jumpscares and looming behavior
 // - Nov 15, 2026 | air : Added cinematic face light, GetHeadPosition, head-bend looming, and 5.5s death pacing
 // - Nov 15, 2026 | air : Corrected cardinal staging yaws (Front door 180 deg, North 0 deg) and lurking orientations to face farmhouse
+// - Nov 16, 2026 | air : Added PlayDeathHouseFling for dragging player through attacking opening and casting them outside
 // =========================================================================================
 using Godot;
 using System;
@@ -293,6 +294,61 @@ public partial class AniAniMonster : Node3D
 
 		// 3. Loom and twitch directly over the camera for 2.2 seconds
 		_lungeTween.TweenInterval(2.2f);
+		_lungeTween.TweenCallback(Callable.From(() =>
+		{
+			onComplete?.Invoke();
+		}));
+	}
+
+	public void PlayDeathHouseFling(Vector3 breachOpeningPos, Vector3 playerInsidePos, float openingYaw, Action onFlingThrow, Action onComplete)
+	{
+		if (_retreatTween != null && _retreatTween.IsValid()) _retreatTween.Kill();
+		if (_lungeTween != null && _lungeTween.IsValid()) _lungeTween.Kill();
+
+		IsInDeathAnimation = true;
+		_deathHeadBendPitch = 0f;
+		Visible = true;
+		Scale = _baseScale;
+		// Keep monster outside the house at the opening threshold
+		GlobalPosition = breachOpeningPos;
+		RotationDegrees = new Vector3(0, openingYaw, 0);
+
+		if (_eyeLight != null)
+		{
+			_eyeLight.LightEnergy = 7.0f;
+			_eyeLight.LightColor = new Color(1.0f, 0.05f, 0.05f);
+		}
+
+		if (_cinematicFaceLight != null)
+		{
+			_cinematicFaceLight.LightEnergy = 11.0f;
+		}
+
+		CurrentStage = 3;
+
+		// Ani-Ani faces into the house toward the player from outside the window/door
+		Vector3 toPlayer = (playerInsidePos - breachOpeningPos).Normalized();
+		float reachYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
+		RotationDegrees = new Vector3(0, reachYaw, 0);
+
+		_lungeTween = CreateTween().SetParallel(false);
+
+		// 1. Stand menacingly outside at opening threshold while pulling the player toward the opening (0.65s)
+		_lungeTween.TweenInterval(0.65f);
+
+		// 2. Fling / Throw release callback
+		_lungeTween.TweenCallback(Callable.From(() =>
+		{
+			onFlingThrow?.Invoke();
+		}));
+
+		// Bend torso / head forward peering down after flinging the player away
+		var throwGesture = _lungeTween.Parallel();
+		throwGesture.TweenMethod(Callable.From<float>(v => _deathHeadBendPitch = v), 0f, 48.0f, 0.5f)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+
+		// 3. Stare down at the thrown player from the elevated opening
+		_lungeTween.TweenInterval(3.2f);
 		_lungeTween.TweenCallback(Callable.From(() =>
 		{
 			onComplete?.Invoke();

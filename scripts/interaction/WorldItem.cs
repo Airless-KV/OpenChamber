@@ -13,6 +13,7 @@
 // - Nov 15, 2026 | air : Removed Plank and Crowbar item types and models following barricade removal
 // - Nov 15, 2026 | air : Added flower shelf life (Tier 1: 180s, scaling down 30s per tier) and natural wilting
 // - Nov 15, 2026 | air : Updated Seed GetItemDisplayName to reflect FlowerTier level
+// - Nov 16, 2026 | air : Fixed '!is_inside_tree()' error in Spawn by removing premature GlobalPosition from object initializer
 // =========================================================================================
 using Godot;
 using System;
@@ -292,8 +293,7 @@ public partial class WorldItem : InteractableBase
 			BatteryHealth = Mathf.Clamp(batteryHealth, 0, 100),
 			FreshnessTimer = shelfLife,
 			CollisionLayer = 2,
-			CollisionMask = 0,
-			GlobalPosition = position
+			CollisionMask = 0
 		};
 		parent.AddChild(item);
 		item.GlobalPosition = position;

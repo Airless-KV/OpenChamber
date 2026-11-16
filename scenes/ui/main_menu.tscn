@@ -53,7 +53,7 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
+[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "HowToPlayModal", "CloseHowToPlayButton", "TutorialConfirmModal", "ConfirmTutorialButton", "CancelTutorialButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -114,6 +114,9 @@ LeaderboardRowsContainer = NodePath("Modals/LeaderboardModal/Panel/VBox/Scroll/R
 CloseLeaderboardButton = NodePath("Modals/LeaderboardModal/Panel/VBox/CloseButton")
 HowToPlayModal = NodePath("Modals/HowToPlayModal")
 CloseHowToPlayButton = NodePath("Modals/HowToPlayModal/Panel/VBox/CloseButton")
+TutorialConfirmModal = NodePath("Modals/TutorialConfirmModal")
+ConfirmTutorialButton = NodePath("Modals/TutorialConfirmModal/Panel/VBox/ButtonContainer/ConfirmButton")
+CancelTutorialButton = NodePath("Modals/TutorialConfirmModal/Panel/VBox/ButtonContainer/CancelButton")
 
 [node name="Background" type="Panel" parent="." unique_id=1021653859]
 layout_mode = 1
@@ -960,3 +963,79 @@ theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "BACK"
+
+[node name="TutorialConfirmModal" type="ColorRect" parent="Modals" unique_id=987112001]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Panel" type="Panel" parent="Modals/TutorialConfirmModal" unique_id=987112002]
+custom_minimum_size = Vector2(560, 260)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -130.0
+offset_right = 280.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/TutorialConfirmModal/Panel" unique_id=987112003]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 25.0
+offset_right = -30.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Modals/TutorialConfirmModal/Panel/VBox" unique_id=987112004]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 22
+text = "START INTERACTIVE TUTORIAL?"
+horizontal_alignment = 1
+
+[node name="Message" type="Label" parent="Modals/TutorialConfirmModal/Panel/VBox" unique_id=987112005]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.88, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "You are about to enter the interactive training grounds with indefinite daytime practice (controls, farming, workstations, CCTV) and an endless night finale. Are you sure you want to proceed?"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="Modals/TutorialConfirmModal/Panel/VBox" unique_id=987112006]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="Modals/TutorialConfirmModal/Panel/VBox/ButtonContainer" unique_id=987112007]
+custom_minimum_size = Vector2(140, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "CANCEL"
+
+[node name="ConfirmButton" type="Button" parent="Modals/TutorialConfirmModal/Panel/VBox/ButtonContainer" unique_id=987112008]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_primary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "PROCEED"

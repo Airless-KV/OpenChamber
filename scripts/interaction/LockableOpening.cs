@@ -18,6 +18,7 @@
 // - Nov 14, 2026 | air : Reduced plank placement duration to 1.5s (from 3.0s) and updated barricade prompts
 // - Nov 14, 2026 | air : Triggered CameraPivot house attack trauma jolt when tearing barricade planks
 // - Nov 15, 2026 | air : Decommissioned active barricade mechanics per gameplay simplification
+// - Nov 16, 2026 | air : Removed obsolete PlankVisuals export to resolve Godot serialization bug
 // =========================================================================================
 using Godot;
 
@@ -40,7 +41,6 @@ public partial class LockableOpening : Node3D
 
 	[ExportGroup("Visual Bindings")]
 	[Export] public Node3D LockVisual;
-	[Export] public Node3D[] PlankVisuals;
 	[Export] public Label3D StatusLabel;
 
 	public int PlanksPlaced { get; private set; }
@@ -83,19 +83,6 @@ public partial class LockableOpening : Node3D
 
 	private void SetupPlanks()
 	{
-		bool hasPlanks = PlankVisuals != null && PlankVisuals.Length > 0;
-		if (hasPlanks)
-		{
-			_plankScales = new Vector3[PlankVisuals.Length];
-			for (int i = 0; i < PlankVisuals.Length; i++)
-			{
-				if (PlankVisuals[i] != null)
-					_plankScales[i] = PlankVisuals[i].Scale;
-				else
-					_plankScales[i] = Vector3.One;
-			}
-		}
-
 		CreateBlocker(GlobalPosition, GlobalTransform.Basis, BlockerSize);
 		_setupDone = true;
 		UpdateVisuals();
@@ -189,15 +176,6 @@ public partial class LockableOpening : Node3D
 
 		if (LockVisual != null)
 			LockVisual.Visible = false;
-
-		if (PlankVisuals != null)
-		{
-			for (int i = 0; i < PlankVisuals.Length; i++)
-			{
-				if (PlankVisuals[i] != null)
-					PlankVisuals[i].Visible = false;
-			}
-		}
 
 		bool wantBlock = PlanksPlaced > 0;
 		if (_blockerShape != null && _blockerOn != wantBlock)

@@ -23,6 +23,7 @@
 // - Nov 15, 2026 | air : Restored full forest density (2800 outer / 450 mid), extended streaming to 185m/215m,
 //                        increased tree canopy scale (1.15-1.65), and exempted trees from distance culling
 // - Nov 15, 2026 | air : Added dynamic LiteMode density halving and streaming radius clamp for low-end hardware
+// - Nov 16, 2026 | air : Restricted LiteMode foliage halving to runtime gameplay (!Engine.IsEditorHint) to preserve inspector values
 // =========================================================================================
 using Godot;
 using System;
@@ -127,7 +128,7 @@ public partial class FoliageGenerator : Node3D
 			DetectChessboardBounds();
 		}
 
-		if (SaveManager.CurrentData?.Audio?.LiteMode == true)
+		if (!Engine.IsEditorHint() && SaveManager.CurrentData?.Audio?.LiteMode == true)
 		{
 			OuterTreeCount = Mathf.Max(60, OuterTreeCount / 2);
 			MidTreeCount = Mathf.Max(30, MidTreeCount / 2);

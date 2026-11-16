@@ -14,6 +14,8 @@
 //                        with smooth Sine easing for majestic low-speed mountain drifting
 // - Nov 13, 2026 | air : Added physical 3D flower selling interface with dynamic prompt and coin awards
 // - Nov 15, 2026 | air : Replaced distant 40s mountain flight with prominent 7s arrival descent directly above farm tile
+// - Nov 15, 2026 | air : Added selling used/held car batteries for 2 coins
+// - Nov 16, 2026 | air : Restored 40s inbound mountain drift arrival and 30s pre-night departure to mountain opening
 // =========================================================================================
 using Godot;
 using System;
@@ -24,8 +26,8 @@ public partial class HotAirBalloonShop : InteractableShop
 	[ExportGroup("Flight Parameters")]
 	[Export] public float GroundedY = 1.25f;
 	[Export] public Vector3 MountainOpeningSkyTarget = new(-55.0f, 65.0f, -210.0f);
-	[Export] public float InboundFlightDuration = 7.0f;
-	[Export] public float OutboundFlightDuration = 12.0f;
+	[Export] public float InboundFlightDuration = 40.0f;
+	[Export] public float OutboundFlightDuration = 30.0f;
 	[Export] public float DepartureLeadTime = 30.0f;
 	[Export] public float IdleBobDistance = 0.20f;
 	[Export] public float IdleBobDuration = 2.8f;
@@ -152,22 +154,21 @@ public partial class HotAirBalloonShop : InteractableShop
 		// Select a fresh random perimeter tile for today's landing
 		_homeGroundedPos = PickRandomOuterTilePosition();
 
-		// Start prominently above the target farm tile for a visible descent
-		Vector3 arrivalSkyTarget = new Vector3(_homeGroundedPos.X, 22.0f, _homeGroundedPos.Z + 8.0f);
-		GlobalPosition = arrivalSkyTarget;
+		// Start high above the mountain valley opening
+		GlobalPosition = MountainOpeningSkyTarget;
 
 		if (BurnerLight != null)
 		{
 			BurnerLight.Visible = true;
-			BurnerLight.LightEnergy = 3.5f;
+			BurnerLight.LightEnergy = 2.4f;
 		}
 
 		AudioManager.Instance?.PlaySfx("door_thud", 0.9f);
 
-		GD.Print($"[HotAirBalloonShop] Inbound {InboundFlightDuration}s visible arrival initiated from sky above to outer tile {_homeGroundedPos}.");
+		GD.Print($"[HotAirBalloonShop] Inbound 40s slow flight initiated from mountain opening to outer tile {_homeGroundedPos}.");
 
 		_flightTween = CreateTween();
-		_flightTween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		_flightTween.SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
 		_flightTween.TweenProperty(this, "global_position", _homeGroundedPos, InboundFlightDuration);
 		_flightTween.TweenCallback(Callable.From(() =>
 		{
@@ -204,10 +205,9 @@ public partial class HotAirBalloonShop : InteractableShop
 
 		GD.Print($"[HotAirBalloonShop] 30s pre-night departure: Ascending diagonally towards mountain opening over 30s.");
 
-		Vector3 departSkyTarget = new Vector3(_homeGroundedPos.X, 30.0f, _homeGroundedPos.Z - 20.0f);
 		_flightTween = CreateTween();
-		_flightTween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
-		_flightTween.TweenProperty(this, "global_position", departSkyTarget, OutboundFlightDuration);
+		_flightTween.SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+		_flightTween.TweenProperty(this, "global_position", MountainOpeningSkyTarget, OutboundFlightDuration);
 		_flightTween.TweenCallback(Callable.From(() =>
 		{
 			_isDeparting = false;
@@ -240,6 +240,11 @@ public partial class HotAirBalloonShop : InteractableShop
 			string flowerName = WorldItem.FlowerNames[Mathf.Clamp(slot.FlowerTier - 1, 0, 4)];
 			return $"[Space / RMB] Sell {flowerName} (+{sellVal} Coins) | [LMB] Open Shop";
 		}
+		if (inv != null && inv.HasActiveItem(ItemType.CarBattery))
+		{
+			var slot = inv.Slots[inv.ActiveSlot];
+			return $"[Space / RMB] Sell Car Battery ({slot.BatteryHealth}% HP) (+2 Coins) | [LMB] Open Shop";
+		}
 
 		return base.GetPrompt();
 	}
@@ -254,9 +259,16 @@ public partial class HotAirBalloonShop : InteractableShop
 	{
 		if (!IsGrounded || _isDeparting) return;
 		var inv = player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
-		if (inv != null && inv.HasActiveItem(ItemType.Flower))
+		if (inv != null)
 		{
-			inv.SellActiveFlower();
+			if (inv.HasActiveItem(ItemType.Flower))
+			{
+				inv.SellActiveFlower();
+			}
+			else if (inv.HasActiveItem(ItemType.CarBattery))
+			{
+				inv.SellActiveBattery(2);
+			}
 		}
 	}
 }

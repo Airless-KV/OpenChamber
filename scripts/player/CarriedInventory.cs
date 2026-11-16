@@ -16,6 +16,7 @@
 // - Nov 15, 2026 | air : Added Space bar handling for Cryo-Freezer pick up and placement
 // - Nov 15, 2026 | air : Added ConsumeItemAt method for direct slot transfer to Cryo-Freezer chest
 // - Nov 15, 2026 | air : Updated GetDisplayName to show Level {FlowerTier} Seed
+// - Nov 15, 2026 | air : Added SellActiveBattery method to sell used batteries for coins
 // =========================================================================================
 using Godot;
 using System;
@@ -311,6 +312,22 @@ public partial class CarriedInventory : Node
 
 		var hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
 		hud?.SetInteractionPrompt($"[✓] Sold {name} for +{reward} Coins!");
+	}
+
+	public void SellActiveBattery(int coinReward = 2)
+	{
+		if (!Slots[ActiveSlot].IsOccupied || Slots[ActiveSlot].Type != ItemType.CarBattery) return;
+
+		int health = Slots[ActiveSlot].BatteryHealth;
+		ConsumeActiveItem();
+
+		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+		gm?.AddCoins(coinReward);
+
+		AudioManager.Sfx("coin_collect", 2f);
+
+		var hud = GetTree().Root.FindChild("HUD", true, false) as HUDManager;
+		hud?.SetInteractionPrompt($"[✓] Sold Car Battery ({health}% HP) for +{coinReward} Coins!");
 	}
 
 	public WorldItem FindTargetedWorldItem()

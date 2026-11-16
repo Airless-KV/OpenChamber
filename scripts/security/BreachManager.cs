@@ -30,6 +30,7 @@
 // - Nov 15, 2026 | air : Replaced 7s CCTV stare expulsion with 30% power Siren mechanic scaring Ani-Ani
 // - Nov 15, 2026 | air : Positioned Ani-Ani in perimeter loiter spots during night downtime and attack resets
 // - Nov 15, 2026 | air : Removed barricades and added 3-second stage 3 stand timer before entity attack
+// - Nov 16, 2026 | air : Implemented indoors opening grab and fling death animation out of the attacked window/door
 // =========================================================================================
 using Godot;
 using System;
@@ -434,7 +435,32 @@ public partial class BreachManager : Node
 			_ => new Vector3(-1.66f, 4.6f, -3.75f)
 		};
 
+		Vector3 outdoorOffset = CurrentApproachDir switch
+		{
+			AttackDirection.North => new Vector3(0, 0, -10.5f),
+			AttackDirection.East => new Vector3(10.5f, 0, 0),
+			AttackDirection.South => new Vector3(0, 0, 10.5f),
+			AttackDirection.West => new Vector3(-10.5f, 0, 0),
+			_ => new Vector3(0, 0, -10.5f)
+		};
+
 		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? Vector3.Zero);
+		bool isIndoors = PlayerNode != null && PlayerNode.IsIndoors;
+
+		// Check bounding box as safety fallback for indoors check
+		if (!isIndoors && PlayerNode != null)
+		{
+			Vector3 diff = (PlayerNode.GlobalPosition - PlayerNode.HouseCenter).Abs();
+			isIndoors = diff.X <= PlayerNode.HouseExtents.X && diff.Z <= PlayerNode.HouseExtents.Z && diff.Y <= PlayerNode.HouseExtents.Y;
+		}
+
+		if (isIndoors)
+		{
+			PlayHouseFlingSequence(reason, breachPos, outdoorOffset);
+			return;
+		}
+
+		// Fallback for when player is already outside near the house during breach
 		Vector3 toPlayer = (playerPos - breachPos).Normalized();
 		float monsterYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
 
@@ -478,6 +504,68 @@ public partial class BreachManager : Node
 			targetYaw: monsterYaw,
 			lungeDuration: 1.35f,
 			onPeak: null,
+			onComplete: null
+		);
+	}
+
+	private void PlayHouseFlingSequence(string reason, Vector3 openingPos, Vector3 outdoorOffset)
+	{
+		Vector3 playerPos = PlayerNode != null ? PlayerNode.GlobalPosition : (CameraPivotNode?.GlobalPosition ?? Vector3.Zero);
+
+		Vector3 outdoorLandingPos = openingPos + outdoorOffset;
+		outdoorLandingPos.Y = 1.25f; // Ground level in the yard outside
+
+		Vector3 toOpening = (openingPos - playerPos).Normalized();
+		float openingYaw = Mathf.RadToDeg(Mathf.Atan2(toOpening.X, toOpening.Z));
+
+		if (MonsterNode != null)
+		{
+			MonsterNode.GlobalPosition = openingPos;
+			MonsterNode.RotationDegrees = new Vector3(0, openingYaw, 0);
+		}
+
+		Vector3 lookTarget = MonsterNode != null ? MonsterNode.GetHeadPosition() : openingPos + Vector3.Up * 4.9f;
+
+		AudioManager.Sfx("window_rattle");
+		AudioManager.Sfx("warning_stinger");
+
+		CameraPivotNode?.PlayHouseFlingSequence(
+			lookAtHeadPos: lookTarget,
+			openingPos: openingPos,
+			outdoorLandingPos: outdoorLandingPos,
+			targetRollDegrees: -38f,
+			onGrabbed: () =>
+			{
+				AudioManager.Sfx("door_pound");
+			},
+			onFlingRelease: () =>
+			{
+				AudioManager.Sfx("glass_shatter");
+				AudioManager.Sfx("warning_stinger");
+			},
+			onGroundImpact: () =>
+			{
+				AudioManager.Sfx("door_pound");
+				AudioManager.Sfx("jumpscare_stinger");
+				JumpScareScreenNode?.TriggerImpactFlash();
+			},
+			onComplete: () =>
+			{
+				JumpScareScreenNode?.TriggerFadeToBlackout(1.0f, () =>
+				{
+					FinishDeathSequence(reason);
+				});
+			}
+		);
+
+		MonsterNode?.PlayDeathHouseFling(
+			breachOpeningPos: openingPos,
+			playerInsidePos: playerPos,
+			openingYaw: openingYaw,
+			onFlingThrow: () =>
+			{
+				// Callback when monster thrusts forward throwing player outside
+			},
 			onComplete: null
 		);
 	}

@@ -259,7 +259,7 @@ FlightSpeed = 4.4
 BaseHeight = 6.3
 AltitudeAmplitude = 0.35
 OrbitClockwise = false
-HasGlowingEyes = false
+HasGlowingEyes = true
 InitialAngleDegrees = 120.0
 
 [node name="Crow_East_Far" parent="CrowFlock" unique_id=167829003 instance=ExtResource("22_crow")]
@@ -292,7 +292,7 @@ OrbitRadiusZ = 10.0
 FlightSpeed = 4.3
 BaseHeight = 6.3
 AltitudeAmplitude = 0.35
-HasGlowingEyes = false
+HasGlowingEyes = true
 InitialAngleDegrees = 160.0
 
 [node name="Crow_North_Far" parent="CrowFlock" unique_id=167829006 instance=ExtResource("22_crow")]
@@ -325,7 +325,7 @@ FlightSpeed = 4.4
 BaseHeight = 6.3
 AltitudeAmplitude = 0.35
 OrbitClockwise = false
-HasGlowingEyes = false
+HasGlowingEyes = true
 InitialAngleDegrees = 140.0
 
 [node name="Crow_South_Far" parent="CrowFlock" unique_id=167829009 instance=ExtResource("22_crow")]
@@ -357,7 +357,7 @@ OrbitRadiusZ = 11.0
 FlightSpeed = 4.4
 BaseHeight = 6.3
 AltitudeAmplitude = 0.35
-HasGlowingEyes = false
+HasGlowingEyes = true
 InitialAngleDegrees = 195.0
 
 [node name="Crow_West_Far" parent="CrowFlock" unique_id=167829012 instance=ExtResource("22_crow")]

@@ -4,7 +4,7 @@
 //                   - Player name entry modal and profile initialization
 //                   - Settings controls (Volume sliders, Fullscreen toggle)
 //                   - Ranked leaderboard standings modal and lifetime stats display
-//                   - How to Play gameplay guide presentation
+//                   - Interactive tutorial level launching via How to Play button
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 30, 2026 | air : Implemented full Main Menu navigation flow, name entry, and settings
@@ -12,6 +12,7 @@
 // - Oct 31, 2026 | air : Parameterized leaderboard row construction and consolidated modal navigation
 // - Nov 15, 2026 | air : Expanded settings modal with tabbed audio, display, resolution, aspect scaling, and controls
 // - Nov 15, 2026 | air : Added rendering backend option, Lite preset button, GPU info label, and restart trigger
+// - Nov 16, 2026 | air : Added Are You Sure confirmation modal before launching interactive tutorial level
 // =========================================================================================
 using Godot;
 
@@ -87,6 +88,11 @@ public partial class MainMenu : Control
 	[Export] public Control HowToPlayModal;
 	[Export] public Button CloseHowToPlayButton;
 
+	[ExportGroup("Tutorial Confirmation Modal")]
+	[Export] public Control TutorialConfirmModal;
+	[Export] public Button ConfirmTutorialButton;
+	[Export] public Button CancelTutorialButton;
+
 	public override void _Ready()
 	{
 		Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -94,12 +100,15 @@ public partial class MainMenu : Control
 		if (PlayButton != null) PlayButton.Pressed += OnPlayPressed;
 		if (SettingsButton != null) SettingsButton.Pressed += OnSettingsPressed;
 		if (LeaderboardButton != null) LeaderboardButton.Pressed += OnLeaderboardPressed;
-		if (HowToPlayButton != null) HowToPlayButton.Pressed += () => ShowModal(HowToPlayModal);
+		if (HowToPlayButton != null) HowToPlayButton.Pressed += () => ShowModal(TutorialConfirmModal ?? HowToPlayModal);
 		if (QuitButton != null) QuitButton.Pressed += () => GetTree().Quit();
 
 		if (StartGameButton != null) StartGameButton.Pressed += OnStartGamePressed;
 		if (CancelNameButton != null) CancelNameButton.Pressed += () => HideModal(NameEntryModal);
 		if (NameInput != null) NameInput.TextSubmitted += _ => OnStartGamePressed();
+
+		if (ConfirmTutorialButton != null) ConfirmTutorialButton.Pressed += OnHowToPlayPressed;
+		if (CancelTutorialButton != null) CancelTutorialButton.Pressed += () => HideModal(TutorialConfirmModal);
 
 		SettingsBinder.BindFullUI(
 			GetTree(),
@@ -134,7 +143,7 @@ public partial class MainMenu : Control
 
 	private void CloseAllModals()
 	{
-		foreach (var m in new[] { NameEntryModal, SettingsModal, LeaderboardModal, HowToPlayModal })
+		foreach (var m in new[] { NameEntryModal, SettingsModal, LeaderboardModal, HowToPlayModal, TutorialConfirmModal })
 			if (m != null) m.Visible = false;
 	}
 
@@ -167,6 +176,17 @@ public partial class MainMenu : Control
 		if (name.Length > 20) name = name[..20];
 		SaveManager.SetPlayerName(name);
 		GetTree().ChangeSceneToFile("res://scenes/game.tscn");
+	}
+
+	private void OnHowToPlayPressed()
+	{
+		string name = SaveManager.CurrentData.Profile.PlayerName;
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			SaveManager.SetPlayerName("Survivor");
+		}
+		Input.MouseMode = Input.MouseModeEnum.Captured;
+		GetTree().ChangeSceneToFile("res://scenes/tutorial_level.tscn");
 	}
 
 	private void OnSettingsPressed()

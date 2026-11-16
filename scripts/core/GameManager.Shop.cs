@@ -17,6 +17,7 @@
 // - Nov 15, 2026 | air : Added Cryo-Freezer shop purchase handling and physical instantiation
 // - Nov 15, 2026 | air : Added multi-freezer cabin placement support with dedicated battery per unit
 // - Nov 15, 2026 | air : Expanded freezer purchase capacity and support for portable placement
+// - Nov 16, 2026 | air : Reordered outdoor freezer spawning to AddChild before setting GlobalPosition
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -85,8 +86,8 @@ public partial class GameManager
 		{
 			var player = GetTree()?.GetFirstNodeInGroup("Player") as PlayerController;
 			Vector3 dropPos = player != null ? player.GlobalPosition + new Vector3(1.0f, 0.2f, 1.0f) : new Vector3(0, 0, 0);
-			freezer.GlobalPosition = dropPos;
 			(GetTree()?.CurrentScene ?? (Node)this).AddChild(freezer);
+			freezer.GlobalPosition = dropPos;
 		}
 
 		AudioManager.Sfx("door_pound", 1f);

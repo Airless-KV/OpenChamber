@@ -22,6 +22,8 @@
 // - Nov 15, 2026 | air : Implemented face-targeted look, upward pitch tumble to +52 deg, and 5.5s death sequence
 // - Nov 15, 2026 | air : Added FarPlane configuration (extended to 350m) to preserve mountain perimeter
 // - Nov 15, 2026 | air : Clamped FarPlane to 210m to match outer forest perimeter and reduce frustum depth churn
+// - Nov 16, 2026 | air : Added PlayHouseFlingSequence for dragging player through attacking opening and flinging outside
+// - Nov 16, 2026 | air : Prevented mouse capture if hovering or clicking over interactive TutorialOverlay UI
 // =========================================================================================
 using Godot;
 using System;
@@ -167,6 +169,12 @@ public partial class CameraPivot : Node3D
 			return;
 		}
 
+		if (GetTree().Root.FindChild("TutorialLevelManager", true, false) is TutorialLevelManager { IsMouseWanted: true } ||
+			GetTree().Root.FindChild("TutorialOverlay", true, false) is TutorialLevelManager { IsMouseWanted: true })
+		{
+			return;
+		}
+
 		if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } && Input.MouseMode == Input.MouseModeEnum.Visible)
 		{
 			Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -248,6 +256,139 @@ public partial class CameraPivot : Node3D
 			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
 
 		// Linger on the floor for 2.2 seconds while the creature looms directly overhead
+		_deathImpactTween.TweenInterval(2.2f);
+		_deathImpactTween.TweenCallback(Callable.From(() =>
+		{
+			onComplete?.Invoke();
+		}));
+	}
+
+	public void PlayHouseFlingSequence(
+		Vector3 lookAtHeadPos,
+		Vector3 openingPos,
+		Vector3 outdoorLandingPos,
+		float targetRollDegrees,
+		Action onGrabbed,
+		Action onFlingRelease,
+		Action onGroundImpact,
+		Action onComplete)
+	{
+		IsDeathAnimationActive = true;
+		_deathTween?.Kill();
+		_deathImpactTween?.Kill();
+
+		// Phase 1: Snap view to look directly into the monster's towering eyes/face outside the opening
+		Vector3 toMonster = (lookAtHeadPos - GlobalPosition).Normalized();
+		float targetYaw = Mathf.Atan2(-toMonster.X, -toMonster.Z);
+		float targetPitch = Mathf.Clamp(Mathf.Asin(toMonster.Y), Mathf.DegToRad(MinPitchDegrees), Mathf.DegToRad(MaxPitchDegrees));
+
+		float diffYaw = Mathf.Wrap(targetYaw - _yaw, -Mathf.Pi, Mathf.Pi);
+		float endYaw = _yaw + diffYaw;
+
+		_deathTween = CreateTween().SetParallel(true);
+		_deathTween.TweenMethod(Callable.From<float>(v => _yaw = v), _yaw, endYaw, 0.18f)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		_deathTween.TweenMethod(Callable.From<float>(v => _pitch = v), _pitch, targetPitch, 0.18f)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+
+		// Sequence timeline via _deathImpactTween
+		_deathImpactTween = CreateTween().SetParallel(false);
+
+		// Grab instant
+		_deathImpactTween.TweenInterval(0.08f);
+		_deathImpactTween.TweenCallback(Callable.From(() =>
+		{
+			AddTrauma(0.9f);
+			onGrabbed?.Invoke();
+		}));
+
+		// Drag player towards the opening window/door (0.65s)
+		Vector3 playerStartPos = Target != null ? Target.GlobalPosition : GlobalPosition;
+		Vector3 thresholdPos = openingPos;
+		thresholdPos.Y = playerStartPos.Y;
+
+		float dragDuration = 0.65f;
+		_deathImpactTween.TweenMethod(Callable.From<float>(progress =>
+		{
+			if (Target != null)
+			{
+				Target.GlobalPosition = playerStartPos.Lerp(thresholdPos, progress);
+			}
+			AddTrauma(0.4f);
+		}), 0f, 1f, dragDuration).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+
+		// Reached opening threshold: Ani-Ani flings player outside!
+		_deathImpactTween.TweenCallback(Callable.From(() =>
+		{
+			AddTrauma(1.0f);
+			onFlingRelease?.Invoke();
+		}));
+
+		// Parabolic fling through the air across doubled distance (1.15s flight time)
+		float flingDuration = 1.15f;
+		Vector3 flingStart = thresholdPos;
+		float apexHeight = Mathf.Max(flingStart.Y, outdoorLandingPos.Y) + 2.8f;
+
+		_deathImpactTween.TweenMethod(Callable.From<float>(progress =>
+		{
+			if (Target != null)
+			{
+				float x = Mathf.Lerp(flingStart.X, outdoorLandingPos.X, progress);
+				float z = Mathf.Lerp(flingStart.Z, outdoorLandingPos.Z, progress);
+				float arc = 4.0f * (progress - progress * progress);
+				float baseY = Mathf.Lerp(flingStart.Y, outdoorLandingPos.Y, progress);
+				float y = baseY + (apexHeight - baseY) * arc;
+
+				Target.GlobalPosition = new Vector3(x, y, z);
+			}
+		}), 0f, 1f, flingDuration).SetTrans(Tween.TransitionType.Linear);
+
+		// Disorienting camera spin during flight: full 360-degree tumbling roll & pitch rotation
+		var flingCamTween = _deathImpactTween.Parallel();
+		float startRoll = _deathRollOffset;
+		flingCamTween.TweenMethod(Callable.From<float>(v => _deathRollOffset = v), startRoll, startRoll + Mathf.Tau * 1.5f, flingDuration)
+			.SetTrans(Tween.TransitionType.Linear);
+		flingCamTween.TweenMethod(Callable.From<float>(v => _yaw = v), endYaw, endYaw + Mathf.Pi * 1.2f, flingDuration)
+			.SetTrans(Tween.TransitionType.Linear);
+		flingCamTween.TweenMethod(Callable.From<float>(v => _pitch = v), targetPitch, Mathf.DegToRad(-60f), flingDuration * 0.5f)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		flingCamTween.TweenMethod(Callable.From<float>(v => _pitch = v), Mathf.DegToRad(-60f), Mathf.DegToRad(40f), flingDuration * 0.5f)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+
+		// Ground Impact: ONLY now does the player strike the dirt outside
+		_deathImpactTween.TweenCallback(Callable.From(() =>
+		{
+			if (Target != null)
+			{
+				Target.GlobalPosition = outdoorLandingPos;
+			}
+			AddTrauma(1.0f);
+			onGroundImpact?.Invoke();
+		}));
+
+		// Normal death animation starts now on the ground:
+		// Heavy collapse to ground level, roll settling, and camera tilting UP +52 deg to face the distant opening high above
+		float groundTumbleDuration = 0.55f;
+		var groundCollapseTween = _deathImpactTween.Parallel();
+		groundCollapseTween.TweenMethod(Callable.From<float>(v => _deathHeightOffset = v), 0f, -1.25f, groundTumbleDuration)
+			.SetTrans(Tween.TransitionType.Bounce).SetEase(Tween.EaseType.Out);
+
+		// Settle roll to target tilt degrees
+		groundCollapseTween.TweenMethod(Callable.From<float>(v => _deathRollOffset = v), _deathRollOffset, Mathf.DegToRad(targetRollDegrees), groundTumbleDuration)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+
+		// Aim gaze back up towards the elevated cabin opening where Ani-Ani is glaring down
+		Vector3 toOpening = (openingPos - outdoorLandingPos).Normalized();
+		float lookUpYaw = Mathf.Atan2(-toOpening.X, -toOpening.Z);
+		float diffLookYaw = Mathf.Wrap(lookUpYaw - (endYaw + Mathf.Pi * 1.2f), -Mathf.Pi, Mathf.Pi);
+		float finalGroundYaw = (endYaw + Mathf.Pi * 1.2f) + diffLookYaw;
+
+		groundCollapseTween.TweenMethod(Callable.From<float>(v => _yaw = v), endYaw + Mathf.Pi * 1.2f, finalGroundYaw, groundTumbleDuration)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+		groundCollapseTween.TweenMethod(Callable.From<float>(v => _pitch = v), Mathf.DegToRad(40f), Mathf.DegToRad(52.0f), groundTumbleDuration)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+
+		// Linger on the ground outside while Ani-Ani looms from above
 		_deathImpactTween.TweenInterval(2.2f);
 		_deathImpactTween.TweenCallback(Callable.From(() =>
 		{

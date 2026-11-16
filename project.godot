@@ -26,7 +26,6 @@ window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode="windowed"
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [dotnet]
 
@@ -66,7 +65,6 @@ rendering_device/driver.windows="d3d12"
 lights_and_shadows/directional_shadow/size=2048
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
-scaling_3d/mode=0
 scaling_3d/scale=0.75
 scaling_3d/fsr_sharpness=0.2
 lights_and_shadows/positional_shadow/size=1024

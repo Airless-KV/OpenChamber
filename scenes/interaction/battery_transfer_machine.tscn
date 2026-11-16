@@ -1,0 +1,165 @@
+[gd_scene format=3 uid="uid://bxtrn5fr001m"]
+
+[ext_resource type="Script" uid="uid://8dhdsw7a3p1w" path="res://scripts/interaction/InteractableBatteryTransfer.cs" id="1_transfer"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bench"]
+size = Vector3(1.4, 0.9, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal_dark"]
+albedo_color = Color(0.2, 0.22, 0.25, 1)
+metallic = 0.8
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_top"]
+size = Vector3(1.3, 0.1, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_legs"]
+albedo_color = Color(0.15, 0.16, 0.18, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg"]
+size = Vector3(0.08, 0.8, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock"]
+albedo_color = Color(0.1, 0.1, 0.12, 1)
+metallic = 0.5
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_dock"]
+size = Vector3(0.42, 0.12, 0.28)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_battery_body"]
+albedo_color = Color(0.18, 0.18, 0.18, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_battery_body"]
+size = Vector3(0.32, 0.22, 0.18)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_term_pos"]
+albedo_color = Color(0.85, 0.15, 0.15, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_terminal"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.04
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_term_neg"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_led"]
+emission_enabled = true
+emission = Color(0.2, 0.8, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_led"]
+radius = 0.025
+height = 0.05
+
+[node name="BatteryTransferMachine" type="StaticBody3D" unique_id=987654501 node_paths=PackedStringArray("BatteryAVisual", "BatteryBVisual", "LedA", "LedB", "StatusLabel", "IndicatorLight")]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_transfer")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("BoxShape3D_bench")
+
+[node name="BenchTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+material_override = SubResource("StandardMaterial3D_metal_dark")
+mesh = SubResource("BoxMesh_top")
+
+[node name="Leg1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, 0.4, 0.28)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="Leg2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.4, 0.28)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="Leg3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, 0.4, -0.28)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="Leg4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.4, -0.28)
+material_override = SubResource("StandardMaterial3D_legs")
+mesh = SubResource("BoxMesh_leg")
+
+[node name="DockA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0.88, 0)
+material_override = SubResource("StandardMaterial3D_dock")
+mesh = SubResource("BoxMesh_dock")
+
+[node name="DockB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.88, 0)
+material_override = SubResource("StandardMaterial3D_dock")
+mesh = SubResource("BoxMesh_dock")
+
+[node name="BatteryAVisual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0.98, 0)
+
+[node name="Body" type="MeshInstance3D" parent="BatteryAVisual"]
+material_override = SubResource("StandardMaterial3D_battery_body")
+mesh = SubResource("BoxMesh_battery_body")
+
+[node name="PosTerm" type="MeshInstance3D" parent="BatteryAVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_term_pos")
+mesh = SubResource("CylinderMesh_terminal")
+
+[node name="NegTerm" type="MeshInstance3D" parent="BatteryAVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_term_neg")
+mesh = SubResource("CylinderMesh_terminal")
+
+[node name="BatteryBVisual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.98, 0)
+
+[node name="Body" type="MeshInstance3D" parent="BatteryBVisual"]
+material_override = SubResource("StandardMaterial3D_battery_body")
+mesh = SubResource("BoxMesh_battery_body")
+
+[node name="PosTerm" type="MeshInstance3D" parent="BatteryBVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_term_pos")
+mesh = SubResource("CylinderMesh_terminal")
+
+[node name="NegTerm" type="MeshInstance3D" parent="BatteryBVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_term_neg")
+mesh = SubResource("CylinderMesh_terminal")
+
+[node name="LedA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0.92, 0.2)
+material_override = SubResource("StandardMaterial3D_led")
+mesh = SubResource("SphereMesh_led")
+
+[node name="LedB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.92, 0.2)
+material_override = SubResource("StandardMaterial3D_led")
+mesh = SubResource("SphereMesh_led")
+
+[node name="IndicatorLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0.1)
+light_color = Color(0.2, 0.7, 1, 1)
+light_energy = 0.6
+omni_range = 2.5
+
+[node name="StatusLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+double_sided = true
+text = "Battery Transfer Machine
+A: EMPTY | B: EMPTY"
+font_size = 22
+outline_size = 6
+outline_modulate = Color(0, 0, 0, 0.8)
+modulate = Color(0.9, 0.9, 0.9, 1)
