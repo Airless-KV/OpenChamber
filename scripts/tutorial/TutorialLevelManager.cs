@@ -12,6 +12,7 @@
 // - Nov 16, 2026 | air : Added IsMouseWanted, SkipTutorialButton, Alt/Tab cursor release, and keyboard shortcuts ([N] Next, [H] Toggle)
 // - Nov 16, 2026 | air : Enabled full defense combat during Endless Night (allowing player to fight with batteries, CCTV, sirens & floodlights until depletion)
 // - Nov 16, 2026 | air : Set default mouse mode to captured on start with cursor off for seamless first-person immersion
+// - Nov 17, 2026 | air : Automatically fade out and dismiss EndlessNightBanner after 6 seconds
 // =========================================================================================
 using Godot;
 using System;
@@ -451,6 +452,17 @@ public partial class TutorialLevelManager : CanvasLayer
 		if (EndlessNightBanner != null)
 		{
 			EndlessNightBanner.Visible = true;
+			EndlessNightBanner.Modulate = new Color(1, 1, 1, 1);
+
+			// Automatically fade out and hide banner after 6 seconds so it doesn't block player view
+			Tween tw = CreateTween();
+			tw.TweenInterval(5.0f);
+			tw.TweenProperty(EndlessNightBanner, "modulate:a", 0.0f, 1.5f);
+			tw.TweenCallback(Callable.From(() =>
+			{
+				EndlessNightBanner.Visible = false;
+				EndlessNightBanner.Modulate = new Color(1, 1, 1, 1);
+			}));
 		}
 
 		// Sound warning stinger
