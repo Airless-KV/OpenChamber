@@ -14,6 +14,7 @@
 // - Nov 15, 2026 | air : Added rendering backend option, Lite preset button, GPU info label, and restart trigger
 // - Nov 16, 2026 | air : Added Are You Sure confirmation modal before launching interactive tutorial level
 // - Nov 16, 2026 | air : Added SQL query filtering bar, callsign search, and aggregate stats to leaderboard modal
+// - Nov 17, 2026 | air : Integrated Anji's eerie horror title/subtitle fonts and animated CCTV background
 // =========================================================================================
 using Godot;
 
@@ -150,6 +151,10 @@ public partial class MainMenu : Control
 
 		UpdateProfileDisplay();
 		CloseAllModals();
+
+		MenuTitleFont.Apply(this);
+		MenuSubtitleFont.Apply(this);
+		MenuCCTV.Attach(this);
 	}
 
 	private void CloseAllModals()
