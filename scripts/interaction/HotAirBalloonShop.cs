@@ -16,6 +16,9 @@
 // - Nov 15, 2026 | air : Replaced distant 40s mountain flight with prominent 7s arrival descent directly above farm tile
 // - Nov 15, 2026 | air : Added selling used/held car batteries for 2 coins
 // - Nov 16, 2026 | air : Restored 40s inbound mountain drift arrival and 30s pre-night departure to mountain opening
+// - Nov 17, 2026 | air : Increased spent battery core recycling rebate to 4 coins
+// - Nov 17, 2026 | air : Streamlined prompt format to '[F / RMB] Quick Sell | [E / LMB] Open Shop'
+// - Nov 17, 2026 | air : Added ShopVisited event for interactive tutorial verification
 // =========================================================================================
 using Godot;
 using System;
@@ -23,6 +26,8 @@ using System.Collections.Generic;
 
 public partial class HotAirBalloonShop : InteractableShop
 {
+	public static event Action ShopVisited;
+
 	[ExportGroup("Flight Parameters")]
 	[Export] public float GroundedY = 1.25f;
 	[Export] public Vector3 MountainOpeningSkyTarget = new(-55.0f, 65.0f, -210.0f);
@@ -238,12 +243,12 @@ public partial class HotAirBalloonShop : InteractableShop
 			var slot = inv.Slots[inv.ActiveSlot];
 			int sellVal = WorldItem.FlowerPrices[Mathf.Clamp(slot.FlowerTier - 1, 0, 4)];
 			string flowerName = WorldItem.FlowerNames[Mathf.Clamp(slot.FlowerTier - 1, 0, 4)];
-			return $"[Space / RMB] Sell {flowerName} (+{sellVal} Coins) | [LMB] Open Shop";
+			return $"[F / RMB] Quick Sell {flowerName} (+{sellVal} Coins) | [E / LMB] Open Shop";
 		}
 		if (inv != null && inv.HasActiveItem(ItemType.CarBattery))
 		{
 			var slot = inv.Slots[inv.ActiveSlot];
-			return $"[Space / RMB] Sell Car Battery ({slot.BatteryHealth}% HP) (+2 Coins) | [LMB] Open Shop";
+			return $"[F / RMB] Recycle Battery ({slot.BatteryHealth}% HP) (+4 Coins) | [E / LMB] Open Shop";
 		}
 
 		return base.GetPrompt();
@@ -253,6 +258,7 @@ public partial class HotAirBalloonShop : InteractableShop
 	{
 		if (!IsGrounded || _isDeparting) return;
 		base.OnInteract(player);
+		ShopVisited?.Invoke();
 	}
 
 	protected override void OnInteractSecondary(PlayerController player)
@@ -264,10 +270,12 @@ public partial class HotAirBalloonShop : InteractableShop
 			if (inv.HasActiveItem(ItemType.Flower))
 			{
 				inv.SellActiveFlower();
+				ShopVisited?.Invoke();
 			}
 			else if (inv.HasActiveItem(ItemType.CarBattery))
 			{
-				inv.SellActiveBattery(2);
+				inv.SellActiveBattery(4);
+				ShopVisited?.Invoke();
 			}
 		}
 	}

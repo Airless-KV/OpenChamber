@@ -15,11 +15,21 @@
 // - Nov 16, 2026 | air : Added Are You Sure confirmation modal before launching interactive tutorial level
 // - Nov 16, 2026 | air : Added SQL query filtering bar, callsign search, and aggregate stats to leaderboard modal
 // - Nov 17, 2026 | air : Integrated Anji's eerie horror title/subtitle fonts and animated CCTV background
+// - Nov 17, 2026 | air : Added ConfirmExitCheck to controls settings tab for restart/title confirmation prompt toggle
+// - Nov 17, 2026 | air : Added 4-digit PIN authentication to name entry modal for user profile verification
+// - Nov 17, 2026 | air : Added clickable leaderboard rows and Survivor Dossier stats modal
+// - Nov 17, 2026 | air : Implemented LIFO modal navigation stack and ESC back-navigation
 // =========================================================================================
 using Godot;
+using System.Collections.Generic;
 
 public partial class MainMenu : Control
 {
+	// =========================================================================================
+	// ITEC 104: LIFO MODAL NAVIGATION STACK
+	// =========================================================================================
+	private readonly Stack<Control> _modalStack = new();
+	private Control _activeModal = null;
 	[ExportGroup("Main Navigation Buttons")]
 	[Export] public Button PlayButton;
 	[Export] public Button SettingsButton;
@@ -31,9 +41,11 @@ public partial class MainMenu : Control
 	[ExportGroup("Name Entry Modal")]
 	[Export] public Control NameEntryModal;
 	[Export] public LineEdit NameInput;
+	[Export] public LineEdit PinInput;
 	[Export] public Button StartGameButton;
 	[Export] public Button CancelNameButton;
 	[Export] public Label NameErrorLabel;
+	[Export] public Label PinHintLabel;
 
 	[ExportGroup("Settings Modal")]
 	[Export] public Control SettingsModal;
@@ -76,6 +88,7 @@ public partial class MainMenu : Control
 	[Export] public CheckBox InvertYCheck;
 	[Export] public CheckBox HeadbobCheck;
 	[Export] public CheckBox ScreenShakeCheck;
+	[Export] public CheckBox ConfirmExitCheck;
 
 	[Export] public Button ResetDefaultsButton;
 	[Export] public Button CloseSettingsButton;
@@ -88,6 +101,15 @@ public partial class MainMenu : Control
 	[Export] public Button FilterAllButton;
 	[Export] public Button FilterVictoriesButton;
 	[Export] public LineEdit LeaderboardSearchInput;
+
+	[ExportGroup("Survivor Dossier Modal")]
+	[Export] public Control DossierModal;
+	[Export] public Label DossierTitleLabel;
+	[Export] public Label DossierSubtitleLabel;
+	[Export] public Label DossierCombatStatsLabel;
+	[Export] public Label DossierFieldStatsLabel;
+	[Export] public Label DossierStatsGridLabel;
+	[Export] public Button CloseDossierButton;
 
 	[ExportGroup("How To Play Modal")]
 	[Export] public Control HowToPlayModal;
@@ -110,7 +132,8 @@ public partial class MainMenu : Control
 
 		if (StartGameButton != null) StartGameButton.Pressed += OnStartGamePressed;
 		if (CancelNameButton != null) CancelNameButton.Pressed += () => HideModal(NameEntryModal);
-		if (NameInput != null) NameInput.TextSubmitted += _ => OnStartGamePressed();
+		if (NameInput != null) NameInput.TextSubmitted += _ => { if (PinInput != null) PinInput.GrabFocus(); else OnStartGamePressed(); };
+		if (PinInput != null) PinInput.TextSubmitted += _ => OnStartGamePressed();
 
 		if (ConfirmTutorialButton != null) ConfirmTutorialButton.Pressed += OnHowToPlayPressed;
 		if (CancelTutorialButton != null) CancelTutorialButton.Pressed += () => HideModal(TutorialConfirmModal);
@@ -136,11 +159,13 @@ public partial class MainMenu : Control
 			ApplyLitePresetButton,
 			GpuInfoLabel,
 			RestartNoticeContainer,
-			RestartNowButton
+			RestartNowButton,
+			ConfirmExitCheck
 		);
 		if (CloseSettingsButton != null) CloseSettingsButton.Pressed += () => HideModal(SettingsModal);
 		if (CloseLeaderboardButton != null) CloseLeaderboardButton.Pressed += () => HideModal(LeaderboardModal);
 		if (CloseHowToPlayButton != null) CloseHowToPlayButton.Pressed += () => HideModal(HowToPlayModal);
+		if (CloseDossierButton != null) CloseDossierButton.Pressed += () => { HideModal(DossierModal); ShowModal(LeaderboardModal); };
 
 		if (FilterAllButton != null) FilterAllButton.Pressed += () => LoadLeaderboardData(null);
 		if (FilterVictoriesButton != null) FilterVictoriesButton.Pressed += () => LoadLeaderboardData(true);
@@ -159,12 +184,45 @@ public partial class MainMenu : Control
 
 	private void CloseAllModals()
 	{
-		foreach (var m in new[] { NameEntryModal, SettingsModal, LeaderboardModal, HowToPlayModal, TutorialConfirmModal })
+		_modalStack.Clear();
+		_activeModal = null;
+		foreach (var m in new[] { NameEntryModal, SettingsModal, LeaderboardModal, HowToPlayModal, TutorialConfirmModal, DossierModal })
 			if (m != null) m.Visible = false;
 	}
 
-	private void ShowModal(Control modal) { CloseAllModals(); if (modal != null) modal.Visible = true; }
-	private void HideModal(Control modal) { if (modal != null) modal.Visible = false; UpdateProfileDisplay(); }
+	private void ShowModal(Control modal)
+	{
+		if (modal == null) return;
+		if (_activeModal != null && _activeModal != modal)
+		{
+			_modalStack.Push(_activeModal);
+			_activeModal.Visible = false;
+		}
+		_activeModal = modal;
+		modal.Visible = true;
+	}
+
+	private void HideModal(Control modal)
+	{
+		if (modal != null) modal.Visible = false;
+		if (_activeModal == modal) _activeModal = null;
+
+		if (_modalStack.Count > 0)
+		{
+			_activeModal = _modalStack.Pop();
+			if (_activeModal != null) _activeModal.Visible = true;
+		}
+		UpdateProfileDisplay();
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event.IsActionPressed("ui_cancel") && _activeModal != null)
+		{
+			HideModal(_activeModal);
+			GetViewport().SetInputAsHandled();
+		}
+	}
 
 	private void UpdateProfileDisplay()
 	{
@@ -176,6 +234,7 @@ public partial class MainMenu : Control
 	{
 		string name = SaveManager.CurrentData.Profile.PlayerName;
 		if (NameInput != null) { NameInput.Text = string.IsNullOrWhiteSpace(name) ? "Survivor" : name; NameInput.SelectAll(); }
+		if (PinInput != null) { PinInput.Text = SaveManager.ActivePlayerPin ?? "0000"; }
 		if (NameErrorLabel != null) NameErrorLabel.Visible = false;
 		ShowModal(NameEntryModal);
 		NameInput?.GrabFocus();
@@ -184,13 +243,32 @@ public partial class MainMenu : Control
 	private void OnStartGamePressed()
 	{
 		string name = NameInput?.Text?.Trim();
+		string pin = PinInput?.Text?.Trim();
+
 		if (string.IsNullOrWhiteSpace(name))
 		{
 			if (NameErrorLabel != null) { NameErrorLabel.Text = "Please enter a valid callsign (1-20 characters)."; NameErrorLabel.Visible = true; }
 			return;
 		}
 		if (name.Length > 20) name = name[..20];
-		SaveManager.SetPlayerName(name);
+
+		if (string.IsNullOrWhiteSpace(pin) || pin.Length != 4 || !int.TryParse(pin, out _))
+		{
+			if (NameErrorLabel != null) { NameErrorLabel.Text = "PIN must be exactly 4 numeric digits (e.g. 1234)."; NameErrorLabel.Visible = true; }
+			PinInput?.GrabFocus();
+			return;
+		}
+
+		// Authenticate with SQLite multi-user database
+		var (success, error) = SaveManager.LoginOrRegisterPlayer(name, pin);
+		if (!success)
+		{
+			if (NameErrorLabel != null) { NameErrorLabel.Text = error ?? "Authentication failed."; NameErrorLabel.Visible = true; }
+			PinInput?.GrabFocus();
+			return;
+		}
+
+		UpdateProfileDisplay();
 		GetTree().ChangeSceneToFile("res://scenes/game.tscn");
 	}
 
@@ -222,7 +300,8 @@ public partial class MainMenu : Control
 			InvertYCheck, HeadbobCheck, ScreenShakeCheck,
 			BackendOption,
 			GpuInfoLabel,
-			RestartNoticeContainer
+			RestartNoticeContainer,
+			ConfirmExitCheck
 		);
 		ShowModal(SettingsModal);
 	}
@@ -254,11 +333,14 @@ public partial class MainMenu : Control
 			entries = SaveManager.GetLeaderboardByFilter(onlyVictories, 20);
 		}
 
+		// ITEC 104: Algorithmic In-Memory Quicksort demonstration
+		entries = SaveManager.SortLeaderboardAlgorithmically(entries, "score");
+
 		// 3. Render table rows (adjusted column widths to eliminate horizontal overflow)
 		if (LeaderboardRowsContainer != null)
 		{
 			foreach (Node c in LeaderboardRowsContainer.GetChildren()) c.QueueFree();
-			LeaderboardRowsContainer.AddChild(CreateRow(true, new(0.9f, 0.75f, 0.2f), ("#", 36), ("CALLSIGN", 210), ("SCORE", 100), ("DAY", 85), ("STATUS", 115), ("DATE", 150)));
+			LeaderboardRowsContainer.AddChild(CreateRow(true, new(0.9f, 0.75f, 0.2f), null, ("#", 36), ("CALLSIGN", 175), ("SCORE", 90), ("DAY", 80), ("STATUS", 110), ("DATE", 145)));
 
 			if (entries.Count == 0)
 			{
@@ -273,22 +355,80 @@ public partial class MainMenu : Control
 			int rank = 1;
 			foreach (var e in entries)
 			{
+				string callsign = e.PlayerName;
 				Color col = e.Survived ? new Color(0.4f, 0.95f, 0.5f) : new Color(0.85f, 0.85f, 0.85f);
-				LeaderboardRowsContainer.AddChild(CreateRow(false, col, ($"{rank:00}", 36), (e.PlayerName, 210), (e.Score.ToString(), 100), ($"Day {e.DayReached}", 85), (e.Survived ? "SURVIVED" : "BREACHED", 115), (e.Date, 150)));
+				LeaderboardRowsContainer.AddChild(CreateRow(false, col, () => OpenSurvivorDossier(callsign), ($"{rank:00}", 36), (callsign, 175), (e.Score.ToString(), 90), ($"Day {e.DayReached}", 80), (e.Survived ? "SURVIVED" : "BREACHED", 110), (e.Date, 145)));
 				rank++;
 			}
 		}
 	}
 
-	private static HBoxContainer CreateRow(bool header, Color color, params (string text, float width)[] cells)
+	private void OpenSurvivorDossier(string playerName)
+	{
+		var dossier = SaveManager.GetPlayerDossier(playerName);
+		if (DossierTitleLabel != null)
+		{
+			DossierTitleLabel.Text = $"SURVIVOR DOSSIER: {dossier.Callsign.ToUpper()}";
+		}
+		if (DossierSubtitleLabel != null)
+		{
+			DossierSubtitleLabel.Text = $"Registered Callsign File  •  Active Since: {dossier.MemberSince}";
+		}
+
+		if (DossierCombatStatsLabel != null)
+		{
+			DossierCombatStatsLabel.Text =
+				$"TOTAL RUNS LOGGED   : {dossier.TotalGames}\n" +
+				$"DAY 7 VICTORIES    : {dossier.TotalVictories}\n" +
+				$"CABIN BREACH LOSSES: {dossier.TotalBreaches}\n" +
+				$"CAREER ESCAPE RATE : {dossier.WinRatePercentage:0.0}%\n" +
+				$"HIGHEST DAY REACHED: Day {dossier.HighestDayReached}\n" +
+				$"ALL-TIME HIGH SCORE: {dossier.AllTimeHighScore} pts";
+		}
+
+		if (DossierFieldStatsLabel != null)
+		{
+			DossierFieldStatsLabel.Text =
+				$"LIFETIME HARVEST   : {dossier.TotalCoinsEarned} coins\n" +
+				$"PLANT MERGES       : {dossier.TotalMerges} merges\n" +
+				$"ATTACKS REPELLED   : {dossier.TotalAttacksRepelled} attacks\n" +
+				$"SECURITY STATUS    : VERIFIED\n" +
+				$"CLASSIFICATION     : RESTRICTED\n" +
+				$"CLEARANCE LEVEL    : CABIN OPERATIVE";
+		}
+
+		ShowModal(DossierModal);
+	}
+
+	private static HBoxContainer CreateRow(bool header, Color color, System.Action onInspect, params (string text, float width)[] cells)
 	{
 		var row = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
 		foreach (var (text, width) in cells)
 		{
 			var lbl = new Label { Text = text, CustomMinimumSize = new(width, 26), HorizontalAlignment = HorizontalAlignment.Left };
 			lbl.AddThemeColorOverride("font_color", color);
-			lbl.AddThemeFontSizeOverride("font_size", header ? 16 : 14);
+			lbl.AddThemeFontSizeOverride("font_size", header ? 15 : 13);
 			row.AddChild(lbl);
+		}
+
+		if (header)
+		{
+			var hdr = new Label { Text = "DOSSIER", CustomMinimumSize = new(70, 26), HorizontalAlignment = HorizontalAlignment.Center };
+			hdr.AddThemeColorOverride("font_color", color);
+			hdr.AddThemeFontSizeOverride("font_size", 14);
+			row.AddChild(hdr);
+		}
+		else if (onInspect != null)
+		{
+			var btn = new Button
+			{
+				Text = "VIEW",
+				CustomMinimumSize = new(60, 24),
+				SizeFlagsVertical = SizeFlags.ShrinkCenter
+			};
+			btn.AddThemeFontSizeOverride("font_size", 11);
+			btn.Pressed += onInspect;
+			row.AddChild(btn);
 		}
 		return row;
 	}

@@ -7,11 +7,16 @@
 // Change Log:
 // - Nov 11, 2026 | air : Implemented two-way ladder climbing between ground and treehouse
 // - Nov 14, 2026 | air : Updated prompts and responsibilities for knotted rope ladder
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
+// - Nov 17, 2026 | air : Added LadderClimbed event for interactive tutorial verification
 // =========================================================================================
 using Godot;
+using System;
 
 public partial class InteractableLadder : InteractableBase
 {
+	public static event Action LadderClimbed;
+
 	[Export] public Vector3 GroundPosition = new(-1.66f, 1.0f, 4.2f);
 	[Export] public Vector3 TreehousePosition = new(-1.66f, 4.35f, 1.8f);
 	[Export] public Node3D GroundPoint;
@@ -31,11 +36,11 @@ public partial class InteractableLadder : InteractableBase
 			float distHouse = player.GlobalPosition.DistanceSquaredTo(top);
 			if (distGround < distHouse)
 			{
-				return "Press [E] to Climb Up Knot Ladder";
+				return "[E / LMB] Climb Up Knot Ladder";
 			}
-			return "Press [E] to Climb Down Knot Ladder";
+			return "[E / LMB] Climb Down Knot Ladder";
 		}
-		return "Press [E] to Use Knot Ladder";
+		return "[E / LMB] Use Knot Ladder";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -52,6 +57,7 @@ public partial class InteractableLadder : InteractableBase
 		_isClimbing = true;
 		player.Velocity = Vector3.Zero;
 		AudioManager.Sfx("foliage_rustle", -4f, 0.2f);
+		LadderClimbed?.Invoke();
 
 		var tween = CreateTween();
 		tween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);

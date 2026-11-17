@@ -18,6 +18,8 @@
 // - Nov 15, 2026 | air : Added multi-freezer cabin placement support with dedicated battery per unit
 // - Nov 15, 2026 | air : Expanded freezer purchase capacity and support for portable placement
 // - Nov 16, 2026 | air : Reordered outdoor freezer spawning to AddChild before setting GlobalPosition
+// - Nov 17, 2026 | air : Added daily limited Car Battery stock (1/day) to prevent battery hoarding
+// - Nov 17, 2026 | air : Synchronized SeedCost with ShopCatalog seed price (100 coins) and removed freezer shop purchasing
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -30,11 +32,18 @@ public partial class GameManager
 	public int Planks => 0;
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
+	public int DailyBatteryStock { get; private set; } = 1;
 
 	private int _lastObservedSeeds = -1;
 
 	public override void _EnterTree()
 	{
+		var seedItem = ShopCatalog.Get(ShopCatalog.SeedId);
+		if (seedItem != null)
+		{
+			SeedCost = seedItem.Price;
+		}
+
 		// Starter seeds allotment for Day 1 so the player can immediately engage in farming
 		if (Level1Seeds == 0 && Coins == 0 && CurrentDay == 1)
 		{
@@ -43,6 +52,15 @@ public partial class GameManager
 		_lastObservedSeeds = Level1Seeds;
 
 		SeedsChanged += OnSeedsChangedInventorySync;
+		PhaseChanged += OnPhaseChangedShopStockReset;
+	}
+
+	private void OnPhaseChangedShopStockReset(bool isDay, int currentDay)
+	{
+		if (isDay)
+		{
+			DailyBatteryStock = 1;
+		}
 	}
 
 	private void OnSeedsChangedInventorySync(int totalSeeds)
@@ -148,6 +166,14 @@ public partial class GameManager
 	{
 		var item = ShopCatalog.Get(id);
 		if (item == null) return false;
+
+		if (id == ShopCatalog.BatteryId && DailyBatteryStock <= 0)
+		{
+			var hud = GetTree()?.Root.FindChild("HUD", true, false) as HUDManager;
+			hud?.SetInteractionPrompt("[!] OUT OF STOCK! The Balloon Merchant only carries 1 Car Battery per day.");
+			return false;
+		}
+
 		if (Coins < item.Price) return false;
 
 		Coins -= item.Price;
@@ -159,10 +185,8 @@ public partial class GameManager
 				SpawnOrAddPurchasedItem(ItemType.Seed);
 				break;
 			case ShopCatalog.BatteryId:
+				DailyBatteryStock = Mathf.Max(0, DailyBatteryStock - 1);
 				SpawnOrAddPurchasedItem(ItemType.CarBattery, 100);
-				break;
-			case ShopCatalog.FreezerId:
-				SpawnFreezerInCabin();
 				break;
 		}
 

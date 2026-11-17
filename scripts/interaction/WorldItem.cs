@@ -14,6 +14,7 @@
 // - Nov 15, 2026 | air : Added flower shelf life (Tier 1: 180s, scaling down 30s per tier) and natural wilting
 // - Nov 15, 2026 | air : Updated Seed GetItemDisplayName to reflect FlowerTier level
 // - Nov 16, 2026 | air : Fixed '!is_inside_tree()' error in Spawn by removing premature GlobalPosition from object initializer
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / Space] Grab <Item>'
 // =========================================================================================
 using Godot;
 using System;
@@ -130,7 +131,7 @@ public partial class WorldItem : InteractableBase
 
 	public override string GetPrompt()
 	{
-		return $"[Space] Grab {GetItemDisplayName()}";
+		return $"[E / Space] Grab {GetItemDisplayName()}";
 	}
 
 	public override bool CanInteract(PlayerController player) => true;

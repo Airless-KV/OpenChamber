@@ -17,12 +17,18 @@
 // - Nov 15, 2026 | air : Added ConsumeItemAt method for direct slot transfer to Cryo-Freezer chest
 // - Nov 15, 2026 | air : Updated GetDisplayName to show Level {FlowerTier} Seed
 // - Nov 15, 2026 | air : Added SellActiveBattery method to sell used batteries for coins
+// - Nov 17, 2026 | air : Streamlined inventory controls: added [Q] dedicated drop key and expanded GrabRange to 6m matching InteractionRaycaster
+// - Nov 17, 2026 | air : Added ItemDropped and ItemPickedUp events for interactive tutorial verification
+// - Nov 17, 2026 | air : Bypassed inventory slot key handling during CCTV mode so 1-4 jump cameras properly
 // =========================================================================================
 using Godot;
 using System;
 
 public partial class CarriedInventory : Node
 {
+	public static event Action ItemDropped;
+	public static event Action ItemPickedUp;
+
 	[Signal] public delegate void InventoryChangedEventHandler();
 	[Signal] public delegate void ActiveSlotChangedEventHandler(int slotIndex);
 
@@ -52,7 +58,7 @@ public partial class CarriedInventory : Node
 	public SlotData[] Slots = new SlotData[MaxSlots];
 	public int ActiveSlot { get; private set; } = 0;
 
-	[Export] public float GrabRange = 3.5f;
+	[Export] public float GrabRange = 6.0f;
 	[Export] public PlayerController Player;
 
 	private Node3D _handViewModelRoot;
@@ -91,6 +97,8 @@ public partial class CarriedInventory : Node
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
+		if (NighttCamera.Instance != null && NighttCamera.Instance.IsNightMode) return;
+
 		if (@event is InputEventMouseButton mb && mb.Pressed)
 		{
 			if (mb.ButtonIndex == MouseButton.WheelUp)
@@ -109,6 +117,11 @@ public partial class CarriedInventory : Node
 			if (key.Keycode == Key.Space)
 			{
 				HandleSpaceAction();
+				GetViewport().SetInputAsHandled();
+			}
+			else if (key.Keycode == Key.Q)
+			{
+				TryDropActiveItem();
 				GetViewport().SetInputAsHandled();
 			}
 			else if (key.Keycode == Key.Key1)
@@ -385,6 +398,7 @@ public partial class CarriedInventory : Node
 			item.QueueFree();
 			AudioManager.Sfx("coin_collect", -4f);
 			OnInventoryUpdated();
+			ItemPickedUp?.Invoke();
 			return true;
 		}
 
@@ -404,6 +418,7 @@ public partial class CarriedInventory : Node
 				item.QueueFree();
 				AudioManager.Sfx("coin_collect", -4f);
 				OnInventoryUpdated();
+				ItemPickedUp?.Invoke();
 				return true;
 			}
 		}
@@ -432,6 +447,7 @@ public partial class CarriedInventory : Node
 
 		AudioManager.Sfx("door_thud", -2f);
 		OnInventoryUpdated();
+		ItemPickedUp?.Invoke();
 		return true;
 	}
 
@@ -477,6 +493,7 @@ public partial class CarriedInventory : Node
 
 		AudioManager.Sfx("door_thud", -5f);
 		OnInventoryUpdated();
+		ItemDropped?.Invoke();
 		return true;
 	}
 

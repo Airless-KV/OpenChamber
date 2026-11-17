@@ -8,12 +8,16 @@
 // Change Log:
 // - Nov 15, 2026 | air : Created InteractableWorkbench (1 Flower -> 2 Seeds conversion)
 // - Nov 15, 2026 | air : Scaled seed outputs to match harvested flower tier (Lvl 1-5 Seeds)
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
+// - Nov 17, 2026 | air : Added WorkbenchCrafted event for interactive tutorial verification
 // =========================================================================================
 using Godot;
 using System;
 
 public partial class InteractableWorkbench : InteractableBase
 {
+	public static event Action WorkbenchCrafted;
+
 	[Export] public Label3D StatusLabel;
 	[Export] public Node3D SpawnPoint;
 
@@ -39,15 +43,15 @@ public partial class InteractableWorkbench : InteractableBase
 			{
 				int tier = Mathf.Clamp(inv.Slots[inv.ActiveSlot].FlowerTier, 1, 5);
 				string flowerName = WorldItem.FlowerNames[tier - 1];
-				return $"Extract Level {tier} Seeds from {flowerName} (+2 Seeds) [E]";
+				return $"[E / LMB] Extract Level {tier} Seeds from {flowerName} (+2 Seeds)";
 			}
 			else if (inv.HasItem(ItemType.Flower))
 			{
-				return "Select Flower in hand to extract seeds [Scroll]";
+				return "Select Flower in hand to extract seeds [Scroll / 1-3]";
 			}
 		}
 
-		return "Seed Workbench [Requires 1 Flower -> 2 Seeds of that Level]";
+		return "[!] Seed Workbench [Hold 1 Flower to extract 2 Seeds]";
 	}
 
 	public override bool CanInteract(PlayerController player)
@@ -114,6 +118,7 @@ public partial class InteractableWorkbench : InteractableBase
 		AudioManager.Sfx("foliage_rustle", 2f);
 
 		UpdateStatusLabel(true, flowerTier);
+		WorkbenchCrafted?.Invoke();
 	}
 
 	private void UpdateStatusLabel(bool craftedRecently, int seedTier = 1)

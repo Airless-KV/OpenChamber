@@ -14,6 +14,9 @@
 // - Nov 15, 2026 | air : Added render_scale, scaling_mode, max_fps, and show_fps_counter persistence
 // - Nov 15, 2026 | air : Added rendering_method and lite_mode schema migrations and persistence
 // - Nov 16, 2026 | air : Normalized schema with players, match_sessions, and match_stat_details; added CRUD, JOIN, and aggregate queries
+// - Nov 17, 2026 | air : Added user account authentication, 4-digit PIN security, and per-account lifetime statistics
+// - Nov 17, 2026 | air : Added GetPlayerPublicDossier for inspecting other players' extended career statistics
+// - Nov 17, 2026 | air : Implemented ACID SqliteTransaction guarantees and relational SQL views (v_top_survivors, v_player_career_summary)
 // =========================================================================================
 using Godot;
 using Microsoft.Data.Sqlite;
@@ -71,10 +74,19 @@ public static class DatabaseManager
 				PRAGMA journal_mode = WAL;
 				PRAGMA foreign_keys = ON;
 
-				-- 1. Normalized players entity (3NF)
+				-- 1. Normalized players entity (3NF) with 4-digit PIN authentication & per-user stats
 				CREATE TABLE IF NOT EXISTS players (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					player_name TEXT NOT NULL UNIQUE,
+					player_name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+					pin_code TEXT NOT NULL DEFAULT '0000',
+					total_games_played INTEGER NOT NULL DEFAULT 0,
+					total_victories INTEGER NOT NULL DEFAULT 0,
+					total_breaches INTEGER NOT NULL DEFAULT 0,
+					highest_day_reached INTEGER NOT NULL DEFAULT 1,
+					all_time_high_score INTEGER NOT NULL DEFAULT 0,
+					total_coins_earned INTEGER NOT NULL DEFAULT 0,
+					total_merges INTEGER NOT NULL DEFAULT 0,
+					total_attacks_repelled INTEGER NOT NULL DEFAULT 0,
 					created_at TEXT NOT NULL,
 					updated_at TEXT NOT NULL
 				);
@@ -165,6 +177,29 @@ public static class DatabaseManager
 					breaches_occurred INTEGER NOT NULL DEFAULT 0,
 					FOREIGN KEY (session_id) REFERENCES match_sessions(session_id) ON DELETE CASCADE
 				);
+
+				-- 8. Relational SQL Views for reporting and data abstraction
+				CREATE VIEW IF NOT EXISTS v_top_survivors AS
+				SELECT COALESCE(p.player_name, l.player_name) AS player_name,
+				       l.score, l.day_reached, l.coins, l.created_at
+				FROM leaderboard l
+				LEFT JOIN players p ON l.player_id = p.id
+				WHERE l.survived = 1
+				ORDER BY l.score DESC;
+
+				CREATE VIEW IF NOT EXISTS v_player_career_summary AS
+				SELECT player_name,
+				       total_games_played,
+				       total_victories,
+				       total_breaches,
+				       highest_day_reached,
+				       all_time_high_score,
+				       total_coins_earned,
+				       CASE WHEN total_games_played > 0 
+				            THEN ROUND((CAST(total_victories AS REAL) / total_games_played) * 100.0, 1) 
+				            ELSE 0.0 END AS win_rate_percent,
+				       created_at AS member_since
+				FROM players;
 			";
 			cmd.ExecuteNonQuery();
 
@@ -195,7 +230,16 @@ public static class DatabaseManager
 			"ALTER TABLE audio_settings ADD COLUMN show_fps_counter INTEGER NOT NULL DEFAULT 0;",
 			"ALTER TABLE audio_settings ADD COLUMN rendering_method TEXT NOT NULL DEFAULT 'forward_plus';",
 			"ALTER TABLE audio_settings ADD COLUMN lite_mode INTEGER NOT NULL DEFAULT 0;",
-			"ALTER TABLE leaderboard ADD COLUMN player_id INTEGER DEFAULT 1;"
+			"ALTER TABLE leaderboard ADD COLUMN player_id INTEGER DEFAULT 1;",
+			"ALTER TABLE players ADD COLUMN pin_code TEXT NOT NULL DEFAULT '0000';",
+			"ALTER TABLE players ADD COLUMN total_games_played INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN total_victories INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN total_breaches INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN highest_day_reached INTEGER NOT NULL DEFAULT 1;",
+			"ALTER TABLE players ADD COLUMN all_time_high_score INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN total_coins_earned INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN total_merges INTEGER NOT NULL DEFAULT 0;",
+			"ALTER TABLE players ADD COLUMN total_attacks_repelled INTEGER NOT NULL DEFAULT 0;"
 		};
 
 		foreach (var colSql in columns)
@@ -215,26 +259,43 @@ public static class DatabaseManager
 
 	private static void SeedInitialDataIfEmpty(SqliteConnection conn)
 	{
-		// Seed default players record if missing (3NF normalized anchor)
+		// Seed default players records if missing (Normalized 3NF accounts with 4-digit PINs & career stats)
 		using (var checkPlayersCmd = conn.CreateCommand())
 		{
-			checkPlayersCmd.CommandText = "SELECT COUNT(*) FROM players WHERE id = 1;";
+			checkPlayersCmd.CommandText = "SELECT COUNT(*) FROM players;";
 			long count = (long)(checkPlayersCmd.ExecuteScalar() ?? 0L);
 			if (count == 0)
 			{
+				string date1 = "2026-11-15 10:00:00";
+				string date2 = "2026-11-15 11:30:00";
+				string date3 = "2026-11-15 12:00:00";
+				string date4 = "2026-11-15 13:15:00";
+
 				using var insertPlayer = conn.CreateCommand();
-				string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 				insertPlayer.CommandText = @"
-					INSERT OR IGNORE INTO players (id, player_name, created_at, updated_at)
-					VALUES (1, 'Survivor', $created, $updated);
+					INSERT INTO players (
+						id, player_name, pin_code, total_games_played, total_victories, total_breaches,
+						highest_day_reached, all_time_high_score, total_coins_earned, total_merges,
+						total_attacks_repelled, created_at, updated_at
+					) VALUES 
+					(1, 'air',            '1337', 5, 2, 3, 7, 310, 48, 45, 18, $d1, $d1),
+					(2, 'anj',            '1111', 4, 2, 2, 7, 285, 56, 52, 12, $d2, $d2),
+					(3, 'rbn',            '2222', 3, 2, 1, 7, 295, 42, 38, 24, $d3, $d3),
+					(4, 'khurt',          '3333', 3, 1, 2, 7, 270, 34, 35, 16, $d4, $d4),
+					(5, 'Grand Champion', '7777', 4, 3, 1, 7, 320, 60, 60, 20, '2026-11-01 00:00:00', '2026-11-01 00:00:00'),
+					(6, 'Night Watcher',  '1024', 3, 1, 2, 7, 240, 30, 30, 15, '2026-11-02 00:00:00', '2026-11-02 00:00:00'),
+					(7, 'Country Farmer', '5555', 4, 0, 4, 5, 130, 18, 40,  6, '2026-11-03 00:00:00', '2026-11-03 00:00:00'),
+					(8, 'Ani-Ani Evader', '2048', 3, 0, 3, 3,  75, 12, 15,  4, '2026-11-04 00:00:00', '2026-11-04 00:00:00');
 				";
-				insertPlayer.Parameters.AddWithValue("$created", now);
-				insertPlayer.Parameters.AddWithValue("$updated", now);
+				insertPlayer.Parameters.AddWithValue("$d1", date1);
+				insertPlayer.Parameters.AddWithValue("$d2", date2);
+				insertPlayer.Parameters.AddWithValue("$d3", date3);
+				insertPlayer.Parameters.AddWithValue("$d4", date4);
 				insertPlayer.ExecuteNonQuery();
 			}
 		}
 
-		// Seed default profile if missing
+		// Seed default active profile if missing
 		using (var checkProfileCmd = conn.CreateCommand())
 		{
 			checkProfileCmd.CommandText = "SELECT COUNT(*) FROM player_profile WHERE id = 1;";
@@ -248,7 +309,7 @@ public static class DatabaseManager
 						highest_day_reached, all_time_high_score, total_coins_earned,
 						total_merges, total_attacks_repelled, updated_at
 					) VALUES (
-						1, 'Survivor', 0, 0, 0, 1, 0, 0, 0, 0, $updated
+						1, 'air', 5, 2, 3, 7, 310, 48, 45, 18, $updated
 					);
 				";
 				insertProfile.Parameters.AddWithValue("$updated", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -275,7 +336,7 @@ public static class DatabaseManager
 			}
 		}
 
-		// Seed initial benchmark local leaderboard entries if table is empty
+		// Seed rich initial match history runs into leaderboard
 		using (var checkLeaderboardCmd = conn.CreateCommand())
 		{
 			checkLeaderboardCmd.CommandText = "SELECT COUNT(*) FROM leaderboard;";
@@ -284,11 +345,19 @@ public static class DatabaseManager
 			{
 				using var seedCmd = conn.CreateCommand();
 				seedCmd.CommandText = @"
-					INSERT INTO leaderboard (player_name, score, day_reached, survived, coins, created_at) VALUES
-					('Grand Champion', 320, 7, 1, 20, 'Legacy Record'),
-					('Night Watcher',  240, 7, 1, 15, 'Legacy Record'),
-					('Country Farmer', 130, 5, 0, 8,  'Legacy Record'),
-					('Ani-Ani Evader', 75,  3, 0, 5,  'Legacy Record');
+					INSERT INTO leaderboard (player_id, player_name, score, day_reached, survived, coins, created_at) VALUES
+					(5, 'Grand Champion', 320, 7, 1, 20, '2026-11-15 14:00'),
+					(1, 'air',            310, 7, 1, 25, '2026-11-16 18:30'),
+					(3, 'rbn',            295, 7, 1, 22, '2026-11-16 19:15'),
+					(2, 'anj',            285, 7, 1, 30, '2026-11-16 20:00'),
+					(4, 'khurt',          270, 7, 1, 18, '2026-11-16 21:10'),
+					(6, 'Night Watcher',  240, 7, 1, 15, '2026-11-15 22:00'),
+					(2, 'anj',            190, 6, 0, 18, '2026-11-16 12:45'),
+					(3, 'rbn',            175, 6, 0, 14, '2026-11-16 14:20'),
+					(4, 'khurt',          165, 5, 0, 11, '2026-11-16 16:00'),
+					(1, 'air',            160, 5, 0, 12, '2026-11-15 17:30'),
+					(7, 'Country Farmer', 130, 5, 0,  8, '2026-11-14 11:20'),
+					(8, 'Ani-Ani Evader',  75, 3, 0,  5, '2026-11-14 09:10');
 				";
 				seedCmd.ExecuteNonQuery();
 			}
@@ -581,6 +650,11 @@ public static class DatabaseManager
 
 	public static int InsertLeaderboardEntry(LeaderboardEntry entry)
 	{
+		return InsertLeaderboardEntry(entry, null);
+	}
+
+	public static int InsertLeaderboardEntry(LeaderboardEntry entry, string pin)
+	{
 		if (entry == null) return -1;
 		Initialize();
 		lock (_dbLock)
@@ -588,8 +662,37 @@ public static class DatabaseManager
 			using var conn = new SqliteConnection(GetConnectionString());
 			conn.Open();
 
-			// Ensure player exists in normalized players table
-			int playerId = EnsurePlayerExists(conn, entry.PlayerName);
+			// Authenticate or register player
+			string resolvedName = string.IsNullOrWhiteSpace(entry.PlayerName) ? "Survivor" : entry.PlayerName.Trim();
+			var (authSuccess, playerId, userProfile, err) = AuthenticateOrRegisterPlayerInternal(conn, resolvedName, pin);
+			if (!authSuccess)
+			{
+				GD.PrintErr($"[DatabaseManager] Upload rejected for '{resolvedName}': {err}");
+				return -1;
+			}
+
+			// Update per-user lifetime statistics in normalized players table
+			using (var updateStatsCmd = conn.CreateCommand())
+			{
+				updateStatsCmd.CommandText = @"
+					UPDATE players SET
+						total_games_played = total_games_played + 1,
+						total_victories = total_victories + (CASE WHEN $survived = 1 THEN 1 ELSE 0 END),
+						total_breaches = total_breaches + (CASE WHEN $survived = 0 THEN 1 ELSE 0 END),
+						highest_day_reached = MAX(highest_day_reached, $day),
+						all_time_high_score = MAX(all_time_high_score, $score),
+						total_coins_earned = total_coins_earned + $coins,
+						updated_at = $updated
+					WHERE id = $playerId;
+				";
+				updateStatsCmd.Parameters.AddWithValue("$survived", entry.Survived ? 1 : 0);
+				updateStatsCmd.Parameters.AddWithValue("$day", entry.DayReached);
+				updateStatsCmd.Parameters.AddWithValue("$score", entry.Score);
+				updateStatsCmd.Parameters.AddWithValue("$coins", entry.Coins);
+				updateStatsCmd.Parameters.AddWithValue("$updated", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+				updateStatsCmd.Parameters.AddWithValue("$playerId", playerId);
+				updateStatsCmd.ExecuteNonQuery();
+			}
 
 			using var insertCmd = conn.CreateCommand();
 			insertCmd.CommandText = @"
@@ -597,7 +700,7 @@ public static class DatabaseManager
 				VALUES ($playerId, $name, $score, $day, $survived, $coins, $created);
 			";
 			insertCmd.Parameters.AddWithValue("$playerId", playerId);
-			insertCmd.Parameters.AddWithValue("$name", entry.PlayerName);
+			insertCmd.Parameters.AddWithValue("$name", resolvedName);
 			insertCmd.Parameters.AddWithValue("$score", entry.Score);
 			insertCmd.Parameters.AddWithValue("$day", entry.DayReached);
 			insertCmd.Parameters.AddWithValue("$survived", entry.Survived ? 1 : 0);
@@ -618,29 +721,169 @@ public static class DatabaseManager
 		}
 	}
 
-	private static int EnsurePlayerExists(SqliteConnection conn, string playerName)
+	/// <summary>
+	/// Retrieves public career statistics (dossier) for any survivor callsign.
+	/// Accurately aggregates recorded match runs and account stats while keeping security PIN private.
+	/// </summary>
+	public static PlayerPublicDossier GetPlayerPublicDossier(string playerName)
 	{
-		string resolved = string.IsNullOrWhiteSpace(playerName) ? "Survivor" : playerName.Trim();
-		using var selectCmd = conn.CreateCommand();
-		selectCmd.CommandText = "SELECT id FROM players WHERE player_name = $name LIMIT 1;";
-		selectCmd.Parameters.AddWithValue("$name", resolved);
-		var res = selectCmd.ExecuteScalar();
-		if (res != null && res != DBNull.Value)
+		Initialize();
+		lock (_dbLock)
 		{
-			return Convert.ToInt32(res);
-		}
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
 
-		using var insertCmd = conn.CreateCommand();
+			string resolvedName = string.IsNullOrWhiteSpace(playerName) ? "Survivor" : playerName.Trim();
+
+			// 1. Fetch persistent account metadata & farming/combat stats
+			bool accountExists = false;
+			string created = "Legacy Record";
+			int merges = 0;
+			int repelled = 0;
+
+			using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = @"
+					SELECT player_name, created_at, total_merges, total_attacks_repelled
+					FROM players
+					WHERE player_name = $name COLLATE NOCASE
+					LIMIT 1;
+				";
+				cmd.Parameters.AddWithValue("$name", resolvedName);
+
+				using var reader = cmd.ExecuteReader();
+				if (reader.Read())
+				{
+					accountExists = true;
+					resolvedName = reader.GetString(0);
+					created = reader.GetString(1);
+					merges = reader.GetInt32(2);
+					repelled = reader.GetInt32(3);
+				}
+			}
+
+			// 2. Dynamically aggregate all match history runs recorded for this callsign
+			using (var lbCmd = conn.CreateCommand())
+			{
+				lbCmd.CommandText = @"
+					SELECT COALESCE(COUNT(*), 0),
+					       COALESCE(SUM(CASE WHEN survived = 1 THEN 1 ELSE 0 END), 0),
+					       COALESCE(SUM(CASE WHEN survived = 0 THEN 1 ELSE 0 END), 0),
+					       COALESCE(MAX(day_reached), 1),
+					       COALESCE(MAX(score), 0),
+					       COALESCE(SUM(coins), 0),
+						   COALESCE(MIN(created_at), 'Legacy')
+					FROM leaderboard
+					WHERE player_name = $name COLLATE NOCASE;
+				";
+				lbCmd.Parameters.AddWithValue("$name", resolvedName);
+
+				using var lbReader = lbCmd.ExecuteReader();
+				if (lbReader.Read())
+				{
+					int games = lbReader.GetInt32(0);
+					int wins = lbReader.GetInt32(1);
+					int breaches = lbReader.GetInt32(2);
+					int bestDay = games > 0 ? lbReader.GetInt32(3) : 1;
+					int highScore = lbReader.GetInt32(4);
+					int coins = lbReader.GetInt32(5);
+					string firstRecordedDate = lbReader.GetString(6);
+
+					if (!accountExists && firstRecordedDate != "Legacy")
+					{
+						created = firstRecordedDate;
+					}
+
+					double winRate = games > 0 ? Math.Round((double)wins / games * 100.0, 1) : 0.0;
+					return new PlayerPublicDossier(resolvedName, games, wins, breaches, bestDay, highScore, coins, merges, repelled, winRate, created);
+				}
+			}
+
+			return new PlayerPublicDossier(resolvedName, 0, 0, 0, 1, 0, 0, 0, 0, 0.0, created);
+		}
+	}
+	public static (bool success, int playerId, PlayerProfile profile, string errorMessage) AuthenticateOrRegisterPlayer(string playerName, string pin)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+			return AuthenticateOrRegisterPlayerInternal(conn, playerName, pin);
+		}
+	}
+
+	private static (bool success, int playerId, PlayerProfile profile, string errorMessage) AuthenticateOrRegisterPlayerInternal(SqliteConnection conn, string playerName, string pin)
+	{
+		string resolvedName = string.IsNullOrWhiteSpace(playerName) ? "Survivor" : playerName.Trim();
+		string resolvedPin = string.IsNullOrWhiteSpace(pin) ? "0000" : pin.Trim();
+
+		using var selectCmd = conn.CreateCommand();
+		selectCmd.CommandText = @"
+			SELECT id, player_name, pin_code, total_games_played, total_victories, total_breaches,
+			       highest_day_reached, all_time_high_score, total_coins_earned, total_merges, total_attacks_repelled
+			FROM players
+			WHERE player_name = $name COLLATE NOCASE
+			LIMIT 1;
+		";
+		selectCmd.Parameters.AddWithValue("$name", resolvedName);
+
+		using var reader = selectCmd.ExecuteReader();
+		if (reader.Read())
+		{
+			int id = reader.GetInt32(0);
+			string name = reader.GetString(1);
+			string storedPin = reader.GetString(2);
+
+			// Check 4-digit PIN security
+			if (!string.Equals(storedPin, resolvedPin, StringComparison.Ordinal))
+			{
+				return (false, id, null, $"CALLSIGN '{name.ToUpper()}' IS ALREADY CLAIMED. ENTER CORRECT 4-DIGIT PIN TO SIGN IN.");
+			}
+
+			var profile = new PlayerProfile
+			{
+				PlayerName = name,
+				TotalGamesPlayed = reader.GetInt32(3),
+				TotalVictories = reader.GetInt32(4),
+				TotalBreaches = reader.GetInt32(5),
+				HighestDayReached = reader.GetInt32(6),
+				AllTimeHighScore = reader.GetInt32(7),
+				TotalCoinsEarned = reader.GetInt32(8),
+				TotalMerges = reader.GetInt32(9),
+				TotalAttacksRepelled = reader.GetInt32(10)
+			};
+			return (true, id, profile, null);
+		}
+		reader.Close();
+
+		// New Account Registration
 		string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+		using var insertCmd = conn.CreateCommand();
 		insertCmd.CommandText = @"
-			INSERT INTO players (player_name, created_at, updated_at)
-			VALUES ($name, $created, $updated);
+			INSERT INTO players (
+				player_name, pin_code, total_games_played, total_victories, total_breaches,
+				highest_day_reached, all_time_high_score, total_coins_earned, total_merges, total_attacks_repelled,
+				created_at, updated_at
+			) VALUES (
+				$name, $pin, 0, 0, 0, 1, 0, 0, 0, 0, $created, $updated
+			);
 			SELECT last_insert_rowid();
 		";
-		insertCmd.Parameters.AddWithValue("$name", resolved);
+		insertCmd.Parameters.AddWithValue("$name", resolvedName);
+		insertCmd.Parameters.AddWithValue("$pin", resolvedPin);
 		insertCmd.Parameters.AddWithValue("$created", now);
 		insertCmd.Parameters.AddWithValue("$updated", now);
-		return Convert.ToInt32(insertCmd.ExecuteScalar() ?? 1);
+
+		int newId = Convert.ToInt32(insertCmd.ExecuteScalar() ?? 1);
+		var newProfile = new PlayerProfile { PlayerName = resolvedName };
+		return (true, newId, newProfile, null);
+	}
+
+	private static int EnsurePlayerExists(SqliteConnection conn, string playerName)
+	{
+		var res = AuthenticateOrRegisterPlayerInternal(conn, playerName, "0000");
+		return res.playerId;
 	}
 
 	public static List<LeaderboardEntry> GetTopLeaderboard(int limit = 10)
@@ -721,24 +964,36 @@ public static class DatabaseManager
 			using var conn = new SqliteConnection(GetConnectionString());
 			conn.Open();
 
-			using var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				INSERT INTO save_slots (slot_id, slot_name, day_number, coins, board_state_json, saved_at)
-				VALUES ($slotId, $slotName, $day, $coins, $boardJson, $savedAt)
-				ON CONFLICT(slot_id) DO UPDATE SET
-					slot_name = excluded.slot_name,
-					day_number = excluded.day_number,
-					coins = excluded.coins,
-					board_state_json = excluded.board_state_json,
-					saved_at = excluded.saved_at;
-			";
-			cmd.Parameters.AddWithValue("$slotId", slotId);
-			cmd.Parameters.AddWithValue("$slotName", slotName ?? $"Slot {slotId}");
-			cmd.Parameters.AddWithValue("$day", dayNumber);
-			cmd.Parameters.AddWithValue("$coins", coins);
-			cmd.Parameters.AddWithValue("$boardJson", boardStateJson ?? "");
-			cmd.Parameters.AddWithValue("$savedAt", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-			cmd.ExecuteNonQuery();
+			using var transaction = conn.BeginTransaction();
+			try
+			{
+				using var cmd = conn.CreateCommand();
+				cmd.Transaction = transaction;
+				cmd.CommandText = @"
+					INSERT INTO save_slots (slot_id, slot_name, day_number, coins, board_state_json, saved_at)
+					VALUES ($slotId, $slotName, $day, $coins, $boardJson, $savedAt)
+					ON CONFLICT(slot_id) DO UPDATE SET
+						slot_name = excluded.slot_name,
+						day_number = excluded.day_number,
+						coins = excluded.coins,
+						board_state_json = excluded.board_state_json,
+						saved_at = excluded.saved_at;
+				";
+				cmd.Parameters.AddWithValue("$slotId", slotId);
+				cmd.Parameters.AddWithValue("$slotName", slotName ?? $"Slot {slotId}");
+				cmd.Parameters.AddWithValue("$day", dayNumber);
+				cmd.Parameters.AddWithValue("$coins", coins);
+				cmd.Parameters.AddWithValue("$boardJson", boardStateJson ?? "");
+				cmd.Parameters.AddWithValue("$savedAt", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+				cmd.ExecuteNonQuery();
+
+				transaction.Commit();
+			}
+			catch (Exception ex)
+			{
+				transaction.Rollback();
+				GD.PrintErr($"[DatabaseManager] SaveSlot transaction rolled back: {ex.Message}");
+			}
 		}
 	}
 
@@ -793,7 +1048,7 @@ public static class DatabaseManager
 				: "";
 
 			cmd.CommandText = $@"
-				SELECT COALESCE(p.player_name, l.player_name) AS resolved_name,
+				SELECT l.player_name,
 				       l.score, l.day_reached, l.survived, l.coins, l.created_at
 				FROM leaderboard l
 				LEFT JOIN players p ON l.player_id = p.id
@@ -873,7 +1128,7 @@ public static class DatabaseManager
 
 			using var cmd = conn.CreateCommand();
 			cmd.CommandText = @"
-				SELECT COALESCE(p.player_name, l.player_name) AS resolved_name,
+				SELECT l.player_name,
 				       l.score, l.day_reached, l.survived, l.coins, l.created_at
 				FROM leaderboard l
 				LEFT JOIN players p ON l.player_id = p.id
@@ -939,6 +1194,7 @@ public static class DatabaseManager
 
 	/// <summary>
 	/// CRUD Insert operation: logs a deep match session and its per-night telemetry details.
+	/// Executes within an ACID SqliteTransaction to guarantee multi-table atomic consistency.
 	/// </summary>
 	public static int RecordMatchSession(
 		string playerName, 
@@ -956,51 +1212,64 @@ public static class DatabaseManager
 			using var conn = new SqliteConnection(GetConnectionString());
 			conn.Open();
 
-			int playerId = EnsurePlayerExists(conn, playerName);
-			string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-			using var cmd = conn.CreateCommand();
-			cmd.CommandText = @"
-				INSERT INTO match_sessions (
-					player_id, final_day, final_score, survived, coins_earned,
-					attacks_repelled, merges_performed, session_start, session_end
-				) VALUES (
-					$playerId, $day, $score, $survived, $coins,
-					$repelled, $merges, $start, $end
-				);
-				SELECT last_insert_rowid();
-			";
-			cmd.Parameters.AddWithValue("$playerId", playerId);
-			cmd.Parameters.AddWithValue("$day", finalDay);
-			cmd.Parameters.AddWithValue("$score", finalScore);
-			cmd.Parameters.AddWithValue("$survived", survived ? 1 : 0);
-			cmd.Parameters.AddWithValue("$coins", coinsEarned);
-			cmd.Parameters.AddWithValue("$repelled", attacksRepelled);
-			cmd.Parameters.AddWithValue("$merges", mergesPerformed);
-			cmd.Parameters.AddWithValue("$start", now);
-			cmd.Parameters.AddWithValue("$end", now);
-
-			long sessionId = Convert.ToInt64(cmd.ExecuteScalar() ?? 0);
-
-			if (nightDetails != null && nightDetails.Count > 0 && sessionId > 0)
+			using var transaction = conn.BeginTransaction();
+			try
 			{
-				foreach (var detail in nightDetails)
-				{
-					using var detailCmd = conn.CreateCommand();
-					detailCmd.CommandText = @"
-						INSERT INTO match_stat_details (session_id, night_number, crops_lost, planks_used, breaches_occurred)
-						VALUES ($sessionId, $night, $crops, $planks, $breaches);
-					";
-					detailCmd.Parameters.AddWithValue("$sessionId", sessionId);
-					detailCmd.Parameters.AddWithValue("$night", detail.night);
-					detailCmd.Parameters.AddWithValue("$crops", detail.cropsLost);
-					detailCmd.Parameters.AddWithValue("$planks", detail.planksUsed);
-					detailCmd.Parameters.AddWithValue("$breaches", detail.breaches);
-					detailCmd.ExecuteNonQuery();
-				}
-			}
+				int playerId = EnsurePlayerExists(conn, playerName);
+				string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-			return (int)sessionId;
+				using var cmd = conn.CreateCommand();
+				cmd.Transaction = transaction;
+				cmd.CommandText = @"
+					INSERT INTO match_sessions (
+						player_id, final_day, final_score, survived, coins_earned,
+						attacks_repelled, merges_performed, session_start, session_end
+					) VALUES (
+						$playerId, $day, $score, $survived, $coins,
+						$repelled, $merges, $start, $end
+					);
+					SELECT last_insert_rowid();
+				";
+				cmd.Parameters.AddWithValue("$playerId", playerId);
+				cmd.Parameters.AddWithValue("$day", finalDay);
+				cmd.Parameters.AddWithValue("$score", finalScore);
+				cmd.Parameters.AddWithValue("$survived", survived ? 1 : 0);
+				cmd.Parameters.AddWithValue("$coins", coinsEarned);
+				cmd.Parameters.AddWithValue("$repelled", attacksRepelled);
+				cmd.Parameters.AddWithValue("$merges", mergesPerformed);
+				cmd.Parameters.AddWithValue("$start", now);
+				cmd.Parameters.AddWithValue("$end", now);
+
+				long sessionId = Convert.ToInt64(cmd.ExecuteScalar() ?? 0);
+
+				if (nightDetails != null && nightDetails.Count > 0 && sessionId > 0)
+				{
+					foreach (var detail in nightDetails)
+					{
+						using var detailCmd = conn.CreateCommand();
+						detailCmd.Transaction = transaction;
+						detailCmd.CommandText = @"
+							INSERT INTO match_stat_details (session_id, night_number, crops_lost, planks_used, breaches_occurred)
+							VALUES ($sessionId, $night, $crops, $planks, $breaches);
+						";
+						detailCmd.Parameters.AddWithValue("$sessionId", sessionId);
+						detailCmd.Parameters.AddWithValue("$night", detail.night);
+						detailCmd.Parameters.AddWithValue("$crops", detail.cropsLost);
+						detailCmd.Parameters.AddWithValue("$planks", detail.planksUsed);
+						detailCmd.Parameters.AddWithValue("$breaches", detail.breaches);
+						detailCmd.ExecuteNonQuery();
+					}
+				}
+
+				transaction.Commit();
+				return (int)sessionId;
+			}
+			catch (Exception ex)
+			{
+				transaction.Rollback();
+				GD.PrintErr($"[DatabaseManager] RecordMatchSession transaction rolled back: {ex.Message}");
+				return -1;
+			}
 		}
 	}
 
@@ -1073,6 +1342,99 @@ public static class DatabaseManager
 			return sessions;
 		}
 	}
+
+	/// <summary>
+	/// Relational View Query: queries the 'v_top_survivors' SQL View.
+	/// Demonstrates database abstraction via virtual relational views.
+	/// </summary>
+	public static List<LeaderboardEntry> GetTopSurvivorsFromView(int limit = 10)
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			var list = new List<LeaderboardEntry>();
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT player_name, score, day_reached, coins, created_at
+				FROM v_top_survivors
+				LIMIT $limit;
+			";
+			cmd.Parameters.AddWithValue("$limit", limit);
+
+			using var reader = cmd.ExecuteReader();
+			while (reader.Read())
+			{
+				list.Add(new LeaderboardEntry
+				{
+					PlayerName = reader.GetString(0),
+					Score = reader.GetInt32(1),
+					DayReached = reader.GetInt32(2),
+					Survived = true,
+					Coins = reader.GetInt32(3),
+					Date = reader.GetString(4)
+				});
+			}
+			return list;
+		}
+	}
+
+	/// <summary>
+	/// Relational View Query: queries the 'v_player_career_summary' SQL View.
+	/// Pre-calculates win rate percentages and aggregate career statistics.
+	/// </summary>
+	public static List<PlayerCareerSummaryViewRecord> GetPlayerCareerSummariesFromView()
+	{
+		Initialize();
+		lock (_dbLock)
+		{
+			var list = new List<PlayerCareerSummaryViewRecord>();
+			using var conn = new SqliteConnection(GetConnectionString());
+			conn.Open();
+
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				SELECT player_name, total_games_played, total_victories, total_breaches,
+				       highest_day_reached, all_time_high_score, total_coins_earned,
+				       win_rate_percent, member_since
+				FROM v_player_career_summary
+				ORDER BY all_time_high_score DESC, total_victories DESC;
+			";
+
+			using var reader = cmd.ExecuteReader();
+			while (reader.Read())
+			{
+				list.Add(new PlayerCareerSummaryViewRecord
+				{
+					PlayerName = reader.GetString(0),
+					TotalGamesPlayed = reader.GetInt32(1),
+					TotalVictories = reader.GetInt32(2),
+					TotalBreaches = reader.GetInt32(3),
+					HighestDayReached = reader.GetInt32(4),
+					AllTimeHighScore = reader.GetInt32(5),
+					TotalCoinsEarned = reader.GetInt32(6),
+					WinRatePercent = reader.GetDouble(7),
+					MemberSince = reader.GetString(8)
+				});
+			}
+			return list;
+		}
+	}
+}
+
+public class PlayerCareerSummaryViewRecord
+{
+	public string PlayerName { get; set; }
+	public int TotalGamesPlayed { get; set; }
+	public int TotalVictories { get; set; }
+	public int TotalBreaches { get; set; }
+	public int HighestDayReached { get; set; }
+	public int AllTimeHighScore { get; set; }
+	public int TotalCoinsEarned { get; set; }
+	public double WinRatePercent { get; set; }
+	public string MemberSince { get; set; }
 }
 
 public record LeaderboardStatsReport(
@@ -1082,6 +1444,20 @@ public record LeaderboardStatsReport(
 	double AvgScore,
 	int TotalCoins,
 	double WinRatePercentage
+);
+
+public record PlayerPublicDossier(
+	string Callsign,
+	int TotalGames,
+	int TotalVictories,
+	int TotalBreaches,
+	int HighestDayReached,
+	int AllTimeHighScore,
+	int TotalCoinsEarned,
+	int TotalMerges,
+	int TotalAttacksRepelled,
+	double WinRatePercentage,
+	string MemberSince
 );
 
 public class MatchSessionSummary

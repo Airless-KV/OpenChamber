@@ -17,6 +17,8 @@
 // - Nov 14, 2026 | air : Corrected channel names for CAM 02 (East Perimeter) and CAM 03 (South Porch & Door)
 // - Nov 14, 2026 | air : Implemented TriggerCameraGlitch for CRT analog static bursts and entity vanish
 // - Nov 15, 2026 | air : Added AlertLabel OSD banner and updated controls for [SPACE] siren trigger
+// - Nov 17, 2026 | air : Streamlined OSD controls label; removed [SPACE] siren trigger in favor of physical cabin switch
+// - Nov 17, 2026 | air : Updated OSD controls label to include [A / D / LMB] Cycle Cam and [E / ESC / RMB] Exit
 // =========================================================================================
 using Godot;
 using System;
@@ -159,8 +161,8 @@ public partial class CCTVOverlay : CanvasLayer
 		_currentChannel = Mathf.Clamp(channelIndex, 0, ChannelNames.Length - 1);
 		if (ChannelLabel != null) ChannelLabel.Text = ChannelNames[_currentChannel];
 		UpdateStatusDisplay();
-		if (ControlsLabel != null) ControlsLabel.Text = "[L-CLICK / TAB] CAM  [SPACE] SIREN (30%)  [V] NVG";
-		if (ExitLabel != null) ExitLabel.Text = "[R-CLICK / ESC] EXIT DESK";
+		if (ControlsLabel != null) ControlsLabel.Text = "[A / D / LMB] Cycle Cam  [1-4] Jump Cam  [V] NVG";
+		if (ExitLabel != null) ExitLabel.Text = "[E / ESC / RMB] Exit Desk";
 	}
 
 	public void ShowAlert(string text, float duration = 3.5f)

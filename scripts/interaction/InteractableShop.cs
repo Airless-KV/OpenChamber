@@ -8,6 +8,7 @@
 // - Oct 31, 2026 | air : Applied standard header formatting and moved to scripts/interaction/
 // - Nov 06, 2026 | air : Added dynamic open/close prompt state
 // - Nov 10, 2026 | air : Updated prompt to Left Click to open/close
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
 // =========================================================================================
 using Godot;
 
@@ -32,8 +33,8 @@ public partial class InteractableShop : InteractableBase
 	public override string GetPrompt()
 	{
 		if (HUDNode != null && HUDNode.IsShopOpen)
-			return "Left Click to close Flower Shop";
-		return "Left Click to open Flower Shop";
+			return "[E / LMB] Close Flower Shop";
+		return "[E / LMB] Open Flower Shop";
 	}
 
 	protected override void OnInteract(PlayerController player)

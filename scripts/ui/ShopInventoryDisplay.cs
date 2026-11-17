@@ -8,13 +8,13 @@
 // - Nov 11, 2026 | air : Created ShopInventoryDisplay for streamlined plank inventory HUD
 // - Nov 14, 2026 | air : Added dynamic Car Battery and Rusted Crowbar shop buttons and real-time inventory counter
 // - Nov 15, 2026 | air : Added BuyFreezerButton integration for Cryo-Freezer flower storage
+// - Nov 17, 2026 | air : Removed freezer purchase option; dynamically bound seed and battery button labels and tooltips to ShopCatalog prices
 // =========================================================================================
 using Godot;
 
 public partial class ShopInventoryDisplay : Label
 {
 	private Button _buyBatteryBtn;
-	private Button _buyFreezerBtn;
 	private CarriedInventory _carriedInv;
 
 	public override void _Ready()
@@ -46,6 +46,18 @@ public partial class ShopInventoryDisplay : Label
 		var vbox = GetParent() as VBoxContainer;
 		if (vbox == null) return;
 
+		// Dynamically sync BuySeedButton text and tooltip with ShopCatalog
+		var seedBtn = vbox.GetNodeOrNull<Button>("BuySeedButton");
+		if (seedBtn != null)
+		{
+			var seedItem = ShopCatalog.Get(ShopCatalog.SeedId);
+			if (seedItem != null)
+			{
+				seedBtn.Text = $"{seedItem.DisplayName} ({seedItem.Price}c)";
+				seedBtn.TooltipText = seedItem.Description;
+			}
+		}
+
 		// Hide legacy BuyPlankButton from the HUD shop UI so planks are not offered
 		var plankBtn = vbox.GetNodeOrNull<Button>("BuyPlankButton");
 		if (plankBtn != null)
@@ -59,13 +71,17 @@ public partial class ShopInventoryDisplay : Label
 
 		int insertIndex = GetIndex(); // Right above this label
 
-		// 1. Car Battery Button
+		// Car Battery Button - dynamically reflects ShopCatalog price
+		var batteryItem = ShopCatalog.Get(ShopCatalog.BatteryId);
+		string batteryText = batteryItem != null ? $"{batteryItem.DisplayName} ({batteryItem.Price}c)" : "Car Battery (15c)";
+
 		if (_buyBatteryBtn == null || !IsInstanceValid(_buyBatteryBtn))
 		{
 			_buyBatteryBtn = new Button
 			{
 				Name = "BuyBatteryButton",
-				Text = "Car Battery (5c)",
+				Text = batteryText,
+				TooltipText = batteryItem?.Description ?? string.Empty,
 				CustomMinimumSize = new Vector2(0, 42),
 				LayoutMode = 2
 			};
@@ -76,26 +92,11 @@ public partial class ShopInventoryDisplay : Label
 			_buyBatteryBtn.Pressed += OnBuyBatteryClicked;
 			vbox.AddChild(_buyBatteryBtn);
 			vbox.MoveChild(_buyBatteryBtn, insertIndex);
-			insertIndex++;
 		}
-
-		// 2. Cryo-Freezer Button
-		if (_buyFreezerBtn == null || !IsInstanceValid(_buyFreezerBtn))
+		else
 		{
-			_buyFreezerBtn = new Button
-			{
-				Name = "BuyFreezerButton",
-				Text = "Cryo-Freezer Box (8c)",
-				CustomMinimumSize = new Vector2(0, 42),
-				LayoutMode = 2
-			};
-			if (fontSize > 0) _buyFreezerBtn.AddThemeFontSizeOverride("font_size", fontSize);
-			if (normalStyle != null) _buyFreezerBtn.AddThemeStyleboxOverride("normal", normalStyle);
-			if (hoverStyle != null) _buyFreezerBtn.AddThemeStyleboxOverride("hover", hoverStyle);
-
-			_buyFreezerBtn.Pressed += OnBuyFreezerClicked;
-			vbox.AddChild(_buyFreezerBtn);
-			vbox.MoveChild(_buyFreezerBtn, insertIndex);
+			_buyBatteryBtn.Text = batteryText;
+			if (batteryItem != null) _buyBatteryBtn.TooltipText = batteryItem.Description;
 		}
 	}
 
@@ -105,22 +106,6 @@ public partial class ShopInventoryDisplay : Label
 		if (gm != null)
 		{
 			if (gm.TryBuyItem(ShopCatalog.BatteryId))
-			{
-				AudioManager.Sfx("coin_collect", 2f);
-			}
-			else
-			{
-				AudioManager.Sfx("window_rattle", -3f);
-			}
-		}
-	}
-
-	private void OnBuyFreezerClicked()
-	{
-		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
-		if (gm != null)
-		{
-			if (gm.TryBuyItem(ShopCatalog.FreezerId))
 			{
 				AudioManager.Sfx("coin_collect", 2f);
 			}

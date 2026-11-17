@@ -13,6 +13,9 @@
 // - Nov 15, 2026 | air : Added [Space] / [G] pick up and relocation mechanics with contents preservation and auto-facing player on drop
 // - Nov 15, 2026 | air : Upgraded to full Minecraft chest non-stackable slot inventory system with UI and live decay
 // - Nov 15, 2026 | air : Updated Seed display names to reflect FlowerTier level
+// - Nov 17, 2026 | air : Accelerated cooling battery burn to 1% per 2.0s for power management tension
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB] Open Chest | [F / RMB] Quick Store | [Space / G] Relocate'
+// - Nov 17, 2026 | air : Added FreezerInteracted event for interactive tutorial verification
 // =========================================================================================
 using Godot;
 using System;
@@ -21,12 +24,14 @@ using System.Linq;
 
 public partial class InteractableFreezer : InteractableBase
 {
+	public static event Action FreezerInteracted;
+
 	public static InteractableFreezer Instance { get; private set; }
 	public static InteractableFreezer HeldFreezerInstance { get; private set; }
 	public bool IsBeingCarried { get; private set; } = false;
 
 	public const int ChestCapacity = 10;
-	public const float BatteryBurnInterval = 5.0f; // 1% power consumed per 5 seconds
+	public const float BatteryBurnInterval = 2.0f; // 1% power consumed per 2 seconds
 
 	public struct ChestItem
 	{
@@ -361,19 +366,22 @@ public partial class InteractableFreezer : InteractableBase
 	public override string GetPrompt()
 	{
 		string powerText = IsCooling ? $"Active ({BatteryHealth}%)" : (HasBattery ? "Depleted (0%)" : "No Battery");
-		return $"[Left Click / E] Open Chest Inventory | [Right Click] Quick Store | [Space / G] Pick Up ({OccupiedCount}/{ChestCapacity} | Cooling: {powerText})";
+		return $"[E / LMB] Open Chest | [F / RMB] Quick Store | [Space / G] Relocate ({OccupiedCount}/{ChestCapacity} | Cooling: {powerText})";
 	}
 
 	protected override void OnInteract(PlayerController player)
 	{
 		// Open Minecraft-style Chest Inventory UI
 		FreezerInventoryUI.Open(this);
+		FreezerInteracted?.Invoke();
 	}
 
 	protected override void OnInteractSecondary(PlayerController player)
 	{
 		var inv = player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
 		if (inv == null) return;
+
+		FreezerInteracted?.Invoke();
 
 		// Quick-deposit active item into freezer if space available
 		if (inv.Slots[inv.ActiveSlot].IsOccupied)

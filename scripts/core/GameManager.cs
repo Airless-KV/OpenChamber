@@ -8,6 +8,7 @@
 // - Oct 22, 2026 | anjivv : Implemented 7-day phase countdown loop, coin wallet rewards, and seed economy
 // - Oct 23, 2026 | air : Added FadeRect auto-lookup fallback for robust scene loading
 // - Nov 06, 2026 | air : Restored 300s Day 1 duration and verified phase dispatch for DayNightClock
+// - Nov 17, 2026 | air : Rebalanced day/night cycle durations to ~30.5m total (Day: 150s down to 60s, Night: 90s up to 330s)
 // =========================================================================================
 using Godot;
 
@@ -35,12 +36,12 @@ public partial class GameManager : Node
 		Night
 	}
 
-	// Daytime and nighttime durations in seconds, from Day 1 to Day 7.
+	// Daytime and nighttime durations in seconds, from Day 1 to Day 7 (~30.5 min total game length).
 	private readonly float[] DayDurations =
-		{ 300, 300, 240, 240, 180, 180, 120 };
+		{ 150, 150, 120, 120, 90, 90, 60 };
 
 	private readonly float[] NightDurations =
-		{ 180, 180, 240, 240, 300, 300, 600 };
+		{ 90, 90, 120, 120, 150, 150, 330 };
 
 	[ExportGroup("Cycle Settings")]
 	[Export] public int MaxDays = 7;

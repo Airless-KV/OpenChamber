@@ -1,18 +1,20 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Nov 16, 2026
-// Responsibilities: - Dedicated tutorial level state machine & interactive Roblox-style progression
-//                   - Basic Controls: WASD movement, Space Bar (Pick/Drop), LMB & E (Primary Interact), RMB & F (Secondary Interact)
-//                   - In-world mechanics: Planting & merging, Freezer storage, Seed workbench extraction,
-//                     Car Battery handling & Battery Transfer Machine, CCTV monitoring & Siren/Floodlight defense
-//                   - Indefinite daytime phase (no timer expiration) until all steps are complete
-//                   - Guaranteed Endless Night transition with relentless Ani-Ani breach and horror defeat
+// Responsibilities: - Dedicated tutorial level state machine & interactive progression
+//                   - Real interaction verification for all in-game interactables
+//                   - Scavenger balloon merchant flower shop visit and trading loop
+//                   - Faithful Day 7 Night Defense climax with authentic difficulty scaling
+//                   - Dynamic 3D waypoint target tracking and Roblox-style objective guidance
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 16, 2026 | air : Created comprehensive TutorialLevelManager with event-driven steps and endless night climax
 // - Nov 16, 2026 | air : Added IsMouseWanted, SkipTutorialButton, Alt/Tab cursor release, and keyboard shortcuts ([N] Next, [H] Toggle)
-// - Nov 16, 2026 | air : Enabled full defense combat during Endless Night (allowing player to fight with batteries, CCTV, sirens & floodlights until depletion)
+// - Nov 16, 2026 | air : Enabled full defense combat during Endless Night
 // - Nov 16, 2026 | air : Set default mouse mode to captured on start with cursor off for seamless first-person immersion
 // - Nov 17, 2026 | air : Automatically fade out and dismiss EndlessNightBanner after 6 seconds
+// - Nov 17, 2026 | air : Removed manual cursor toggle hotkeys; cursor is captured and only toggles visible when opening the Cryo-Freezer
+// - Nov 17, 2026 | air : Overhauled tutorial to verify all interactables, visit shop, and copy normal game Day 7 Night defense
+// - Nov 17, 2026 | air : Added [K] hotkey to skip tutorial, set default cursor to off (Captured), and added [Alt] cursor toggle
 // =========================================================================================
 using Godot;
 using System;
@@ -23,16 +25,20 @@ public partial class TutorialLevelManager : CanvasLayer
 	{
 		Welcome,
 		ControlsMovement,
-		ControlsPickDrop,
-		ControlsInteractPrimary,
-		ControlsInteractSecondary,
 		MechanicsPlanting,
+		MechanicsMerging,
+		MechanicsHarvesting,
+		MechanicsDropAndPick,
+		MechanicsVisitShop,
+		MechanicsClimbLadder,
 		MechanicsFreezer,
 		MechanicsWorkbench,
+		MechanicsBatteryDocking,
 		MechanicsBatteryTransfer,
-		MechanicsCCTVAndDefense,
-		OverallObjective,
-		EndlessNightBreach
+		MechanicsCCTV,
+		MechanicsSirenSwitch,
+		MechanicsFloodlight,
+		Day7NightDefense
 	}
 
 	[ExportGroup("UI Elements")]
@@ -56,31 +62,39 @@ public partial class TutorialLevelManager : CanvasLayer
 	[Export] public BreachManager BreachManagerNode;
 	[Export] public NighttCamera NightCameraNode;
 	[Export] public AtmosphereManager AtmosphereNode;
+	[Export] public CropDevourer CropDevourerNode;
+	[Export] public VictoryScreen VictoryScreenNode;
 
 	public TutorialStep CurrentStep { get; private set; } = TutorialStep.Welcome;
 	public bool IsMouseWanted { get; private set; } = false;
 
-	// Key locations
+	// Default fallback coordinates if scene nodes are not found
 	private static readonly Vector3 FarmCenter = new(-1.66f, 1.25f, 0.0f);
-	private static readonly Vector3 HouseLadderPos = new(-1.66f, 1.5f, 2.5f);
-	private static readonly Vector3 HouseInteriorCenter = new(-1.66f, 4.6f, 0.0f);
-	private static readonly Vector3 FreezerPos = new(-3.5f, 4.6f, -1.8f);
-	private static readonly Vector3 WorkbenchPos = new(0.05f, 4.6f, 2.15f);
-	private static readonly Vector3 BatteryTransferPos = new(-3.4f, 4.6f, 2.26f);
-	private static readonly Vector3 CCTVDeskPos = new(-1.66f, 5.1f, -1.5f);
+	private static readonly Vector3 BalloonDefaultPos = new(4.5f, 1.72f, 3.5f);
+	private static readonly Vector3 HouseLadderDefaultPos = new(-1.66f, 1.5f, 2.5f);
+	private static readonly Vector3 FreezerDefaultPos = new(-3.5f, 4.6f, -1.8f);
+	private static readonly Vector3 WorkbenchDefaultPos = new(0.05f, 4.6f, 2.15f);
+	private static readonly Vector3 BatteryTransferDefaultPos = new(-3.4f, 4.6f, 2.26f);
+	private static readonly Vector3 CCTVDeskDefaultPos = new(-1.66f, 5.1f, -1.5f);
+	private static readonly Vector3 SirenSwitchDefaultPos = new(-1.14f, 4.95f, -1.42f);
+	private static readonly Vector3 FloodlightKeypadDefaultPos = new(-1.26f, 4.95f, -1.42f);
+
+	// Dynamically resolved interactable node references
+	private Node3D _ladderNode;
+	private Node3D _freezerNode;
+	private Node3D _workbenchNode;
+	private Node3D _batteryTransferNode;
+	private Node3D _cctvDeskNode;
+	private Node3D _sirenSwitchNode;
+	private Node3D _floodlightKeypadNode;
+	private Node3D _cabinBatteryNode;
+	private Node3D _powerStationNode;
 
 	private float _stepTimer = 0f;
 	private Vector3 _playerStartPos;
-	private bool _movedFarEnough = false;
-	private bool _spaceActionObserved = false;
-	private bool _primaryInteractObserved = false;
-	private bool _secondaryInteractObserved = false;
-	private bool _plantObserved = false;
-	private bool _freezerObserved = false;
-	private bool _workbenchObserved = false;
-	private bool _batteryTransferObserved = false;
-	private bool _cctvObserved = false;
-	private bool _endlessNightTriggered = false;
+	private bool _itemDroppedObserved = false;
+	private bool _cctvEntered = false;
+	private bool _day7DefenseActive = false;
 
 	public override void _Ready()
 	{
@@ -91,12 +105,14 @@ public partial class TutorialLevelManager : CanvasLayer
 
 		if (NextStepButton != null)
 		{
+			NextStepButton.Text = "Next Step [N] >";
 			NextStepButton.Pressed += OnNextStepPressed;
 		}
 
 		if (SkipTutorialButton != null)
 		{
-			SkipTutorialButton.Pressed += () => SetStep(TutorialStep.EndlessNightBreach);
+			SkipTutorialButton.Text = "Skip Tutorial [K]";
+			SkipTutorialButton.Pressed += () => SetStep(TutorialStep.Day7NightDefense);
 		}
 
 		if (Player != null)
@@ -107,8 +123,12 @@ public partial class TutorialLevelManager : CanvasLayer
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 		IsMouseWanted = false;
 
-		// Keep daylight steady by keeping GameManager time high so daytime never naturally runs out
 		SetStep(TutorialStep.Welcome);
+	}
+
+	public override void _ExitTree()
+	{
+		UnbindEvents();
 	}
 
 	private void ResolveDependencies()
@@ -121,21 +141,72 @@ public partial class TutorialLevelManager : CanvasLayer
 		BreachManagerNode ??= GetTree().Root.FindChild("BreachManager", true, false) as BreachManager;
 		NightCameraNode ??= GetTree().Root.FindChild("NighttCamera", true, false) as NighttCamera;
 		AtmosphereNode ??= GetTree().Root.FindChild("AtmosphereManager", true, false) as AtmosphereManager;
+		CropDevourerNode ??= GetTree().Root.FindChild("CropDevourer", true, false) as CropDevourer;
+		VictoryScreenNode ??= GetTree().Root.FindChild("VictoryScreen", true, false) as VictoryScreen;
+
+		// Dynamically resolve interactable nodes for pinpoint waypoint tracking
+		_ladderNode = GetTree().Root.FindChild("KnotLadder", true, false) as Node3D;
+		_freezerNode = GetTree().Root.FindChild("CryoFreezer", true, false) as Node3D;
+		_workbenchNode = GetTree().Root.FindChild("SeedWorkbench", true, false) as Node3D;
+		_batteryTransferNode = GetTree().Root.FindChild("BatteryTransferMachine", true, false) as Node3D;
+		_cctvDeskNode = GetTree().Root.FindChild("CCTVStation", true, false) as Node3D;
+		_sirenSwitchNode = GetTree().Root.FindChild("SirenSwitch", true, false) as Node3D;
+		_floodlightKeypadNode = GetTree().Root.FindChild("FloodlightKeypad", true, false) as Node3D;
+		_cabinBatteryNode = GetTree().Root.FindChild("StarterCarBattery", true, false) as Node3D;
+		_powerStationNode = GetTree().Root.FindChild("UnderDeskPC", true, false) as Node3D
+			?? GetTree().Root.FindChild("SirenBatteryDock", true, false) as Node3D;
 	}
 
 	private void BindEvents()
 	{
 		if (FarmGrid != null)
 		{
-			FarmGrid.CropPlanted += (cell, tier) =>
-			{
-				_plantObserved = true;
-				if (CurrentStep == TutorialStep.MechanicsPlanting)
-				{
-					AdvanceStep();
-				}
-			};
+			FarmGrid.CropPlanted += OnCropPlanted;
+			FarmGrid.CropsMerged += OnCropsMerged;
+			FarmGrid.CropHarvested += OnCropHarvested;
 		}
+
+		if (Player != null)
+		{
+			Player.LocationChanged += OnPlayerLocationChanged;
+		}
+
+		CarriedInventory.ItemDropped += OnItemDropped;
+		CarriedInventory.ItemPickedUp += OnItemPickedUp;
+		HotAirBalloonShop.ShopVisited += OnShopVisited;
+		InteractableLadder.LadderClimbed += OnLadderClimbed;
+		InteractableFreezer.FreezerInteracted += OnFreezerInteracted;
+		InteractableWorkbench.WorkbenchCrafted += OnWorkbenchCrafted;
+		InteractableBatteryStation.BatteryDocked += OnBatteryDocked;
+		InteractableBatteryTransfer.BatteryTransferInteracted += OnBatteryTransferInteracted;
+		InteractableSirenSwitch.SirenActivated += OnSirenActivated;
+		InteractableFloodlightButton.FloodlightButtonPressed += OnFloodlightButtonPressed;
+	}
+
+	private void UnbindEvents()
+	{
+		if (FarmGrid != null)
+		{
+			FarmGrid.CropPlanted -= OnCropPlanted;
+			FarmGrid.CropsMerged -= OnCropsMerged;
+			FarmGrid.CropHarvested -= OnCropHarvested;
+		}
+
+		if (Player != null)
+		{
+			Player.LocationChanged -= OnPlayerLocationChanged;
+		}
+
+		CarriedInventory.ItemDropped -= OnItemDropped;
+		CarriedInventory.ItemPickedUp -= OnItemPickedUp;
+		HotAirBalloonShop.ShopVisited -= OnShopVisited;
+		InteractableLadder.LadderClimbed -= OnLadderClimbed;
+		InteractableFreezer.FreezerInteracted -= OnFreezerInteracted;
+		InteractableWorkbench.WorkbenchCrafted -= OnWorkbenchCrafted;
+		InteractableBatteryStation.BatteryDocked -= OnBatteryDocked;
+		InteractableBatteryTransfer.BatteryTransferInteracted -= OnBatteryTransferInteracted;
+		InteractableSirenSwitch.SirenActivated -= OnSirenActivated;
+		InteractableFloodlightButton.FloodlightButtonPressed -= OnFloodlightButtonPressed;
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -150,6 +221,14 @@ public partial class TutorialLevelManager : CanvasLayer
 				return;
 			}
 
+			// [K] to Skip Tutorial straight to Day 7 Night Defense
+			if (key.Keycode == Key.K)
+			{
+				SetStep(TutorialStep.Day7NightDefense);
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+
 			// [N] or [Enter] to Advance Tutorial Step via keyboard
 			if ((key.Keycode == Key.N || key.Keycode == Key.Enter || key.Keycode == Key.KpEnter) && QuestCard != null && QuestCard.Visible)
 			{
@@ -158,71 +237,14 @@ public partial class TutorialLevelManager : CanvasLayer
 				return;
 			}
 
-			// [Alt] or [Tab] to toggle mouse cursor visibility for UI clicking
-			if (key.Keycode == Key.Alt || key.Keycode == Key.Tab)
+			// [Alt] Toggle Mouse Cursor Mode (Visible / Captured) for clicking UI buttons
+			if (key.Keycode == Key.Alt)
 			{
-				ToggleMouseMode();
+				IsMouseWanted = !IsMouseWanted;
+				Input.MouseMode = IsMouseWanted ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
 				GetViewport().SetInputAsHandled();
 				return;
 			}
-
-			if (key.Keycode == Key.Space)
-			{
-				_spaceActionObserved = true;
-				if (CurrentStep == TutorialStep.ControlsPickDrop && _stepTimer > 0.5f)
-				{
-					AdvanceStep();
-				}
-			}
-			else if (key.Keycode == Key.E)
-			{
-				_primaryInteractObserved = true;
-				if (CurrentStep == TutorialStep.ControlsInteractPrimary && _stepTimer > 0.5f)
-				{
-					AdvanceStep();
-				}
-			}
-			else if (key.Keycode == Key.F)
-			{
-				_secondaryInteractObserved = true;
-				if (CurrentStep == TutorialStep.ControlsInteractSecondary && _stepTimer > 0.5f)
-				{
-					AdvanceStep();
-				}
-			}
-		}
-		else if (@event is InputEventMouseButton { Pressed: true } mb)
-		{
-			if (mb.ButtonIndex == MouseButton.Left)
-			{
-				_primaryInteractObserved = true;
-				if (CurrentStep == TutorialStep.ControlsInteractPrimary && _stepTimer > 0.5f)
-				{
-					AdvanceStep();
-				}
-			}
-			else if (mb.ButtonIndex == MouseButton.Right)
-			{
-				_secondaryInteractObserved = true;
-				if (CurrentStep == TutorialStep.ControlsInteractSecondary && _stepTimer > 0.5f)
-				{
-					AdvanceStep();
-				}
-			}
-		}
-	}
-
-	public void ToggleMouseMode()
-	{
-		if (Input.MouseMode == Input.MouseModeEnum.Captured)
-		{
-			Input.MouseMode = Input.MouseModeEnum.Visible;
-			IsMouseWanted = true;
-		}
-		else
-		{
-			Input.MouseMode = Input.MouseModeEnum.Captured;
-			IsMouseWanted = false;
 		}
 	}
 
@@ -231,68 +253,33 @@ public partial class TutorialLevelManager : CanvasLayer
 		float dt = (float)delta;
 		_stepTimer += dt;
 
-		// Maintain indefinite daytime during tutorial before Endless Night
-		if (!_endlessNightTriggered && GameManagerNode != null)
+		// Keep daytime fixed and steady during active training before Night 7
+		if (!_day7DefenseActive && GameManagerNode != null)
 		{
-			// Keep day timer at 999s so daytime never expires on its own
 			if (GameManagerNode.TimeRemaining < 200f)
 			{
-				GameManagerNode.Set("TimeRemaining", 999f);
+				typeof(GameManager).GetProperty("TimeRemaining")?.SetValue(GameManagerNode, 999.0f);
 			}
 		}
 
 		switch (CurrentStep)
 		{
 			case TutorialStep.ControlsMovement:
-				if (Player != null && Player.GlobalPosition.DistanceTo(_playerStartPos) > 4.0f)
+				if (Player != null && Player.GlobalPosition.DistanceTo(_playerStartPos) > 4.0f && _stepTimer > 1.0f)
 				{
-					_movedFarEnough = true;
-					if (_stepTimer > 1.2f)
-					{
-						AdvanceStep();
-					}
+					AdvanceStep();
 				}
 				break;
 
-			case TutorialStep.MechanicsFreezer:
-				// Advance if player interacts with freezer or approaches it closely
-				if (Player != null && Player.GlobalPosition.DistanceTo(FreezerPos) < 2.5f)
+			case TutorialStep.MechanicsCCTV:
+				// Advance once player has entered CCTV surveillance mode and then exited back to first-person
+				if (NightCameraNode != null)
 				{
-					if (_stepTimer > 3.0f || _freezerObserved)
+					if (NightCameraNode.IsNightMode)
 					{
-						AdvanceStep();
+						_cctvEntered = true;
 					}
-				}
-				break;
-
-			case TutorialStep.MechanicsWorkbench:
-				// Advance if player approaches workbench closely
-				if (Player != null && Player.GlobalPosition.DistanceTo(WorkbenchPos) < 2.5f)
-				{
-					if (_stepTimer > 3.0f || _workbenchObserved)
-					{
-						AdvanceStep();
-					}
-				}
-				break;
-
-			case TutorialStep.MechanicsBatteryTransfer:
-				// Advance if player checks transfer machine
-				if (Player != null && Player.GlobalPosition.DistanceTo(BatteryTransferPos) < 2.5f)
-				{
-					if (_stepTimer > 4.0f || _batteryTransferObserved)
-					{
-						AdvanceStep();
-					}
-				}
-				break;
-
-			case TutorialStep.MechanicsCCTVAndDefense:
-				// Advance if player enters CCTV or views desk
-				if (NightCameraNode != null && NightCameraNode.IsNightMode)
-				{
-					_cctvObserved = true;
-					if (_stepTimer > 4.0f)
+					else if (_cctvEntered && _stepTimer > 2.0f)
 					{
 						AdvanceStep();
 					}
@@ -312,103 +299,154 @@ public partial class TutorialLevelManager : CanvasLayer
 				ShowQuest(
 					"OVERVIEW",
 					"SURVIVAL TRAINING INITIATION",
-					"Welcome, survivor. This interactive course will teach you the controls, farming, workstation mechanics, and horror defense required to stay alive. Click [Next] or press any key to begin."
+					"Welcome, survivor. This interactive course will walk you through every interactable, workstation, and survival system in the canyon, followed by the ultimate Night 7 defense.\nPress [N / Enter] to begin, [K] to skip straight to Night 7 Defense, or [Alt] to toggle cursor."
 				);
 				WaypointArrow?.ClearTarget();
 				break;
 
 			case TutorialStep.ControlsMovement:
 				ShowQuest(
-					"STEP 1 / 10 - CONTROLS",
-					"MOVEMENT: [W] [A] [S] [D]",
-					"Use [W], [A], [S], [D] to walk across the canyon plateau and move your mouse to look around. Take a few steps now."
+					"STEP 1 / 14 - CONTROLS",
+					"MOVEMENT & CAMERA: [W] [A] [S] [D]",
+					"Use [W], [A], [S], [D] to navigate across the canyon plateau and move your mouse to look around. Take a few steps across the dirt."
 				);
 				WaypointArrow?.SetTarget(FarmCenter, "FARM FIELD");
 				break;
 
-			case TutorialStep.ControlsPickDrop:
-				ShowQuest(
-					"STEP 2 / 10 - CONTROLS",
-					"PICK UP & DROP: [SPACE BAR]",
-					"Press [SPACE BAR] while aiming at physical items (like car batteries or harvested flowers) to pick them up into your carried inventory. Press [SPACE BAR] again while holding an item to drop it onto the floor."
-				);
-				WaypointArrow?.ClearTarget();
-				break;
-
-			case TutorialStep.ControlsInteractPrimary:
-				ShowQuest(
-					"STEP 3 / 10 - CONTROLS",
-					"PRIMARY INTERACT (1_INTERACT): [LMB] & [E]",
-					"Use [Left Mouse Button] or [E] to perform primary interactions: opening doors, climbing ladders, operating CCTV monitors, and placing seeds on chessboard tiles."
-				);
-				WaypointArrow?.ClearTarget();
-				break;
-
-			case TutorialStep.ControlsInteractSecondary:
-				ShowQuest(
-					"STEP 4 / 10 - CONTROLS",
-					"SECONDARY INTERACT (2_INTERACT): [RMB] & [F]",
-					"Use [Right Mouse Button] or [F] to execute secondary actions: initiating battery charge transfers, fast-harvesting bloomed flowers, or secondary workstation functions."
-				);
-				WaypointArrow?.ClearTarget();
-				break;
-
 			case TutorialStep.MechanicsPlanting:
 				ShowQuest(
-					"STEP 5 / 10 - MECHANICS",
-					"CULTIVATION & MERGING",
-					"Select your Level 1 Seed in your hotbar ([1] or Mouse Wheel) and [Left Click] or [E] on an empty chessboard tile to plant. When two identical flowers bloom, drag one onto another to MERGE them into a higher tier!"
+					"STEP 2 / 14 - CULTIVATION",
+					"PLANT LEVEL 1 SEED: [E / LMB]",
+					"Select your Level 1 Seed in your hotbar ([1-3] or Mouse Wheel) and press [E / LMB] while aiming at an empty chessboard tile to plant the cure."
 				);
-				WaypointArrow?.SetTarget(FarmCenter, "CHESSBOARD GRID");
+				WaypointArrow?.SetTarget(FarmCenter, "CHESSBOARD TILE");
+				break;
+
+			case TutorialStep.MechanicsMerging:
+				ShowQuest(
+					"STEP 3 / 14 - CULTIVATION",
+					"GRAFT & MERGE TIERS: [E / LMB]",
+					"Plant a second seed on an adjacent tile. When both flowers bloom, press and hold [E / LMB] to drag one bloom onto another identical bloom to MERGE them into Level 2!"
+				);
+				Vector3 mergePos = GetFirstPlantedCropPos() ?? FarmCenter;
+				WaypointArrow?.SetTarget(mergePos, "BLOOMING FLOWERS");
+				break;
+
+			case TutorialStep.MechanicsHarvesting:
+				ShowQuest(
+					"STEP 4 / 14 - CULTIVATION",
+					"HARVEST MATURE BLOOM: [F / RMB]",
+					"Aim at your merged Level 2 flower on the chessboard and press [F / RMB] to harvest it into a physical carried item."
+				);
+				Vector3 harvestPos = GetFirstPlantedCropPos() ?? FarmCenter;
+				WaypointArrow?.SetTarget(harvestPos, "MATURE FLOWER");
+				break;
+
+			case TutorialStep.MechanicsDropAndPick:
+				ShowQuest(
+					"STEP 5 / 14 - INVENTORY",
+					"DROP & PICK UP ITEMS: [SPACE BAR]",
+					"Physical items can be placed in the world or carried. Press [SPACE BAR] to drop your held flower onto the ground, then aim at it and press [SPACE BAR] (or [E / LMB]) to pick it back up!"
+				);
+				_itemDroppedObserved = false;
+				WaypointArrow?.SetTarget(Player?.GlobalPosition ?? FarmCenter, "DROPPED ITEM");
+				break;
+
+			case TutorialStep.MechanicsVisitShop:
+				ShowQuest(
+					"STEP 6 / 14 - COMMERCE",
+					"VISIT THE SCAVENGER BALLOON: [E / LMB] / [F / RMB]",
+					"Approach the Scavenger Merchant's Hot Air Balloon on the farm perimeter. Press [E / LMB] to open the shop catalog to inspect wares, or press [F / RMB] to quick-sell items for coins!"
+				);
+				Vector3 balloonPos = BalloonShop?.GlobalPosition ?? BalloonDefaultPos;
+				WaypointArrow?.SetTarget(balloonPos + new Vector3(0, 1.0f, 0), "SCAVENGER BALLOON");
+				break;
+
+			case TutorialStep.MechanicsClimbLadder:
+				ShowQuest(
+					"STEP 7 / 14 - NAVIGATION",
+					"CLIMB TOWER KNOT LADDER: [E / LMB]",
+					"The sun burns the canyon floor. Approach the base of the colossal transmission tower and press [E / LMB] on the knot ladder to ascend to your elevated cabin."
+				);
+				Vector3 ladderPos = _ladderNode?.GlobalPosition ?? HouseLadderDefaultPos;
+				WaypointArrow?.SetTarget(ladderPos, "KNOT LADDER");
 				break;
 
 			case TutorialStep.MechanicsFreezer:
 				ShowQuest(
-					"STEP 6 / 10 - MECHANICS",
-					"CRYO-FREEZER STORAGE",
-					"Climb the tower ladder into your cabin and approach the Cryo-Freezer. [Left Click] or [E] to store valuable flowers and seeds so they never decay or spoil in the sun."
+					"STEP 8 / 14 - CABIN WORKSTATIONS",
+					"CRYO-FREEZER CHEST STORAGE: [E / LMB]",
+					"Approach the Cryo-Freezer chest inside the cabin. Press [E / LMB] to open the chest inventory (or [F / RMB] to quick-store) to safely preserve valuable crops and seeds from solar decay."
 				);
-				WaypointArrow?.SetTarget(FreezerPos, "CRYO-FREEZER");
+				Vector3 freezerPos = _freezerNode?.GlobalPosition ?? FreezerDefaultPos;
+				WaypointArrow?.SetTarget(freezerPos, "CRYO-FREEZER");
 				break;
 
 			case TutorialStep.MechanicsWorkbench:
 				ShowQuest(
-					"STEP 7 / 10 - MECHANICS",
-					"SEED WORKBENCH",
-					"Locate the Seed Workbench inside the cabin. Insert a harvested flower [E] to extract 2 seeds matching that flower's tier level, multiplying your crop yields!"
+					"STEP 9 / 14 - CABIN WORKSTATIONS",
+					"SEED WORKBENCH EXTRACTION: [E / LMB]",
+					"Approach the Seed Workbench inside the cabin. With a harvested flower in hand, press [E / LMB] to extract 2 seeds matching that flower's tier level."
 				);
-				WaypointArrow?.SetTarget(WorkbenchPos, "SEED WORKBENCH");
+				EnsurePlayerHasFlower();
+				Vector3 workbenchPos = _workbenchNode?.GlobalPosition ?? WorkbenchDefaultPos;
+				WaypointArrow?.SetTarget(workbenchPos, "SEED WORKBENCH");
+				break;
+
+			case TutorialStep.MechanicsBatteryDocking:
+				ShowQuest(
+					"STEP 10 / 14 - POWER & DEFENSE",
+					"CAR BATTERY & POWER STATION DOCKING: [E / LMB]",
+					"Pick up a car battery ([Space Bar] or [E / LMB]) from the cabin floor. Aim at any empty Power Station dock under or beside the CCTV desk and press [E / LMB] to insert it and restore power!"
+				);
+				Vector3 stationPos = _powerStationNode?.GlobalPosition 
+					?? (_cabinBatteryNode?.GlobalPosition ?? CCTVDeskDefaultPos);
+				WaypointArrow?.SetTarget(stationPos, "POWER STATION DOCK");
 				break;
 
 			case TutorialStep.MechanicsBatteryTransfer:
 				ShowQuest(
-					"STEP 8 / 10 - MECHANICS",
-					"BATTERIES & CHARGE TRANSFER",
-					"Pick up car batteries with [SPACE]. Dock a donor battery in Slot A and a recipient in Slot B at the Battery Transfer Machine, then use Secondary Action ([RMB] / [F]) to siphon and combine electrical charge!"
+					"STEP 11 / 14 - POWER & DEFENSE",
+					"BATTERY CHARGE TRANSFER MACHINE: [E / LMB]",
+					"Approach the dual-dock Battery Transfer Machine. Aim at Slot A or Slot B with a battery and press [E / LMB] to dock it for automated charge balancing (1% per 2s). Press [E / LMB] again to retrieve."
 				);
-				WaypointArrow?.SetTarget(BatteryTransferPos, "BATTERY TRANSFER MACHINE");
+				Vector3 transferPos = _batteryTransferNode?.GlobalPosition ?? BatteryTransferDefaultPos;
+				WaypointArrow?.SetTarget(transferPos, "BATTERY TRANSFER MACHINE");
 				break;
 
-			case TutorialStep.MechanicsCCTVAndDefense:
+			case TutorialStep.MechanicsCCTV:
 				ShowQuest(
-					"STEP 9 / 10 - MECHANICS",
-					"CCTV SURVEILLANCE & DEFENSE",
-					"Inspect the Security Desk [LMB] to monitor North, East, South, and West perimeter cameras. Spot the Ani-Ani entity and blast the Roof Siren ([SPACE] in CCTV) or Floodlights to drive it back!"
+					"STEP 12 / 14 - SURVEILLANCE & DEFENSE",
+					"CCTV MONITORING STATION: [E / LMB]",
+					"Aim at the CRT monitor on the security desk and press [E / LMB] to enter live surveillance. Cycle North, East, South, and West feeds using [A]/[D] or [1-4]. Press [E / ESC] to exit back to cabin view."
 				);
-				WaypointArrow?.SetTarget(CCTVDeskPos, "CCTV STATION");
+				_cctvEntered = false;
+				Vector3 cctvPos = _cctvDeskNode?.GlobalPosition ?? CCTVDeskDefaultPos;
+				WaypointArrow?.SetTarget(cctvPos, "CCTV MONITOR");
 				break;
 
-			case TutorialStep.OverallObjective:
+			case TutorialStep.MechanicsSirenSwitch:
 				ShowQuest(
-					"STEP 10 / 10 - OBJECTIVE",
-					"THE SURVIVAL MANDATE & ENDLESS NIGHT",
-					"Your core objective: Survive 7 Days and 7 Nights. Farm crops by day, trade at the Scavenger Balloon, and survive the horror by night. But here... night falls forever. Brace yourself!"
+					"STEP 13 / 14 - DEFENSE SYSTEMS",
+					"EMERGENCY CABIN SIREN SWITCH: [E / LMB]",
+					"Locate the large red emergency Siren button on the desk/wall. Aim at it and press [E / LMB] to sound the roof siren and verify the alarm system works!"
 				);
-				WaypointArrow?.ClearTarget();
+				Vector3 sirenPos = _sirenSwitchNode?.GlobalPosition ?? SirenSwitchDefaultPos;
+				WaypointArrow?.SetTarget(sirenPos, "EMERGENCY SIREN SWITCH");
 				break;
 
-			case TutorialStep.EndlessNightBreach:
-				InitiateEndlessNight();
+			case TutorialStep.MechanicsFloodlight:
+				ShowQuest(
+					"STEP 14 / 14 - DEFENSE SYSTEMS",
+					"PERIMETER FLOODLIGHT KEYPAD: [E / LMB]",
+					"Aim at any of the directional floodlight buttons (▲ N, ► E, ▼ S, ◄ W) on the desk and press [E / LMB] to fire a blinding burst across that sector to repel approaching threats!"
+				);
+				Vector3 floodPos = _floodlightKeypadNode?.GlobalPosition ?? FloodlightKeypadDefaultPos;
+				WaypointArrow?.SetTarget(floodPos, "FLOODLIGHT KEYPAD");
+				break;
+
+			case TutorialStep.Day7NightDefense:
+				InitiateDay7NightDefense();
 				break;
 		}
 	}
@@ -420,9 +458,7 @@ public partial class TutorialLevelManager : CanvasLayer
 		if (StepTitleLabel != null) StepTitleLabel.Text = title;
 		if (StepDescLabel != null) StepDescLabel.Text = description;
 
-		// Default to captured mouse (cursor off) so player can freely look and move
-		Input.MouseMode = Input.MouseModeEnum.Captured;
-		IsMouseWanted = false;
+		Input.MouseMode = IsMouseWanted ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
 	}
 
 	private void OnNextStepPressed()
@@ -432,19 +468,167 @@ public partial class TutorialLevelManager : CanvasLayer
 
 	private void AdvanceStep()
 	{
-		if (CurrentStep == TutorialStep.OverallObjective)
+		if (CurrentStep == TutorialStep.MechanicsFloodlight)
 		{
-			SetStep(TutorialStep.EndlessNightBreach);
+			SetStep(TutorialStep.Day7NightDefense);
 		}
-		else if (CurrentStep < TutorialStep.OverallObjective)
+		else if (CurrentStep < TutorialStep.Day7NightDefense)
 		{
 			SetStep(CurrentStep + 1);
 		}
 	}
 
-	private void InitiateEndlessNight()
+	private void EnsurePlayerHasFlower()
 	{
-		_endlessNightTriggered = true;
+		var inv = Player?.GetNodeOrNull<CarriedInventory>("CarriedInventory");
+		if (inv == null) return;
+
+		if (!inv.HasItem(ItemType.Flower))
+		{
+			inv.AddItem(ItemType.Flower, 2);
+		}
+	}
+
+	private Vector3? GetFirstPlantedCropPos()
+	{
+		if (FarmGrid != null)
+		{
+			var highestCell = FarmGrid.GetHighestTierPlantedCell();
+			if (highestCell.HasValue)
+			{
+				return FarmGrid.GridToWorld(highestCell.Value);
+			}
+		}
+		return null;
+	}
+
+	// -----------------------------------------------------------------------------------------
+	// Event Callbacks
+	// -----------------------------------------------------------------------------------------
+	private void OnCropPlanted(Vector2I cell, int tier)
+	{
+		if (CurrentStep == TutorialStep.MechanicsPlanting)
+		{
+			FarmGrid?.ForceBloomAllCrops();
+			AdvanceStep();
+		}
+		else if (CurrentStep == TutorialStep.MechanicsMerging)
+		{
+			FarmGrid?.ForceBloomAllCrops();
+		}
+	}
+
+	private void OnCropsMerged(int resultingTier)
+	{
+		if (CurrentStep == TutorialStep.MechanicsMerging)
+		{
+			FarmGrid?.ForceBloomAllCrops();
+			AdvanceStep();
+		}
+	}
+
+	private void OnCropHarvested(Vector2I cell, int tier)
+	{
+		if (CurrentStep == TutorialStep.MechanicsHarvesting)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnItemDropped()
+	{
+		if (CurrentStep == TutorialStep.MechanicsDropAndPick)
+		{
+			_itemDroppedObserved = true;
+		}
+	}
+
+	private void OnItemPickedUp()
+	{
+		if (CurrentStep == TutorialStep.MechanicsDropAndPick && _itemDroppedObserved)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnShopVisited()
+	{
+		if (CurrentStep == TutorialStep.MechanicsVisitShop)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnLadderClimbed()
+	{
+		if (CurrentStep == TutorialStep.MechanicsClimbLadder)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnPlayerLocationChanged(bool isIndoors)
+	{
+		if (isIndoors && CurrentStep == TutorialStep.MechanicsClimbLadder)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnFreezerInteracted()
+	{
+		if (CurrentStep == TutorialStep.MechanicsFreezer)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnWorkbenchCrafted()
+	{
+		if (CurrentStep == TutorialStep.MechanicsWorkbench)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnBatteryDocked()
+	{
+		if (CurrentStep == TutorialStep.MechanicsBatteryDocking)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnBatteryTransferInteracted()
+	{
+		if (CurrentStep == TutorialStep.MechanicsBatteryTransfer)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnSirenActivated()
+	{
+		if (CurrentStep == TutorialStep.MechanicsSirenSwitch)
+		{
+			AdvanceStep();
+		}
+	}
+
+	private void OnFloodlightButtonPressed()
+	{
+		if (CurrentStep == TutorialStep.MechanicsFloodlight)
+		{
+			AdvanceStep();
+		}
+	}
+
+	// -----------------------------------------------------------------------------------------
+	// Faithful Day 7 Night Defense Climax
+	// -----------------------------------------------------------------------------------------
+	private void InitiateDay7NightDefense()
+	{
+		_day7DefenseActive = true;
 
 		if (QuestCard != null) QuestCard.Visible = false;
 		WaypointArrow?.ClearTarget();
@@ -454,9 +638,18 @@ public partial class TutorialLevelManager : CanvasLayer
 			EndlessNightBanner.Visible = true;
 			EndlessNightBanner.Modulate = new Color(1, 1, 1, 1);
 
-			// Automatically fade out and hide banner after 6 seconds so it doesn't block player view
+			if (EndlessNightBanner.GetNodeOrNull<Label>("Margin/VBox/Title") is { } titleLbl)
+			{
+				titleLbl.Text = "⚠ ALL OBJECTIVES COMPLETE - NIGHT 7 DEFENSE BEGINS ⚠";
+			}
+
+			if (EndlessNightBanner.GetNodeOrNull<Label>("Margin/VBox/LoreLabel") is { } loreLbl)
+			{
+				loreLbl.Text = "The final night has fallen. Stalking beasts surround the perimeter.\nMonitor CCTV, sound the cabin siren, and pulse perimeter floodlights to survive until dawn!";
+			}
+
 			Tween tw = CreateTween();
-			tw.TweenInterval(5.0f);
+			tw.TweenInterval(5.5f);
 			tw.TweenProperty(EndlessNightBanner, "modulate:a", 0.0f, 1.5f);
 			tw.TweenCallback(Callable.From(() =>
 			{
@@ -465,34 +658,34 @@ public partial class TutorialLevelManager : CanvasLayer
 			}));
 		}
 
-		// Sound warning stinger
+		// Warning stinger audio
 		AudioManager.Sfx("warning_stinger");
 
-		// Switch atmosphere and lighting to Night immediately
+		// Transition GameManager to Day 7 Night (330 seconds standard duration)
 		if (GameManagerNode != null)
 		{
-			GameManagerNode.Set("TimeRemaining", 999999f);
-			GameManagerNode.EmitSignal("PhaseChanged", false, 1);
-			GameManagerNode.EmitSignal("TimeUpdated", 999999f);
+			typeof(GameManager).GetProperty("CurrentDay")?.SetValue(GameManagerNode, 7);
+			typeof(GameManager).GetProperty("CurrentPhase")?.SetValue(GameManagerNode, GameManager.GamePhase.Night);
+			typeof(GameManager).GetProperty("TimeRemaining")?.SetValue(GameManagerNode, 330.0f);
+
+			GameManagerNode.EmitSignal("PhaseChanged", false, 7);
+			GameManagerNode.EmitSignal("TimeUpdated", 330.0f);
 		}
 
-		// Configure BreachManager for fully interactive, fightable Endless Night
+		// Apply exact Day 7 scaling to BreachManager
 		if (BreachManagerNode != null)
 		{
-			// Give player comfortable reaction windows and standard approach pacing so they can defend
-			BreachManagerNode.FirstAttackDelay = 20.0f;
-			BreachManagerNode.AttackInterval = 18.0f;
-			BreachManagerNode.DistantStageDuration = 12.0f;
-			BreachManagerNode.ApproachingStageDuration = 12.0f;
-			BreachManagerNode.Stage3StandDuration = 3.0f;
-			BreachManagerNode.ReactionWindow = 7.0f;
-			BreachManagerNode.MinRetreatCooldown = 18.0f;
-			BreachManagerNode.MaxRetreatCooldown = 32.0f;
-			BreachManagerNode.EnableOutdoorLoss = false; // Allow moving outdoors to replace batteries / check yard without instant death
-
-			// Force night state on BreachManager
+			BreachManagerNode.ApplyDailyDifficultyScaling(7);
+			BreachManagerNode.EnableOutdoorLoss = true; // Match standard game: outdoor night mortality active
 			BreachManagerNode.Set("_isNight", true);
-			BreachManagerNode.Set("_nextAttackTimer", 15.0f);
+			BreachManagerNode.Set("_nextAttackTimer", 18.0f);
+		}
+
+		// Apply exact Day 7 scaling to CropDevourer
+		if (CropDevourerNode != null)
+		{
+			CropDevourerNode.ApplyDailyDifficultyScaling(7);
+			CropDevourerNode.StartNightLoitering();
 		}
 	}
 }

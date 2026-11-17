@@ -9,6 +9,8 @@
 // - Nov 13, 2026 | air : Created physical Treehouse Car Battery Power Station
 // - Nov 14, 2026 | air : Added in-scene visual binding support for editor visibility
 // - Nov 15, 2026 | air : Added PowerSystemType support (Floodlights, Siren, CCTV) and multi-station registry
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
+// - Nov 17, 2026 | air : Added BatteryDocked event for interactive tutorial verification
 // =========================================================================================
 using Godot;
 using System;
@@ -23,6 +25,8 @@ public enum PowerSystemType
 
 public partial class InteractableBatteryStation : InteractableBase
 {
+	public static event Action BatteryDocked;
+
 	public static InteractableBatteryStation Instance { get; private set; }
 
 	private static readonly Dictionary<PowerSystemType, InteractableBatteryStation> _stationRegistry = new();
@@ -128,17 +132,17 @@ public partial class InteractableBatteryStation : InteractableBase
 		{
 			if (inv != null && inv.HasAnyBattery(out _, out int hp))
 			{
-				return $"[LMB] Insert Car Battery ({hp}% HP) into {SystemDisplayName} Station";
+				return $"[E / LMB] Insert Car Battery ({hp}% HP) into {SystemDisplayName} Station";
 			}
 			return $"[!] {SystemDisplayName} Power Station Empty - Insert Car Battery";
 		}
 
 		if (BatteryHealth <= 0)
 		{
-			return $"[!] DEAD BATTERY (0% HP) - [LMB] Eject {SystemDisplayName} Battery";
+			return $"[!] DEAD BATTERY (0% HP) - [E / LMB] Eject {SystemDisplayName} Battery";
 		}
 
-		return $"[LMB] Eject {SystemDisplayName} Battery ({BatteryHealth}% HP) | Powered";
+		return $"[E / LMB] Eject {SystemDisplayName} Battery ({BatteryHealth}% HP) | Powered";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -155,6 +159,7 @@ public partial class InteractableBatteryStation : InteractableBase
 				AudioManager.Sfx("door_thud", 2f);
 				_hud?.SetInteractionPrompt($"[✓] Car Battery Installed ({BatteryHealth}% HP)! {SystemDisplayName} powered.");
 				UpdateVisuals();
+				BatteryDocked?.Invoke();
 			}
 			else
 			{

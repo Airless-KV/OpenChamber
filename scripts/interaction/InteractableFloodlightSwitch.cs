@@ -13,6 +13,8 @@
 // - Nov 13, 2026 | air : Gated spotlights on treehouse Car Battery power and integrated 25% health drain per activation
 // - Nov 14, 2026 | air : Synchronized Direction with RequiredEntrance.AttackDirection in _Ready
 // - Nov 15, 2026 | air : Removed barricade obstruction requirements from floodlight beam
+// - Nov 17, 2026 | air : Increased floodlight battery consumption to 35% per activation
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -108,7 +110,7 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		if (RequiredEntrance != null && !RequiredEntrance.IsOpen)
 			return $"[!] {RequiredEntrance.Name} is CLOSED! Open it to cast floodlight beam outside!";
 
-		return $"Left Click to Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}! [Batt: {station.BatteryHealth}%]";
+		return $"[E / LMB] Fire Floodlight through {RequiredEntrance?.Name ?? "Opening"}! [Batt: {station.BatteryHealth}%]";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -140,9 +142,9 @@ public partial class InteractableFloodlightSwitch : InteractableBase
 		IsActive = true;
 		_activeTimer = ActiveDuration;
 
-		// Consume 25% battery health from treehouse power station
+		// Consume 35% battery health from treehouse power station
 		var station = GetBatteryStation();
-		station?.ConsumePower(25);
+		station?.ConsumePower(35);
 
 		if (ExteriorFloodlight != null)
 		{

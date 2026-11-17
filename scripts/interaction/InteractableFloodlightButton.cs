@@ -6,12 +6,17 @@
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 15, 2026 | air : Implemented directional floodlight keypad button for CCTV console
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
+// - Nov 17, 2026 | air : Added FloodlightButtonPressed event for interactive tutorial verification
 // =========================================================================================
 using Godot;
+using System;
 using System.Linq;
 
 public partial class InteractableFloodlightButton : InteractableBase
 {
+	public static event Action FloodlightButtonPressed;
+
 	[Export(PropertyHint.Enum, "North,East,South,West")] 
 	public int Direction = 0; // 0 = North, 1 = East, 2 = South, 3 = West
 
@@ -70,7 +75,7 @@ public partial class InteractableFloodlightButton : InteractableBase
 				return $"[Cooldown] {dirName} Floodlight Capacitor Recharging...";
 		}
 
-		return $"Left Click to Fire {dirName} Floodlight (Cost: 25% | Floodlight Batt: {station.BatteryHealth}%)";
+		return $"[E / LMB] Fire {dirName} Floodlight (Cost: 25% | Floodlight Batt: {station.BatteryHealth}%)";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -93,5 +98,6 @@ public partial class InteractableFloodlightButton : InteractableBase
 
 		// Forward interaction to the floodlight switch
 		flood.Interact(player);
+		FloodlightButtonPressed?.Invoke();
 	}
 }

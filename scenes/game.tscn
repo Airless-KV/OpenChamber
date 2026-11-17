@@ -19,7 +19,6 @@
 [ext_resource type="PackedScene" uid="uid://sheep001" path="res://scenes/environment/spooky_sheep.tscn" id="18_sheep"]
 [ext_resource type="PackedScene" uid="uid://d3epk37vmo5n5" path="res://scenes/environment/world_foliage.tscn" id="19_foliage"]
 [ext_resource type="PackedScene" path="res://scenes/environment/farm_boundary_zone.tscn" id="20_farmboundary"]
-[ext_resource type="PackedScene" path="res://scenes/ui/tutorial_overlay.tscn" id="21_tutorial"]
 [ext_resource type="PackedScene" uid="uid://crow001" path="res://scenes/environment/spooky_crow.tscn" id="22_crow"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_atm"]
@@ -147,8 +146,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.560114, 1.5545688, 0)
 [node name="CCTVOverlay" parent="." unique_id=1849172314 instance=ExtResource("14_cctvoverlay")]
 
 [node name="PauseMenu" parent="." unique_id=1928374650 instance=ExtResource("15_pausemenu")]
-
-[node name="TutorialOverlay" parent="." unique_id=271538656 instance=ExtResource("21_tutorial")]
 
 [node name="CropDevourer" parent="." unique_id=741829201 node_paths=PackedStringArray("GridManagerNode", "GameManagerNode", "LoiterSpotsContainer") instance=ExtResource("16_cropdevourer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 1.4903667, 2)

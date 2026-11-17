@@ -218,7 +218,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.65, 0.7, 1)
 theme_override_font_sizes/font_size = 12
-text = "[N / Enter] Next  |  [Alt] Cursor  |  [H] Hide"
+text = "[N] Next  |  [K] Skip  |  [Alt] Cursor  |  [H] Toggle"
 
 [node name="TitleLabel" type="Label" parent="QuestCard/Margin/VBox"]
 layout_mode = 2
@@ -243,21 +243,21 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="NextStepButton" type="Button" parent="QuestCard/Margin/VBox/BottomBar"]
-custom_minimum_size = Vector2(110, 26)
+custom_minimum_size = Vector2(115, 26)
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_gold")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_gold_hover")
-text = "Next Step >"
+text = "Next Step [N] >"
 
 [node name="SkipButton" type="Button" parent="QuestCard/Margin/VBox/BottomBar"]
-custom_minimum_size = Vector2(100, 26)
+custom_minimum_size = Vector2(115, 26)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
 theme_override_font_sizes/font_size = 12
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_dark")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_dark_hover")
-text = "Skip Tutorial"
+text = "Skip Tutorial [K]"
 
 [node name="OnboardingModal" type="Control" parent="."]
 visible = false

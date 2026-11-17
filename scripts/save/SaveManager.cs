@@ -15,6 +15,9 @@
 // - Nov 15, 2026 | air : Added IsTutorialCompleted and SetTutorialCompleted persistent tracking
 // - Nov 15, 2026 | air : Added RenderingMethod and LiteMode options for low-end hardware support
 // - Nov 16, 2026 | air : Added wrappers for relational JOINs, query filtering, callsign search, and aggregate stats
+// - Nov 17, 2026 | air : Added ConfirmExitActions setting toggle to AudioSettings schema
+// - Nov 17, 2026 | air : Added active 4-digit PIN session security and per-user profile authentication
+// - Nov 17, 2026 | air : Implemented recursive in-memory QuickSort algorithm and SQL view wrappers
 // =========================================================================================
 using Godot;
 using System;
@@ -61,6 +64,7 @@ public class AudioSettings
 	public bool InvertY { get; set; } = false;
 	public bool Headbob { get; set; } = true;
 	public bool ScreenShake { get; set; } = true;
+	public bool ConfirmExitActions { get; set; } = true;
 }
 
 public class LeaderboardEntry
@@ -87,6 +91,11 @@ public partial class SaveManager : Node
 
 	private static SaveData _cachedData;
 	public static SaveData CurrentData => _cachedData ?? LoadDirect();
+
+	/// <summary>
+	/// Active 4-digit PIN for the current logged-in session.
+	/// </summary>
+	public static string ActivePlayerPin { get; set; } = "0000";
 
 	public override void _EnterTree()
 	{
@@ -152,13 +161,37 @@ public partial class SaveManager : Node
 		data.Profile.AllTimeHighScore = Mathf.Max(data.Profile.AllTimeHighScore, score);
 		data.Profile.TotalCoinsEarned += coins;
 
-		// Persist entry to SQLite and calculate dynamic rank
-		int rank = DatabaseManager.InsertLeaderboardEntry(entry);
-		DatabaseManager.SavePlayerProfile(data.Profile);
+		// Persist entry to SQLite with 4-digit PIN authentication check and calculate dynamic rank
+		int rank = DatabaseManager.InsertLeaderboardEntry(entry, ActivePlayerPin);
+		if (rank > 0)
+		{
+			DatabaseManager.SavePlayerProfile(data.Profile);
+		}
+		else
+		{
+			GD.PrintErr($"[SaveManager] Failed to record run under {resolvedName} due to PIN authentication mismatch.");
+		}
 
 		// Refresh leaderboard cache with top 10
 		data.Leaderboard = DatabaseManager.GetTopLeaderboard(10);
 		return rank;
+	}
+
+	public static (bool success, string error) LoginOrRegisterPlayer(string playerName, string pin)
+	{
+		var res = DatabaseManager.AuthenticateOrRegisterPlayer(playerName, pin);
+		if (!res.success)
+		{
+			return (false, res.errorMessage);
+		}
+
+		ActivePlayerPin = string.IsNullOrWhiteSpace(pin) ? "0000" : pin.Trim();
+		if (res.profile != null)
+		{
+			CurrentData.Profile = res.profile;
+			DatabaseManager.SavePlayerProfile(res.profile);
+		}
+		return (true, null);
 	}
 
 	public static void RecordMerge()
@@ -210,6 +243,10 @@ public partial class SaveManager : Node
 
 	public static List<LeaderboardEntry> GetTopLeaderboard(int limit = 10) => DatabaseManager.GetTopLeaderboard(limit);
 
+	public static List<LeaderboardEntry> GetTopSurvivorsFromView(int limit = 10) => DatabaseManager.GetTopSurvivorsFromView(limit);
+
+	public static List<PlayerCareerSummaryViewRecord> GetPlayerCareerSummariesFromView() => DatabaseManager.GetPlayerCareerSummariesFromView();
+
 	public static List<LeaderboardEntry> GetLeaderboardByFilter(bool? onlyVictories = null, int limit = 10) =>
 		DatabaseManager.GetLeaderboardWithPlayerJoin(onlyVictories, limit);
 
@@ -218,6 +255,9 @@ public partial class SaveManager : Node
 
 	public static List<LeaderboardEntry> SearchLeaderboard(string query, int limit = 10) =>
 		DatabaseManager.SearchLeaderboardByName(query, limit);
+
+	public static PlayerPublicDossier GetPlayerDossier(string playerName) =>
+		DatabaseManager.GetPlayerPublicDossier(playerName);
 
 	public static bool DeleteLeaderboardEntry(int entryId) =>
 		DatabaseManager.DeleteLeaderboardEntry(entryId);
@@ -246,5 +286,67 @@ public partial class SaveManager : Node
 			return hl ? $"#{i + 1,-4} >>> {name,-16} {e.Score,4} pts <<<" : $"#{i + 1,-4} {name,-20} {e.Score,4} pts";
 		});
 		return "RANK   NAME                 SCORE\n" + string.Join("\n", rows);
+	}
+
+	// =========================================================================================
+	// ITEC 104: ALGORITHMIC IN-MEMORY QUICKSORT IMPLEMENTATION
+	// =========================================================================================
+
+	/// <summary>
+	/// Custom in-memory Quicksort algorithm implementing Divide and Conquer.
+	/// Time Complexity: Average O(N log N), Worst-case O(N^2).
+	/// Space Complexity: O(log N) auxiliary recursive stack space.
+	/// </summary>
+	public static void QuickSort(List<LeaderboardEntry> list, int low, int high, Comparison<LeaderboardEntry> comparison)
+	{
+		if (list == null || low >= high || low < 0) return;
+
+		int pivotIndex = Partition(list, low, high, comparison);
+		QuickSort(list, low, pivotIndex - 1, comparison);
+		QuickSort(list, pivotIndex + 1, high, comparison);
+	}
+
+	private static int Partition(List<LeaderboardEntry> list, int low, int high, Comparison<LeaderboardEntry> comparison)
+	{
+		LeaderboardEntry pivot = list[high];
+		int i = low - 1;
+
+		for (int j = low; j < high; j++)
+		{
+			if (comparison(list[j], pivot) <= 0)
+			{
+				i++;
+				(list[i], list[j]) = (list[j], list[i]);
+			}
+		}
+
+		(list[i + 1], list[high]) = (list[high], list[i + 1]);
+		return i + 1;
+	}
+
+	/// <summary>
+	/// Sorts leaderboard entries programmatically using custom in-memory QuickSort.
+	/// Demonstrates custom algorithmic data sorting without relying on external SQL ORDER BY.
+	/// </summary>
+	public static List<LeaderboardEntry> SortLeaderboardAlgorithmically(List<LeaderboardEntry> entries, string criterion = "score")
+	{
+		if (entries == null || entries.Count <= 1) return entries ?? new List<LeaderboardEntry>();
+
+		var sorted = new List<LeaderboardEntry>(entries);
+		Comparison<LeaderboardEntry> comp = criterion.ToLowerInvariant() switch
+		{
+			"day" => (a, b) => b.DayReached.CompareTo(a.DayReached) != 0 
+				? b.DayReached.CompareTo(a.DayReached) 
+				: b.Score.CompareTo(a.Score),
+			"coins" => (a, b) => b.Coins.CompareTo(a.Coins) != 0 
+				? b.Coins.CompareTo(a.Coins) 
+				: b.Score.CompareTo(a.Score),
+			_ => (a, b) => b.Score.CompareTo(a.Score) != 0 
+				? b.Score.CompareTo(a.Score) 
+				: b.DayReached.CompareTo(a.DayReached)
+		};
+
+		QuickSort(sorted, 0, sorted.Count - 1, comp);
+		return sorted;
 	}
 }

@@ -16,6 +16,7 @@
 // - Nov 15, 2026 | air : Added Rendering Backend selector, Lite Mode preset, GPU info detector, and restart trigger in SettingsBinder
 // - Nov 15, 2026 | air : Prevented FSR1 mode warning under OpenGL Compatibility renderer by defaulting to Bilinear
 // - Nov 15, 2026 | air : Fixed asynchronous fullscreen race condition and prevented WindowSetSize during Fullscreen mode
+// - Nov 17, 2026 | air : Added ConfirmExitActions checkbox binding and persistence in SettingsBinder
 // =========================================================================================
 using Godot;
 
@@ -468,6 +469,12 @@ public static class SettingsBinder
 		SaveManager.SaveDirect();
 	}
 
+	public static void ApplyConfirmExitActions(bool enabled)
+	{
+		SaveManager.CurrentData.Audio.ConfirmExitActions = enabled;
+		SaveManager.SaveDirect();
+	}
+
 	public static void ApplyAllSettings(SceneTree tree)
 	{
 		var s = SaveManager.CurrentData?.Audio;
@@ -517,7 +524,8 @@ public static class SettingsBinder
 		Button applyLitePresetBtn = null,
 		Label gpuInfoLabel = null,
 		Control restartNoticeBox = null,
-		Button restartNowBtn = null)
+		Button restartNowBtn = null,
+		CheckBox confirmExitCheck = null)
 	{
 		PopulateResolutions(resOption);
 		PopulateAspectModes(aspectOption);
@@ -665,6 +673,10 @@ public static class SettingsBinder
 		{
 			shakeCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyScreenShake(toggled); };
 		}
+		if (confirmExitCheck != null)
+		{
+			confirmExitCheck.Toggled += (toggled) => { if (!_isSyncingUI) ApplyConfirmExitActions(toggled); };
+		}
 
 		if (backendOption != null)
 		{
@@ -700,7 +712,8 @@ public static class SettingsBinder
 					fovSlider, fovLabel,
 					sensSlider, sensLabel,
 					invertYCheck, headbobCheck, shakeCheck,
-					backendOption, gpuInfoLabel, restartNoticeBox
+					backendOption, gpuInfoLabel, restartNoticeBox,
+					confirmExitCheck
 				);
 				string chosen = SaveManager.CurrentData?.Audio?.RenderingMethod ?? "gl_compatibility";
 				string current = RenderingServer.GetCurrentRenderingMethod();
@@ -732,7 +745,8 @@ public static class SettingsBinder
 					fovSlider, fovLabel,
 					sensSlider, sensLabel,
 					invertYCheck, headbobCheck, shakeCheck,
-					backendOption, gpuInfoLabel, restartNoticeBox
+					backendOption, gpuInfoLabel, restartNoticeBox,
+					confirmExitCheck
 				);
 			};
 		}
@@ -748,7 +762,8 @@ public static class SettingsBinder
 			fovSlider, fovLabel,
 			sensSlider, sensLabel,
 			invertYCheck, headbobCheck, shakeCheck,
-			backendOption, gpuInfoLabel, restartNoticeBox
+			backendOption, gpuInfoLabel, restartNoticeBox,
+			confirmExitCheck
 		);
 	}
 
@@ -776,6 +791,7 @@ public static class SettingsBinder
 		s.InvertY = false;
 		s.Headbob = true;
 		s.ScreenShake = true;
+		s.ConfirmExitActions = true;
 
 		SaveManager.SaveDirect();
 		ApplyAllSettings(tree);
@@ -796,7 +812,8 @@ public static class SettingsBinder
 		CheckBox invertYCheck, CheckBox headbobCheck, CheckBox shakeCheck,
 		OptionButton backendOption = null,
 		Label gpuInfoLabel = null,
-		Control restartNoticeBox = null)
+		Control restartNoticeBox = null,
+		CheckBox confirmExitCheck = null)
 	{
 		_isSyncingUI = true;
 		try
@@ -886,6 +903,7 @@ public static class SettingsBinder
 			if (invertYCheck != null) invertYCheck.ButtonPressed = s.InvertY;
 			if (headbobCheck != null) headbobCheck.ButtonPressed = s.Headbob;
 			if (shakeCheck != null) shakeCheck.ButtonPressed = s.ScreenShake;
+			if (confirmExitCheck != null) confirmExitCheck.ButtonPressed = s.ConfirmExitActions;
 		}
 		finally
 		{

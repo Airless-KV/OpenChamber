@@ -9,12 +9,16 @@
 // - Nov 15, 2026 | air : Created InteractableBatteryTransfer for combining partial batteries
 // - Nov 15, 2026 | air : Aligned StatusLabel style and non-billboard behavior with Seed Workbench
 // - Nov 16, 2026 | air : Implemented aim-aware dock placement and automatic transfer at 1% per 2s
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
+// - Nov 17, 2026 | air : Added BatteryTransferInteracted event for interactive tutorial verification
 // =========================================================================================
 using Godot;
 using System;
 
 public partial class InteractableBatteryTransfer : InteractableBase
 {
+	public static event Action BatteryTransferInteracted;
+
 	[ExportGroup("Slot A (Donor / Source)")]
 	[Export] public bool HasBatteryA { get; set; } = false;
 	[Export] public int BatteryAHealth { get; set; } = 0;
@@ -184,21 +188,21 @@ public partial class InteractableBatteryTransfer : InteractableBase
 		{
 			string dir = donor == 1 ? $"A ({BatteryAHealth}%) -> B ({BatteryBHealth}%)" : $"B ({BatteryBHealth}%) -> A ({BatteryAHealth}%)";
 			if (slotOccupied)
-				return $"[⚡] Transferring Charge (1% / 2s)... [{dir}] | [LMB] Retrieve {slotName}";
+				return $"[⚡] Transferring Charge (1% / 2s)... [{dir}] | [E / LMB] Retrieve {slotName}";
 			return $"[⚡] Transferring Charge (1% / 2s)... [{dir}]";
 		}
 
 		// Aiming at an occupied slot: retrieve it
 		if (slotOccupied)
 		{
-			return $"[LMB] Retrieve Battery from {slotName} ({slotHealth}% HP)";
+			return $"[E / LMB] Retrieve Battery from {slotName} ({slotHealth}% HP)";
 		}
 
 		// Aiming at an empty slot while holding a battery: insert it
 		if (holdingBattery)
 		{
 			int heldHp = inv.Slots[inv.ActiveSlot].BatteryHealth;
-			return $"[LMB] Insert Car Battery ({heldHp}% HP) into {slotName}";
+			return $"[E / LMB] Insert Car Battery ({heldHp}% HP) into {slotName}";
 		}
 
 		return $"[!] Battery Transfer Machine - Aim at {slotName} to Insert Car Battery";
@@ -223,6 +227,7 @@ public partial class InteractableBatteryTransfer : InteractableBase
 			AudioManager.Sfx("door_thud", 2f);
 			_hud?.SetInteractionPrompt($"[✓] Inserted Battery into Slot A ({BatteryAHealth}% HP)");
 			UpdateVisuals();
+			BatteryTransferInteracted?.Invoke();
 			return;
 		}
 
@@ -236,6 +241,7 @@ public partial class InteractableBatteryTransfer : InteractableBase
 			AudioManager.Sfx("door_thud", 2f);
 			_hud?.SetInteractionPrompt($"[✓] Inserted Battery into Slot B ({BatteryBHealth}% HP)");
 			UpdateVisuals();
+			BatteryTransferInteracted?.Invoke();
 			return;
 		}
 
@@ -243,12 +249,14 @@ public partial class InteractableBatteryTransfer : InteractableBase
 		if (targetSlot == 1 && HasBatteryA)
 		{
 			EjectBattery(inv, true);
+			BatteryTransferInteracted?.Invoke();
 			return;
 		}
 
 		if (targetSlot == 2 && HasBatteryB)
 		{
 			EjectBattery(inv, false);
+			BatteryTransferInteracted?.Invoke();
 			return;
 		}
 
@@ -256,10 +264,12 @@ public partial class InteractableBatteryTransfer : InteractableBase
 		if (HasBatteryA && !HasBatteryB)
 		{
 			EjectBattery(inv, true);
+			BatteryTransferInteracted?.Invoke();
 		}
 		else if (HasBatteryB && !HasBatteryA)
 		{
 			EjectBattery(inv, false);
+			BatteryTransferInteracted?.Invoke();
 		}
 	}
 

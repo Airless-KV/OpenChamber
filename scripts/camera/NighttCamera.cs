@@ -24,6 +24,8 @@
 // - Nov 15, 2026 | air : Rebalanced CCTV battery drain to 0.5% per second and mapped [SPACE] to emergency siren trigger
 // - Nov 15, 2026 | air : Buffed CCTV IRLight to 95m range, 65 deg angle, and Layer 7 mask for complete night coverage
 // - Nov 15, 2026 | air : Added static Instance and CCTVModeChanged signal to coordinate entity night stealth visibility
+// - Nov 17, 2026 | air : Removed direct [SPACE] siren trigger in CCTV mode; required exiting monitor to press physical cabin switch
+// - Nov 17, 2026 | air : Promoted CCTV controls to _Input; added [A] / [D] / Left / Right feed cycling, enabled [1-4], [E], and [ESC], and locked player movement
 // =========================================================================================
 using Godot;
 
@@ -122,7 +124,7 @@ public partial class NighttCamera : Node3D
 		cam.GlobalBasis = visualHead.GlobalBasis;
 	}
 
-	public override void _UnhandledInput(InputEvent @event)
+	public override void _Input(InputEvent @event)
 	{
 		if (!IsNightMode) return;
 
@@ -144,11 +146,32 @@ public partial class NighttCamera : Node3D
 
 		if (@event is InputEventKey { Pressed: true, Echo: false } k)
 		{
-			if (k.Keycode is Key.N or Key.E or Key.Escape) ApplyMode(false);
-			else if (k.Keycode is >= Key.Key1 and <= Key.Key4) SwitchNightCamera((int)k.Keycode - (int)Key.Key1);
-			else if (k.Keycode == Key.Tab) SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
-			else if (k.Keycode == Key.V) { ToggleNightVision(); GetViewport().SetInputAsHandled(); return; }
-			else if (k.Keycode == Key.Space) { TriggerSiren(); GetViewport().SetInputAsHandled(); return; }
+			if (k.Keycode is Key.E or Key.Escape)
+			{
+				ApplyMode(false);
+			}
+			else if (k.Keycode is Key.A or Key.Left)
+			{
+				SwitchNightCamera((_currentNightIndex - 1 + _nightCams.Length) % _nightCams.Length);
+			}
+			else if (k.Keycode is Key.D or Key.Right)
+			{
+				SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
+			}
+			else if (k.Keycode is >= Key.Key1 and <= Key.Key4)
+			{
+				SwitchNightCamera((int)k.Keycode - (int)Key.Key1);
+			}
+			else if (k.Keycode == Key.Tab)
+			{
+				SwitchNightCamera((_currentNightIndex + 1) % _nightCams.Length);
+			}
+			else if (k.Keycode == Key.V)
+			{
+				ToggleNightVision();
+				GetViewport().SetInputAsHandled();
+				return;
+			}
 			else return;
 
 			GetViewport().SetInputAsHandled();
@@ -239,6 +262,13 @@ public partial class NighttCamera : Node3D
 			cp.SetCCTVActive(night);
 		}
 
+		var player = GetTree()?.GetFirstNodeInGroup("Player") as PlayerController;
+		if (player != null)
+		{
+			player.IsMovementLocked = night;
+			if (night) player.Velocity = Vector3.Zero;
+		}
+
 		if (_hud != null) _hud.Visible = !night;
 
 		if (IsNightMode)
@@ -271,6 +301,6 @@ public partial class NighttCamera : Node3D
 		OverlayNode?.SetChannel(_currentNightIndex);
 
 		string camLabel = index < CCTVOverlay.ChannelNames.Length ? CCTVOverlay.ChannelNames[index] : $"CAM 0{index + 1}";
-		_hud?.SetInteractionPrompt($"[{camLabel}] - [1-4 / Tab] Switch Feeds | [V] NVG | [N / E / R-Click] Exit Feed");
+		_hud?.SetInteractionPrompt($"[{camLabel}] - [A/D / LMB] Cycle Feeds | [1-4] Jump | [V] NVG | [E / ESC / RMB] Exit");
 	}
 }

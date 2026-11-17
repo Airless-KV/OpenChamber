@@ -13,6 +13,8 @@
 // - Nov 15, 2026 | air : Added Cryo-Freezer item definition for flower preservation
 // - Nov 15, 2026 | air : Increased seed price from 1 to 100 coins
 // - Nov 15, 2026 | air : Preserved dummy entries for Plank, Barrier, and Axe to prevent HUD WireShopButton NullReferenceException
+// - Nov 17, 2026 | air : Rebalanced Car Battery price to 15 coins for power economy anti-spam
+// - Nov 17, 2026 | air : Decommissioned Cryo-Freezer from active purchase catalog
 // =========================================================================================
 using System.Collections.Generic;
 
@@ -39,8 +41,7 @@ public static class ShopCatalog
 		{ BarrierId, new ShopItem { Id = BarrierId, DisplayName = "Barrier", Price = 5, Description = "Defense barrier." } },
 		{ AxeId, new ShopItem { Id = AxeId, DisplayName = "Axe", Price = 10, Description = "Woodcutting axe." } },
 		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 100, Description = "Plantable seed to cultivate valuable flowers." } },
-		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 5, Description = "Powers cabin halogen floodlights to blind night monsters." } },
-		{ FreezerId, new ShopItem { Id = FreezerId, DisplayName = "Cryo-Freezer Box", Price = 8, Description = "Preserves up to 10 harvested flowers. Requires a Car Battery (burns 1% per 5s)." } }
+		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 15, Description = "Powers cabin halogen floodlights and sirens. Limited stock (1/day)." } }
 	};
 
 	public static ShopItem Get(string id)

@@ -26,6 +26,8 @@
 // - Nov 15, 2026 | air : Added cinematic face light, GetHeadPosition, head-bend looming, and 5.5s death pacing
 // - Nov 15, 2026 | air : Corrected cardinal staging yaws (Front door 180 deg, North 0 deg) and lurking orientations to face farmhouse
 // - Nov 16, 2026 | air : Added PlayDeathHouseFling for dragging player through attacking opening and casting them outside
+// - Nov 17, 2026 | air : Rotated Ani-Ani outward on fling throw to glare directly down at the fallen outdoor player
+// - Nov 17, 2026 | air : Leaped down to ground level upon player impact to execute close-up standard death looming
 // =========================================================================================
 using Godot;
 using System;
@@ -300,7 +302,7 @@ public partial class AniAniMonster : Node3D
 		}));
 	}
 
-	public void PlayDeathHouseFling(Vector3 breachOpeningPos, Vector3 playerInsidePos, float openingYaw, Action onFlingThrow, Action onComplete)
+	public void PlayDeathHouseFling(Vector3 breachOpeningPos, Vector3 playerInsidePos, Vector3 outdoorLandingPos, float openingYaw, Action onFlingThrow, Action onComplete)
 	{
 		if (_retreatTween != null && _retreatTween.IsValid()) _retreatTween.Kill();
 		if (_lungeTween != null && _lungeTween.IsValid()) _lungeTween.Kill();
@@ -326,29 +328,61 @@ public partial class AniAniMonster : Node3D
 
 		CurrentStage = 3;
 
-		// Ani-Ani faces into the house toward the player from outside the window/door
+		// Ani-Ani starts facing into the house toward the player from outside the window/door to pull them
 		Vector3 toPlayer = (playerInsidePos - breachOpeningPos).Normalized();
 		float reachYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayer.X, toPlayer.Z));
 		RotationDegrees = new Vector3(0, reachYaw, 0);
+
+		// Calculate outward yaw facing the outdoor landing position
+		Vector3 toOutdoor = (outdoorLandingPos - breachOpeningPos).Normalized();
+		float outwardYaw = Mathf.RadToDeg(Mathf.Atan2(toOutdoor.X, toOutdoor.Z));
 
 		_lungeTween = CreateTween().SetParallel(false);
 
 		// 1. Stand menacingly outside at opening threshold while pulling the player toward the opening (0.65s)
 		_lungeTween.TweenInterval(0.65f);
 
-		// 2. Fling / Throw release callback
+		// 2. Fling / Throw release callback and pivot to face outward toward the landing player
 		_lungeTween.TweenCallback(Callable.From(() =>
 		{
+			RotationDegrees = new Vector3(0, outwardYaw, 0);
 			onFlingThrow?.Invoke();
 		}));
 
-		// Bend torso / head forward peering down after flinging the player away
+		// Bend torso / head forward peering down out the opening during player's midair flight (1.15s flight time)
 		var throwGesture = _lungeTween.Parallel();
 		throwGesture.TweenMethod(Callable.From<float>(v => _deathHeadBendPitch = v), 0f, 48.0f, 0.5f)
 			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
 
-		// 3. Stare down at the thrown player from the elevated opening
-		_lungeTween.TweenInterval(3.2f);
+		_lungeTween.TweenInterval(1.15f);
+
+		// 3. Player hits the ground: Ani-Ani leaps down from the tower right in front of the player on the ground!
+		Vector3 groundLoomSpawnPos = outdoorLandingPos - toOutdoor * 3.5f;
+		groundLoomSpawnPos.Y = 1.25f;
+		Vector3 groundLoomTargetPos = outdoorLandingPos - toOutdoor * 0.95f;
+		groundLoomTargetPos.Y = 1.25f;
+
+		// Monster faces the player from its ground spawn position
+		Vector3 toPlayerOnGround = (outdoorLandingPos - groundLoomSpawnPos).Normalized();
+		float groundYaw = Mathf.RadToDeg(Mathf.Atan2(toPlayerOnGround.X, toPlayerOnGround.Z));
+
+		_lungeTween.TweenCallback(Callable.From(() =>
+		{
+			GlobalPosition = groundLoomSpawnPos;
+			RotationDegrees = new Vector3(0, groundYaw, 0);
+			_deathHeadBendPitch = 0f;
+		}));
+
+		// 4. Close-up standard death animation: Charge forward and loom directly over the fallen player!
+		_lungeTween.TweenProperty(this, "global_position", groundLoomTargetPos, 0.45f)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+
+		var loomGroundTween = _lungeTween.Parallel();
+		loomGroundTween.TweenMethod(Callable.From<float>(v => _deathHeadBendPitch = v), 0f, 52.0f, 0.55f)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+
+		// 5. Loom and twitch menacingly close over the fallen player on the ground for 2.2s before blackout
+		_lungeTween.TweenInterval(2.2f);
 		_lungeTween.TweenCallback(Callable.From(() =>
 		{
 			onComplete?.Invoke();

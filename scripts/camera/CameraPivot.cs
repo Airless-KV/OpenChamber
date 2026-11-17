@@ -24,6 +24,7 @@
 // - Nov 15, 2026 | air : Clamped FarPlane to 210m to match outer forest perimeter and reduce frustum depth churn
 // - Nov 16, 2026 | air : Added PlayHouseFlingSequence for dragging player through attacking opening and flinging outside
 // - Nov 16, 2026 | air : Prevented mouse capture if hovering or clicking over interactive TutorialOverlay UI
+// - Nov 17, 2026 | air : Guarded cursor capture against clicking when FreezerInventoryUI is active
 // =========================================================================================
 using Godot;
 using System;
@@ -164,7 +165,8 @@ public partial class CameraPivot : Node3D
 
 		if (GetTree().Root.FindChild("JumpScareScreen", true, false) is CanvasLayer { Visible: true } ||
 			GetTree().Root.FindChild("VictoryScreen", true, false) is CanvasLayer { Visible: true } ||
-			GetTree().Root.FindChild("PauseMenu", true, false) is CanvasLayer { Visible: true })
+			GetTree().Root.FindChild("PauseMenu", true, false) is CanvasLayer { Visible: true } ||
+			FreezerInventoryUI.Instance is { Visible: true })
 		{
 			return;
 		}
@@ -377,9 +379,11 @@ public partial class CameraPivot : Node3D
 		groundCollapseTween.TweenMethod(Callable.From<float>(v => _deathRollOffset = v), _deathRollOffset, Mathf.DegToRad(targetRollDegrees), groundTumbleDuration)
 			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
 
-		// Aim gaze back up towards the elevated cabin opening where Ani-Ani is glaring down
+		// Aim gaze directly at Ani-Ani's towering face standing right in front of the fallen player on the ground
 		Vector3 toOpening = (openingPos - outdoorLandingPos).Normalized();
-		float lookUpYaw = Mathf.Atan2(-toOpening.X, -toOpening.Z);
+		Vector3 monsterHeadPosOnGround = outdoorLandingPos - toOpening * 0.95f + Vector3.Up * 4.9f;
+		Vector3 toMonsterHead = (monsterHeadPosOnGround - (outdoorLandingPos + FollowOffset + new Vector3(0, -1.25f, 0))).Normalized();
+		float lookUpYaw = Mathf.Atan2(-toMonsterHead.X, -toMonsterHead.Z);
 		float diffLookYaw = Mathf.Wrap(lookUpYaw - (endYaw + Mathf.Pi * 1.2f), -Mathf.Pi, Mathf.Pi);
 		float finalGroundYaw = (endYaw + Mathf.Pi * 1.2f) + diffLookYaw;
 

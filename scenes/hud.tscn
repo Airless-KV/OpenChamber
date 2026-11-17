@@ -194,7 +194,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_shop_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_shop_btn_hover")
-text = "Level 1 Seed (1c)"
+text = "Level 1 Seed (100c)"
 
 [node name="BuyPlankButton" type="Button" parent="ShopPanel/Margin/VBox" unique_id=1827361921]
 custom_minimum_size = Vector2(0, 42)

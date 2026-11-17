@@ -7,6 +7,7 @@
 // - Nov 10, 2026 | air : Updated prompt to Left Click to access/exit CCTV
 // - Nov 14, 2026 | air : Added battery power gating preventing CCTV access without charged Treehouse battery
 // - Nov 15, 2026 | air : Added dynamic 3D world interaction status label above CRT monitor
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
 // =========================================================================================
 using Godot;
 
@@ -68,17 +69,17 @@ public partial class InteractableCCTVStation : InteractableBase
 	{
 		if (NightCameraNode != null && NightCameraNode.IsNightMode)
 		{
-			return "Left Click (or Right Click) to Exit CCTV Monitor";
+			return "[E / ESC / RMB] Exit CCTV Monitor";
 		}
 
 		var station = InteractableBatteryStation.GetStation(PowerSystemType.CCTV)
 			?? InteractableBatteryStation.Instance;
 		if (station == null || !station.HasPower)
 		{
-			return "[!] CCTV Offline - Insert Car Battery in CCTV PC Station under desk";
+			return "[!] CCTV Offline - Insert Car Battery in CCTV Station under desk";
 		}
 
-		return $"Left Click to Access CCTV Security Feeds [CCTV Batt: {station.BatteryHealth}%]";
+		return $"[E / LMB] Access CCTV Security Feeds [CCTV Batt: {station.BatteryHealth}%]";
 	}
 
 	protected override void OnInteract(PlayerController player)

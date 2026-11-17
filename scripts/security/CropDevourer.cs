@@ -14,6 +14,7 @@
 // - Nov 14, 2026 | air : Added Tween lifecycle protection and guard against post-deactivation loitering callbacks
 // - Nov 15, 2026 | air : Concealed pre-spawn loitering, masked body meshes to Visual Layer 2, and confined eye light cull mask
 // - Nov 15, 2026 | air : Added customizable editor LoiterSpotsContainer and perimeter Marker3D loitering for night phase
+// - Nov 17, 2026 | air : Added progressive difficulty scaling (Day 2-7) and Day 1 night dormancy
 // =========================================================================================
 using Godot;
 using System;
@@ -151,8 +152,29 @@ public partial class CropDevourer : Node3D
 		return _loiterWaypoints[_currentLoiterIndex];
 	}
 
+	public void ApplyDailyDifficultyScaling(int day)
+	{
+		int d = Mathf.Clamp(day, 1, 7);
+		float t = Mathf.Clamp((d - 2) / 5.0f, 0f, 1f);
+
+		FirstSpawnDelay = Mathf.Lerp(35.0f, 16.0f, t);
+		SpawnInterval = Mathf.Lerp(50.0f, 24.0f, t);
+		ApproachDuration = Mathf.Lerp(20.0f, 12.0f, t);
+		EatingDuration = Mathf.Lerp(6.0f, 3.5f, t);
+	}
+
 	public void StartNightLoitering()
 	{
+		int day = GameManagerNode?.CurrentDay ?? 1;
+		if (day <= 1)
+		{
+			// Dormant on Night 1 to introduce player safely to farming and Ani-Ani defense
+			Deactivate();
+			return;
+		}
+
+		ApplyDailyDifficultyScaling(day);
+
 		Scale = new Vector3(1.6f, 1.6f, 1.6f);
 		CurrentState = State.Loitering;
 		_timer = FirstSpawnDelay;

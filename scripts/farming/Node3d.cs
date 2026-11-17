@@ -25,6 +25,8 @@
 // - Nov 14, 2026 | air : Enforced strict active seed holding (HasActiveItem) for planting and removed abstract seed fallback
 // - Nov 15, 2026 | air : Added CropPlanted and CropsMerged signals for tutorial and event hooks
 // - Nov 15, 2026 | air : Supported planting seeds of any tier level (Level 1-5) based on active held seed FlowerTier
+// - Nov 17, 2026 | air : Unified farming controls with dual-scheme input ([E]/[LMB] plant & drag, [F]/[RMB] harvest & cancel) and streamlined prompts
+// - Nov 17, 2026 | air : Added CropHarvested signal and ForceBloomAllCrops for interactive tutorial progression
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -34,6 +36,7 @@ public partial class Node3d : Node3D
 {
 	[Signal] public delegate void CropPlantedEventHandler(Vector2I cell, int tier);
 	[Signal] public delegate void CropsMergedEventHandler(int resultingTier);
+	[Signal] public delegate void CropHarvestedEventHandler(Vector2I cell, int tier);
 
 	public enum TileState { Empty, Planted }
 
@@ -163,12 +166,24 @@ public partial class Node3d : Node3D
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left } btn)
+		bool isPrimaryPressed = (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
+			|| (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.E });
+
+		bool isPrimaryReleased = (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: false })
+			|| (@event is InputEventKey { Pressed: false, Echo: false, Keycode: Key.E });
+
+		bool isSecondary = (@event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
+			|| (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F });
+
+		if (isPrimaryPressed)
 		{
-			if (btn.Pressed) OnLeftClickPressed();
-			else OnLeftClickReleased();
+			OnLeftClickPressed();
 		}
-		else if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
+		else if (isPrimaryReleased)
+		{
+			OnLeftClickReleased();
+		}
+		else if (isSecondary)
 		{
 			if (_heldCell.HasValue) CancelHold();
 			else if (_hoveredCell.HasValue) HarvestCrop(_hoveredCell.Value);
@@ -236,7 +251,7 @@ public partial class Node3d : Node3D
 
 		_hoveredCell = null;
 		if (TileSelector != null) TileSelector.Visible = false;
-		if (_heldCell.HasValue) SetPrompt("[RMB] Cancel Drag");
+		if (_heldCell.HasValue) SetPrompt("[F / RMB] Cancel Drag");
 		else ClearPrompt();
 	}
 
@@ -247,7 +262,7 @@ public partial class Node3d : Node3D
 		{
 			var heldTile = GetTile(_heldCell.Value);
 			int heldTier = heldTile?.Tier ?? 1;
-			if (cell == _heldCell.Value) SetPrompt($"[LMB] Put down Tier {heldTier} Flower | [RMB] Cancel");
+			if (cell == _heldCell.Value) SetPrompt($"[E / LMB] Put Down Tier {heldTier} Flower | [F / RMB] Cancel");
 			else if (tile?.State == TileState.Planted)
 			{
 				if (tile.Tier == heldTier && heldTier < 5)
@@ -259,9 +274,9 @@ public partial class Node3d : Node3D
 						SetPrompt("[!] Both flowers must be fully bloomed to merge!");
 				}
 				else
-					SetPrompt($"[LMB] Swap with Tier {tile.Tier} Flower | [RMB] Cancel");
+					SetPrompt($"[E / LMB] Swap with Tier {tile.Tier} Flower | [F / RMB] Cancel");
 			}
-			else SetPrompt($"[LMB] Move Tier {heldTier} Flower here | [RMB] Cancel");
+			else SetPrompt($"[E / LMB] Move Tier {heldTier} Flower here | [F / RMB] Cancel");
 			return;
 		}
 
@@ -272,12 +287,12 @@ public partial class Node3d : Node3D
 
 			if (tile.IsMature)
 			{
-				SetPrompt($"[✓ BLOOMED & READY!] Tier {tier} Flower | [RMB] Harvest to 3D Item | [LMB] Drag & Merge");
+				SetPrompt($"[✓ BLOOMED & READY!] Tier {tier} Flower | [F / RMB] Harvest | [E / LMB] Drag & Merge");
 			}
 			else
 			{
 				float remaining = Mathf.Max(0f, tile.RequiredGrowthTime - tile.GrowthTimer);
-				SetPrompt($"[Growing closed bud... {Mathf.CeilToInt(remaining)}s] Tier {tier} Flower | [LMB] Move | Needs to bloom before merging & harvesting");
+				SetPrompt($"[Growing closed bud... {Mathf.CeilToInt(remaining)}s] Tier {tier} Flower | [E / LMB] Move | Needs bloom to merge & harvest");
 			}
 		}
 		else
@@ -288,7 +303,7 @@ public partial class Node3d : Node3D
 			if (hasSeed)
 			{
 				int seedTier = Mathf.Clamp(inv.Slots[inv.ActiveSlot].FlowerTier, 1, 5);
-				SetPrompt($"[LMB] Plant Tier {seedTier} Flower (Seed ready)");
+				SetPrompt($"[E / LMB] Plant Tier {seedTier} Flower (Seed ready)");
 			}
 			else
 			{
@@ -542,7 +557,38 @@ public partial class Node3d : Node3D
 			WorldItem.Spawn(sceneRoot, dropPos, ItemType.Flower, tier);
 
 			AudioManager.Sfx("flower_merge", -2f);
-			SetPrompt($"[✓] Harvested Tier {tier} Flower! [Space] to Grab & Carry");
+			SetPrompt($"[✓] Harvested Tier {tier} Flower! [E / Space] to Grab & Carry");
+			EmitSignal(SignalName.CropHarvested, cell, tier);
+		}
+	}
+
+	public void ForceBloomAllCrops()
+	{
+		foreach (var (cell, tile) in _tiles)
+		{
+			if (tile.State == TileState.Planted && !tile.IsMature)
+			{
+				tile.GrowthTimer = tile.RequiredGrowthTime;
+				tile.HasPlayedMatureTween = true;
+				float tierScale = Tiers[Mathf.Clamp(tile.Tier - 1, 0, 4)].Scale;
+				if (tile.Visual != null)
+				{
+					tile.Visual.Scale = Vector3.One * tierScale;
+					if (tile.Visual.GetNodeOrNull<Sprite3D>("FlowerSprite") is { } sprite)
+					{
+						var tex = GetFlowerTexture(tile.Tier);
+						if (tex != null)
+							sprite.Texture = tex;
+
+						if (tile.Tier == 5)
+							sprite.Modulate = new Color(1.18f, 1.18f, 1.12f, 1.0f);
+						else
+							sprite.Modulate = Colors.White;
+					}
+					PlayMatureBounce(tile.Visual, tierScale);
+				}
+				AudioManager.Sfx("flower_merge", -2f, 0.1f);
+			}
 		}
 	}
 

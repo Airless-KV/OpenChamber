@@ -31,9 +31,14 @@
 // - Nov 15, 2026 | air : Positioned Ani-Ani in perimeter loiter spots during night downtime and attack resets
 // - Nov 15, 2026 | air : Removed barricades and added 3-second stage 3 stand timer before entity attack
 // - Nov 16, 2026 | air : Implemented indoors opening grab and fling death animation out of the attacked window/door
+// - Nov 17, 2026 | air : Added silent 3-second outdoor grace period before night jumpscare and aligned Ani-Ani fling orientation
+// - Nov 17, 2026 | air : Removed approach warnings so players must spot Ani-Ani manually on CCTV; pull off CCTV into house breach fling
+// - Nov 17, 2026 | air : Implemented daily difficulty scaling (Days 1-7) and increased siren consumption to 50% power
+// - Nov 17, 2026 | air : Implemented ThreatAlert FIFO Queue and SurveillanceGraph with Breadth-First Search (BFS)
 // =========================================================================================
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class BreachManager : Node
@@ -76,12 +81,107 @@ public partial class BreachManager : Node
 	public StalkingStage CurrentStage { get; private set; }
 	public float AttackCountdown { get; private set; }
 
+	// =========================================================================================
+	// ITEC 104: THREAT ALERT FIFO QUEUE
+	// =========================================================================================
+	public readonly record struct ThreatAlert(string Message, AttackDirection Direction, StalkingStage Stage, ulong TimestampMsec);
+	private readonly Queue<ThreatAlert> _alertQueue = new();
+	private float _alertProcessTimer = 0f;
+
+	public void EnqueueThreatAlert(string message, AttackDirection dir, StalkingStage stage)
+	{
+		_alertQueue.Enqueue(new ThreatAlert(message, dir, stage, Time.GetTicksMsec()));
+	}
+
+	// =========================================================================================
+	// ITEC 104: SURVEILLANCE GRAPH & BREADTH-FIRST SEARCH (BFS)
+	// =========================================================================================
+	public class SurveillanceGraph
+	{
+		private readonly Dictionary<string, List<string>> _adjacencyList = new();
+
+		public void AddEdge(string u, string v)
+		{
+			if (!_adjacencyList.ContainsKey(u)) _adjacencyList[u] = new List<string>();
+			if (!_adjacencyList.ContainsKey(v)) _adjacencyList[v] = new List<string>();
+			_adjacencyList[u].Add(v);
+			_adjacencyList[v].Add(u);
+		}
+
+		/// <summary>
+		/// Breadth-First Search (BFS) to compute the shortest threat traversal between surveillance zones.
+		/// Time Complexity: O(V + E) where V is surveillance zones and E is connecting paths.
+		/// Space Complexity: O(V) for visited set and queue storage.
+		/// </summary>
+		public List<string> FindShortestThreatPath(string startNode, string targetNode)
+		{
+			var visited = new HashSet<string>();
+			var parent = new Dictionary<string, string>();
+			var queue = new Queue<string>();
+
+			queue.Enqueue(startNode);
+			visited.Add(startNode);
+
+			bool found = false;
+			while (queue.Count > 0)
+			{
+				string current = queue.Dequeue();
+				if (current == targetNode)
+				{
+					found = true;
+					break;
+				}
+
+				if (_adjacencyList.TryGetValue(current, out var neighbors))
+				{
+					foreach (var neighbor in neighbors)
+					{
+						if (!visited.Contains(neighbor))
+						{
+							visited.Add(neighbor);
+							parent[neighbor] = current;
+							queue.Enqueue(neighbor);
+						}
+					}
+				}
+			}
+
+			if (!found) return new List<string>();
+
+			var path = new List<string>();
+			string curr = targetNode;
+			while (curr != null)
+			{
+				path.Add(curr);
+				parent.TryGetValue(curr, out curr);
+			}
+			path.Reverse();
+			return path;
+		}
+	}
+
+	private readonly SurveillanceGraph _surveillanceGraph = new();
+
 	private float _nextAttackTimer;
 	private bool _isNight;
 	private bool _isDeathSequenceRunning;
+	private float _outdoorTimer;
 	private readonly Random _rng = new();
 
 	private T Find<T>(string name) where T : class => GetTree().Root.FindChild(name, true, false) as T;
+
+	public void ApplyDailyDifficultyScaling(int day)
+	{
+		int d = Mathf.Clamp(day, 1, 7);
+		float t = (d - 1) / 6.0f;
+
+		FirstAttackDelay = Mathf.Lerp(45.0f, 18.0f, t);
+		MinRetreatCooldown = Mathf.Lerp(45.0f, 18.0f, t);
+		MaxRetreatCooldown = Mathf.Lerp(75.0f, 30.0f, t);
+		DistantStageDuration = Mathf.Lerp(13.0f, 8.0f, t);
+		ApproachingStageDuration = Mathf.Lerp(13.0f, 8.0f, t);
+		Stage3StandDuration = Mathf.Lerp(3.5f, 2.2f, t);
+	}
 
 	public override void _Ready()
 	{
@@ -98,9 +198,11 @@ public partial class BreachManager : Node
 		if (GameManagerNode != null)
 		{
 			_isNight = GameManagerNode.CurrentPhase == GameManager.GamePhase.Night;
-			GameManagerNode.PhaseChanged += (isDay, _) =>
+			ApplyDailyDifficultyScaling(GameManagerNode.CurrentDay);
+			GameManagerNode.PhaseChanged += (isDay, day) =>
 			{
 				_isNight = !isDay;
+				ApplyDailyDifficultyScaling(day);
 				ResetAttack();
 				if (_isNight)
 				{
@@ -126,6 +228,20 @@ public partial class BreachManager : Node
 		{
 			MonsterNode?.Deactivate();
 		}
+
+		// Initialize Surveillance Graph edges (ITEC 104)
+		_surveillanceGraph.AddEdge("Perimeter_North", "CCTV_North");
+		_surveillanceGraph.AddEdge("Perimeter_South", "CCTV_South");
+		_surveillanceGraph.AddEdge("Perimeter_East", "CCTV_East");
+		_surveillanceGraph.AddEdge("Perimeter_West", "CCTV_West");
+		_surveillanceGraph.AddEdge("CCTV_North", "Garden_Meadow");
+		_surveillanceGraph.AddEdge("CCTV_South", "Garden_Meadow");
+		_surveillanceGraph.AddEdge("CCTV_East", "Garden_Meadow");
+		_surveillanceGraph.AddEdge("CCTV_West", "Garden_Meadow");
+		_surveillanceGraph.AddEdge("Garden_Meadow", "House_Entrance_North");
+		_surveillanceGraph.AddEdge("Garden_Meadow", "House_Entrance_South");
+		_surveillanceGraph.AddEdge("Garden_Meadow", "House_Entrance_East");
+		_surveillanceGraph.AddEdge("Garden_Meadow", "House_Entrance_West");
 	}
 
 	public override void _Process(double delta)
@@ -133,10 +249,25 @@ public partial class BreachManager : Node
 		if (_isDeathSequenceRunning || GameManagerNode?.IsGameFinished == true || !_isNight) return;
 		float dt = (float)delta;
 
+		_alertProcessTimer -= dt;
+		if (_alertProcessTimer <= 0f && _alertQueue.Count > 0)
+		{
+			var alert = _alertQueue.Dequeue();
+			_alertProcessTimer = 1.2f;
+		}
+
 		if (EnableOutdoorLoss && PlayerNode != null && !PlayerNode.IsIndoors)
 		{
-			TriggerBreach("CAUGHT OUTSIDE! You stepped outside after sundown into the Ani-Ani's hunting grounds!", DeathScenario.CaughtOutsideNight);
-			return;
+			_outdoorTimer += dt;
+			if (_outdoorTimer >= 3.0f)
+			{
+				TriggerBreach("CAUGHT OUTSIDE! You stepped outside after sundown into the Ani-Ani's hunting grounds!", DeathScenario.CaughtOutsideNight);
+				return;
+			}
+		}
+		else
+		{
+			_outdoorTimer = 0f;
 		}
 
 		if (IsMonsterAttacking)
@@ -157,35 +288,18 @@ public partial class BreachManager : Node
 		float totalApproachTime = DistantStageDuration + ApproachingStageDuration;
 		if (_nextAttackTimer <= totalApproachTime && CurrentStage == StalkingStage.Hidden)
 		{
-			CurrentApproachDir = (AttackDirection)_rng.Next(0, 4);
+			AttackDirection nextDir = (AttackDirection)_rng.Next(0, 4);
+			if (GameManagerNode != null && GameManagerNode.CurrentDay >= 4 && nextDir == CurrentApproachDir)
+			{
+				nextDir = (AttackDirection)(((int)CurrentApproachDir + _rng.Next(1, 4)) % 4);
+			}
+			CurrentApproachDir = nextDir;
+			var threatPath = _surveillanceGraph.FindShortestThreatPath($"Perimeter_{CurrentApproachDir}", $"House_Entrance_{CurrentApproachDir}");
 			SetStalkingStage(StalkingStage.Distant);
 		}
 		else if (_nextAttackTimer <= ApproachingStageDuration && CurrentStage == StalkingStage.Distant)
 		{
 			SetStalkingStage(StalkingStage.Approaching);
-		}
-
-		// Active CCTV surveillance check during approach (Distant / Approaching)
-		if (CurrentStage is StalkingStage.Distant or StalkingStage.Approaching)
-		{
-			string dirName = CurrentApproachDir.ToString().ToUpper();
-			int camIndex = (int)CurrentApproachDir + 1;
-			bool isPlayerWatching = !IsPlayerNotLooking(CurrentApproachDir);
-
-			if (isPlayerWatching)
-			{
-				string alert = $"[!] ANI-ANI SPOTTED ON CAM {camIndex} ({dirName})! Press [SPACE] to Sound Siren (30% PWR)";
-				HUDNode?.SetInteractionPrompt(alert);
-				var overlay = GetTree().Root.FindChild("CCTVOverlay", true, false) as CCTVOverlay;
-				if (overlay != null && overlay.Visible)
-				{
-					overlay.ShowAlert(alert, 0.8f);
-				}
-			}
-			else
-			{
-				HUDNode?.SetInteractionPrompt($"[!] ANI-ANI APPROACHING FROM {dirName}! Check CAM {camIndex} or sound Siren (30% PWR)!");
-			}
 		}
 
 		if (_nextAttackTimer <= 0f) StartMonsterAttack();
@@ -210,6 +324,7 @@ public partial class BreachManager : Node
 	private void SetStalkingStage(StalkingStage stage)
 	{
 		CurrentStage = stage;
+		EnqueueThreatAlert($"Ani-Ani threat stage transitioned to {stage} from {CurrentApproachDir}", CurrentApproachDir, stage);
 		if (stage == StalkingStage.Hidden)
 		{
 			if (_isNight) MonsterNode?.SetLurking(_rng.Next(0, 12));
@@ -278,15 +393,15 @@ public partial class BreachManager : Node
 	{
 		var station = InteractableBatteryStation.GetStation(PowerSystemType.Siren)
 			?? InteractableBatteryStation.Instance;
-		if (station == null || !station.HasPower || station.BatteryHealth < 30)
+		if (station == null || !station.HasPower || station.BatteryHealth < 50)
 		{
 			int currentHp = station != null && station.HasBattery ? station.BatteryHealth : 0;
-			message = $"[!] INSUFFICIENT POWER! Siren requires 30% battery power (Current: {currentHp}%).";
+			message = $"[!] INSUFFICIENT POWER! Siren requires 50% battery power (Current: {currentHp}%).";
 			AudioManager.Sfx("window_rattle", -2f);
 			return false;
 		}
 
-		station.ConsumePower(30);
+		station.ConsumePower(50);
 		AudioManager.Sfx("siren");
 		RoofSiren.Instance?.Activate(2.5f);
 
@@ -295,11 +410,11 @@ public partial class BreachManager : Node
 
 		if (RepelBySiren())
 		{
-			message = "[✓] SIREN BLASTED (-30% PWR)! ANI-ANI SCARED AWAY INTO THE WOODS!";
+			message = "[✓] SIREN BLASTED (-50% PWR)! ANI-ANI SCARED AWAY INTO THE WOODS!";
 		}
 		else
 		{
-			message = "[!] SIREN BLASTED (-30% PWR)! No active Ani-Ani threat in range.";
+			message = "[!] SIREN BLASTED (-50% PWR)! No active Ani-Ani threat in range.";
 		}
 
 		HUDNode?.SetInteractionPrompt(message);
@@ -322,11 +437,7 @@ public partial class BreachManager : Node
 	public void TriggerBreach(string reason)
 	{
 		DeathScenario scenario = DeathScenario.HouseBreach;
-		if (NightCameraNode != null && NightCameraNode.IsNightMode)
-		{
-			scenario = DeathScenario.CCTVAmbush;
-		}
-		else if (PlayerNode != null && !PlayerNode.IsIndoors)
+		if (PlayerNode != null && !PlayerNode.IsIndoors)
 		{
 			scenario = DeathScenario.CaughtOutsideNight;
 		}
@@ -341,6 +452,16 @@ public partial class BreachManager : Node
 		_isNight = false;
 		ResetAttack();
 		EmitSignal(SignalName.BreachOccurred, reason);
+
+		// If viewing CCTV monitor, immediately pull player off CCTV so normal house breach fling plays
+		if (NightCameraNode != null && NightCameraNode.IsNightMode)
+		{
+			NightCameraNode.ApplyMode(false);
+			if (scenario == DeathScenario.CCTVAmbush)
+			{
+				scenario = DeathScenario.HouseBreach;
+			}
+		}
 
 		// Lock player controls during cinematic death sequence
 		if (PlayerNode != null)
@@ -561,6 +682,7 @@ public partial class BreachManager : Node
 		MonsterNode?.PlayDeathHouseFling(
 			breachOpeningPos: openingPos,
 			playerInsidePos: playerPos,
+			outdoorLandingPos: outdoorLandingPos,
 			openingYaw: openingYaw,
 			onFlingThrow: () =>
 			{

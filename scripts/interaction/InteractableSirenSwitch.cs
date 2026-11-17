@@ -6,11 +6,16 @@
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Nov 15, 2026 | air : Created physical cabin emergency siren push-button interactable
+// - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB] Sound Perimeter Siren'
+// - Nov 17, 2026 | air : Added SirenActivated event for interactive tutorial verification
 // =========================================================================================
 using Godot;
+using System;
 
 public partial class InteractableSirenSwitch : InteractableBase
 {
+	public static event Action SirenActivated;
+
 	[ExportGroup("Dependencies")]
 	[Export] public BreachManager BreachManagerNode;
 	[Export] public MeshInstance3D ButtonMesh;
@@ -38,7 +43,7 @@ public partial class InteractableSirenSwitch : InteractableBase
 			return $"[!] Siren Offline (Requires 30% Siren Battery | Current: {hp}%)";
 		}
 
-		return $"Left Click to Sound Perimeter Siren (Cost: 30% | Siren Batt: {hp}%)";
+		return $"[E / LMB] Sound Perimeter Siren (Cost: 30% | Siren Batt: {hp}%)";
 	}
 
 	protected override void OnInteract(PlayerController player)
@@ -57,5 +62,6 @@ public partial class InteractableSirenSwitch : InteractableBase
 
 		BreachManagerNode.ActivateSiren(out string message);
 		_hud?.SetInteractionPrompt(message);
+		SirenActivated?.Invoke();
 	}
 }

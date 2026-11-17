@@ -48,12 +48,24 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.25, 0.22, 0.3, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dossier_card"]
+bg_color = Color(0.05, 0.045, 0.07, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.18, 0.26, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "FilterAllButton", "FilterVictoriesButton", "LeaderboardSearchInput", "HowToPlayModal", "CloseHowToPlayButton", "TutorialConfirmModal", "ConfirmTutorialButton", "CancelTutorialButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
+[node name="MainMenu" type="Control" unique_id=1779758231 node_paths=PackedStringArray("PlayButton", "SettingsButton", "LeaderboardButton", "HowToPlayButton", "QuitButton", "CurrentProfileLabel", "NameEntryModal", "NameInput", "PinInput", "StartGameButton", "CancelNameButton", "NameErrorLabel", "PinHintLabel", "SettingsModal", "AudioTabButton", "DisplayTabButton", "ControlsTabButton", "AudioCategory", "DisplayCategory", "ControlsCategory", "MasterSlider", "MasterValLabel", "MusicSlider", "MusicValLabel", "SFXSlider", "SFXValLabel", "ResolutionOption", "AspectOption", "FullscreenCheck", "VSyncCheck", "RenderScaleSlider", "RenderScaleValLabel", "ScalingModeOption", "MaxFpsOption", "ShowFpsCheck", "FovSlider", "FovValLabel", "SensitivitySlider", "SensitivityValLabel", "InvertYCheck", "HeadbobCheck", "ScreenShakeCheck", "ConfirmExitCheck", "ResetDefaultsButton", "CloseSettingsButton", "LeaderboardModal", "LifetimeStatsLabel", "LeaderboardRowsContainer", "CloseLeaderboardButton", "FilterAllButton", "FilterVictoriesButton", "LeaderboardSearchInput", "DossierModal", "DossierTitleLabel", "DossierSubtitleLabel", "DossierCombatStatsLabel", "DossierFieldStatsLabel", "DossierStatsGridLabel", "CloseDossierButton", "HowToPlayModal", "CloseHowToPlayButton", "TutorialConfirmModal", "ConfirmTutorialButton", "CancelTutorialButton", "BackendOption", "ApplyLitePresetButton", "GpuInfoLabel", "RestartNoticeContainer", "RestartNowButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -69,9 +81,11 @@ QuitButton = NodePath("MainContent/ButtonsContainer/QuitButton")
 CurrentProfileLabel = NodePath("MainContent/ProfileBadge/ProfileLabel")
 NameEntryModal = NodePath("Modals/NameEntryModal")
 NameInput = NodePath("Modals/NameEntryModal/Panel/VBox/InputContainer/NameInput")
+PinInput = NodePath("Modals/NameEntryModal/Panel/VBox/InputContainer/PinInput")
 StartGameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/StartButton")
 CancelNameButton = NodePath("Modals/NameEntryModal/Panel/VBox/ButtonContainer/CancelButton")
 NameErrorLabel = NodePath("Modals/NameEntryModal/Panel/VBox/ErrorLabel")
+PinHintLabel = NodePath("Modals/NameEntryModal/Panel/VBox/PinHint")
 SettingsModal = NodePath("Modals/SettingsModal")
 AudioTabButton = NodePath("Modals/SettingsModal/Panel/VBox/TabHeader/AudioTabBtn")
 DisplayTabButton = NodePath("Modals/SettingsModal/Panel/VBox/TabHeader/DisplayTabBtn")
@@ -106,6 +120,7 @@ SensitivityValLabel = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer
 InvertYCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/InvertYCheck")
 HeadbobCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/HeadbobCheck")
 ScreenShakeCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/ShakeCheck")
+ConfirmExitCheck = NodePath("Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox/ConfirmExitCheck")
 ResetDefaultsButton = NodePath("Modals/SettingsModal/Panel/VBox/BottomBar/ResetDefaultsBtn")
 CloseSettingsButton = NodePath("Modals/SettingsModal/Panel/VBox/BottomBar/CloseButton")
 LeaderboardModal = NodePath("Modals/LeaderboardModal")
@@ -115,6 +130,13 @@ CloseLeaderboardButton = NodePath("Modals/LeaderboardModal/Panel/VBox/CloseButto
 FilterAllButton = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/FilterAllBtn")
 FilterVictoriesButton = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/FilterVictoriesBtn")
 LeaderboardSearchInput = NodePath("Modals/LeaderboardModal/Panel/VBox/QueryBar/SearchInput")
+DossierModal = NodePath("Modals/DossierModal")
+DossierTitleLabel = NodePath("Modals/DossierModal/Panel/VBox/Title")
+DossierSubtitleLabel = NodePath("Modals/DossierModal/Panel/VBox/Subtitle")
+DossierCombatStatsLabel = NodePath("Modals/DossierModal/Panel/VBox/CardsContainer/CombatPanel/CombatVBox/CombatStatsLabel")
+DossierFieldStatsLabel = NodePath("Modals/DossierModal/Panel/VBox/CardsContainer/FieldPanel/FieldVBox/FieldStatsLabel")
+DossierStatsGridLabel = NodePath("Modals/DossierModal/Panel/VBox/StatsGrid")
+CloseDossierButton = NodePath("Modals/DossierModal/Panel/VBox/CloseButton")
 HowToPlayModal = NodePath("Modals/HowToPlayModal")
 CloseHowToPlayButton = NodePath("Modals/HowToPlayModal/Panel/VBox/CloseButton")
 TutorialConfirmModal = NodePath("Modals/TutorialConfirmModal")
@@ -279,17 +301,17 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
 [node name="Panel" type="Panel" parent="Modals/NameEntryModal" unique_id=1969949479]
-custom_minimum_size = Vector2(500, 260)
+custom_minimum_size = Vector2(520, 310)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -130.0
-offset_right = 250.0
-offset_bottom = 130.0
+offset_left = -260.0
+offset_top = -155.0
+offset_right = 260.0
+offset_bottom = 155.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -300,12 +322,12 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 30.0
-offset_top = 25.0
+offset_top = 22.0
 offset_right = -30.0
-offset_bottom = -25.0
+offset_bottom = -22.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Modals/NameEntryModal/Panel/VBox" unique_id=1524078526]
 layout_mode = 2
@@ -317,28 +339,46 @@ horizontal_alignment = 1
 [node name="Subtitle" type="Label" parent="Modals/NameEntryModal/Panel/VBox" unique_id=211788546]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
-theme_override_font_sizes/font_size = 15
-text = "Enter your callsign to enter the farmstead:"
+theme_override_font_sizes/font_size = 14
+text = "Enter callsign & 4-digit security PIN to access your account:"
 horizontal_alignment = 1
 
 [node name="InputContainer" type="HBoxContainer" parent="Modals/NameEntryModal/Panel/VBox" unique_id=1224433045]
 layout_mode = 2
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="NameInput" type="LineEdit" parent="Modals/NameEntryModal/Panel/VBox/InputContainer" unique_id=1648871827]
-custom_minimum_size = Vector2(340, 42)
+custom_minimum_size = Vector2(280, 42)
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
-placeholder_text = "Enter callsign..."
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+placeholder_text = "Callsign..."
 alignment = 1
 max_length = 20
+
+[node name="PinInput" type="LineEdit" parent="Modals/NameEntryModal/Panel/VBox/InputContainer" unique_id=1648871828]
+custom_minimum_size = Vector2(140, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+placeholder_text = "PIN (4 digits)"
+alignment = 1
+max_length = 4
+secret = true
+
+[node name="PinHint" type="Label" parent="Modals/NameEntryModal/Panel/VBox" unique_id=2084924772]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.65, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "New callsign? Sets your PIN. Returning survivor? Enter PIN to log in."
+horizontal_alignment = 1
 
 [node name="ErrorLabel" type="Label" parent="Modals/NameEntryModal/Panel/VBox" unique_id=2084924771]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 13
-text = "Invalid callsign."
+text = "Invalid callsign or PIN."
 horizontal_alignment = 1
 
 [node name="ButtonContainer" type="HBoxContainer" parent="Modals/NameEntryModal/Panel/VBox" unique_id=1300261957]
@@ -756,6 +796,12 @@ theme_override_font_sizes/font_size = 15
 button_pressed = true
 text = "House Attack Screen Shake (Cabin Shudder)"
 
+[node name="ConfirmExitCheck" type="CheckBox" parent="Modals/SettingsModal/Panel/VBox/ContentContainer/ControlsCategory/TogglesVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+button_pressed = true
+text = "Confirm Restart & Title Exit"
+
 [node name="BottomBar" type="HBoxContainer" parent="Modals/SettingsModal/Panel/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 16
@@ -880,6 +926,152 @@ theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "BACK"
+
+[node name="DossierModal" type="ColorRect" parent="Modals" unique_id=1778921101]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Panel" type="Panel" parent="Modals/DossierModal" unique_id=1778921102]
+custom_minimum_size = Vector2(640, 520)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -260.0
+offset_right = 320.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Modals/DossierModal/Panel" unique_id=1778921103]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 22.0
+offset_right = -28.0
+offset_bottom = -22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="HeaderBadge" type="Label" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921110]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.25, 0.25, 1)
+theme_override_font_sizes/font_size = 11
+text = "[ TOP SECRET // OPEN CHAMBER SURVIVOR DOSSIER ]"
+horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921104]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.25, 1)
+theme_override_font_sizes/font_size = 22
+text = "SURVIVOR DOSSIER"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921105]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.7, 1)
+theme_override_font_sizes/font_size = 13
+text = "Registered Survivor Clearance & Incident Record"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921106]
+layout_mode = 2
+
+[node name="CardsContainer" type="HBoxContainer" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921111]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="CombatPanel" type="Panel" parent="Modals/DossierModal/Panel/VBox/CardsContainer" unique_id=1778921112]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_dossier_card")
+
+[node name="CombatVBox" type="VBoxContainer" parent="Modals/DossierModal/Panel/VBox/CardsContainer/CombatPanel" unique_id=1778921113]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="CombatHeader" type="Label" parent="Modals/DossierModal/Panel/VBox/CardsContainer/CombatPanel/CombatVBox" unique_id=1778921114]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+text = "SURVIVAL & RUN RECORD"
+
+[node name="CombatStatsLabel" type="Label" parent="Modals/DossierModal/Panel/VBox/CardsContainer/CombatPanel/CombatVBox" unique_id=1778921115]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.9, 0.88, 1)
+theme_override_font_sizes/font_size = 13
+text = "Loading combat record..."
+vertical_alignment = 1
+
+[node name="FieldPanel" type="Panel" parent="Modals/DossierModal/Panel/VBox/CardsContainer" unique_id=1778921116]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_dossier_card")
+
+[node name="FieldVBox" type="VBoxContainer" parent="Modals/DossierModal/Panel/VBox/CardsContainer/FieldPanel" unique_id=1778921117]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="FieldHeader" type="Label" parent="Modals/DossierModal/Panel/VBox/CardsContainer/FieldPanel/FieldVBox" unique_id=1778921118]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.75, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "FIELD WORK & DEFENSES"
+
+[node name="FieldStatsLabel" type="Label" parent="Modals/DossierModal/Panel/VBox/CardsContainer/FieldPanel/FieldVBox" unique_id=1778921119]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.9, 0.88, 1)
+theme_override_font_sizes/font_size = 13
+text = "Loading field record..."
+vertical_alignment = 1
+
+[node name="StatsGrid" type="Label" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921107]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CloseButton" type="Button" parent="Modals/DossierModal/Panel/VBox" unique_id=1778921108]
+custom_minimum_size = Vector2(170, 38)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "CLOSE DOSSIER"
 
 [node name="HowToPlayModal" type="ColorRect" parent="Modals" unique_id=937784927]
 visible = false

@@ -8,6 +8,7 @@
 // Change Log:
 // - Nov 15, 2026 | air : Implemented lore onboarding and 5-stage interactive Roblox-style tutorial
 // - Nov 15, 2026 | air : Updated step descriptions to reflect CCTV siren & floodlight defense instead of barricades
+// - Nov 17, 2026 | air : Updated tutorial step prompts to match streamlined dual-key controls and physical siren switch loop
 // =========================================================================================
 using Godot;
 using System;
@@ -191,7 +192,7 @@ public partial class TutorialManager : CanvasLayer
 				ShowQuest(
 					"STEP 1 / 5",
 					"CULTIVATE THE WALING-WALING",
-					"Equip your Level 1 Seed (Scroll Wheel to Slot 1) and [Left Click] or [E] on any empty chessboard tile to plant the cure."
+					"Equip your Level 1 Seed (Scroll Wheel or [1-3] to Slot 1) and press [E / LMB] on any empty chessboard tile to plant the cure."
 				);
 				WaypointArrow?.SetTarget(FarmCenter, "FARM CHESSBOARD");
 				break;
@@ -200,7 +201,7 @@ public partial class TutorialManager : CanvasLayer
 				ShowQuest(
 					"STEP 2 / 5",
 					"GRAFT & MERGE HIGHER TIERS",
-					"When flowers bloom, [Left Click & Drag] one mature flower onto an identical bloom to merge them into a higher, more valuable tier."
+					"When flowers bloom, press [E / LMB] to drag one mature flower onto an identical bloom to merge them into a higher tier, or [F / RMB] to harvest."
 				);
 				Vector3 flowerPos = GetFirstPlantedCropPos() ?? FarmCenter;
 				WaypointArrow?.SetTarget(flowerPos, "BLOOMING FLOWER");
@@ -210,7 +211,7 @@ public partial class TutorialManager : CanvasLayer
 				ShowQuest(
 					"STEP 3 / 5",
 					"THE SCAVENGER MERCHANT",
-					"Approach the Scavenger Merchant's Hot Air Balloon. Press [Left Click] or [E] to trade harvested flowers for coins, seeds, and car batteries."
+					"Approach the Scavenger Merchant's Hot Air Balloon. Press [F / RMB] to quick sell held items, or [E / LMB] to open the shop menu."
 				);
 				Vector3 balloonPos = BalloonShop?.GlobalPosition ?? BalloonDefaultPos;
 				WaypointArrow?.SetTarget(balloonPos + new Vector3(0, 1.0f, 0), "SCAVENGER BALLOON");
@@ -220,7 +221,7 @@ public partial class TutorialManager : CanvasLayer
 				ShowQuest(
 					"STEP 4 / 5",
 					"RETREAT TO TRANSMISSION TOWER",
-					"The canyon sun burns fast. Climb the ladder up to your rotting shack on the colossal transmission tower before dusk."
+					"The canyon sun burns fast. Climb the knot ladder [E / LMB] up to your rotting shack on the colossal transmission tower before dusk."
 				);
 				WaypointArrow?.SetTarget(HouseLadderPos, "TOWER LADDER");
 				break;
@@ -229,7 +230,7 @@ public partial class TutorialManager : CanvasLayer
 				ShowQuest(
 					"STEP 5 / 5",
 					"SPARK-CELLS & CCTV DEFENSE",
-					"Pick up the Spark-Cell battery [Space] and insert it into the Power Station, then inspect the CCTV Desk [Left Click] to monitor the Ani-Ani outside. Spot it on cameras and trigger Sirens or Floodlights to repel it!"
+					"Pick up the Spark-Cell battery [E / Space] and insert it into the Power Station [E / LMB], then inspect the CCTV Desk [E / LMB] to monitor the Ani-Ani outside. Spot it on cameras, then exit the desk [E / ESC] to sound the cabin Siren switch or fire perimeter Floodlights!"
 				);
 				WaypointArrow?.SetTarget(HouseInteriorPos + new Vector3(0, 0.5f, 0), "TOWER CCTV DESK");
 				break;
