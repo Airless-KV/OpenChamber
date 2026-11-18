@@ -846,6 +846,13 @@ collision_mask = 0
 script = ExtResource("6_world_item")
 ItemType = 2
 
+[node name="StarterCarBattery_02" type="StaticBody3D" parent="." unique_id=849201925]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, 0.2, -1.6)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("6_world_item")
+ItemType = 2
+
 [node name="CryoFreezer" parent="." unique_id=987654321 instance=ExtResource("8_freezer")]
 transform = Transform3D(0.7759668, 0, 0.6307738, 0, 1, 0, -0.6307738, 0, 0.7759668, -1.8847836, 0, -1.8)
 

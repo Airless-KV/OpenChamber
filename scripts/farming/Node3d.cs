@@ -5,7 +5,7 @@
 //                   - 5 flower tier materials (White/Yellow to Emerald Green) & scoring
 //                   - Raycasting mouse hover detection and TileSelector box
 //                   - Seed economy consumption & flower harvesting for coins
-//                   - Staged growth timer system (Tier 1: 30s -> Tier 5: 3 min) and scaled profit
+//                   - Staged growth timer system (Tier 1: 15s -> Tier 5: 90s) and scaled profit
 // -----------------------------------------------------------------------------------------
 // Change Log:
 // - Oct 24, 2026 | air : Streamlined grid coordinate math, fallback mesh generation, and scoring queries for Alpha build
@@ -27,6 +27,7 @@
 // - Nov 15, 2026 | air : Supported planting seeds of any tier level (Level 1-5) based on active held seed FlowerTier
 // - Nov 17, 2026 | air : Unified farming controls with dual-scheme input ([E]/[LMB] plant & drag, [F]/[RMB] harvest & cancel) and streamlined prompts
 // - Nov 17, 2026 | air : Added CropHarvested signal and ForceBloomAllCrops for interactive tutorial progression
+// - Nov 18, 2026 | air : Rebalanced flower cultivation growth times (Daisy 15s, Sunburst 30s, Sunset Coral 45s, Crimson Rose 65s, Emerald Bloom 90s) for faster blooming
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ public partial class Node3d : Node3D
 	};
 
 	public static readonly int[] TierPoints = { 5, 10, 15, 20, 25 };
-	public static readonly float[] GrowthTimes = { 30.0f, 60.0f, 90.0f, 135.0f, 180.0f };
+	public static readonly float[] GrowthTimes = { 15.0f, 30.0f, 45.0f, 65.0f, 90.0f };
 	public static readonly int[] HarvestCoins = { 3, 8, 20, 45, 100 };
 
 	[ExportGroup("Grid Dimensions")]
