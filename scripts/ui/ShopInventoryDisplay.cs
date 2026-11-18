@@ -9,6 +9,7 @@
 // - Nov 14, 2026 | air : Added dynamic Car Battery and Rusted Crowbar shop buttons and real-time inventory counter
 // - Nov 15, 2026 | air : Added BuyFreezerButton integration for Cryo-Freezer flower storage
 // - Nov 17, 2026 | air : Removed freezer purchase option; dynamically bound seed and battery button labels and tooltips to ShopCatalog prices
+// - Nov 18, 2026 | air : Added dynamic merchant daily battery stock display to shop button and synced with day phase transitions
 // =========================================================================================
 using Godot;
 
@@ -23,9 +24,15 @@ public partial class ShopInventoryDisplay : Label
 		if (gm != null)
 		{
 			gm.InventoryChanged += UpdateText;
+			gm.PhaseChanged += OnPhaseChangedUpdate;
 		}
 
 		Callable.From(InitializeShopComponents).CallDeferred();
+	}
+
+	private void OnPhaseChangedUpdate(bool isDay, int currentDay)
+	{
+		UpdateText();
 	}
 
 	private void InitializeShopComponents()
@@ -137,6 +144,14 @@ public partial class ShopInventoryDisplay : Label
 				if (!_carriedInv.Slots[i].IsOccupied) continue;
 				if (_carriedInv.Slots[i].Type == ItemType.CarBattery) batteries++;
 			}
+		}
+
+		var gm = GetTree().Root.FindChild("GameManager", true, false) as GameManager;
+		if (_buyBatteryBtn != null && IsInstanceValid(_buyBatteryBtn) && gm != null)
+		{
+			var batteryItem = ShopCatalog.Get(ShopCatalog.BatteryId);
+			string baseText = batteryItem != null ? $"{batteryItem.DisplayName} ({batteryItem.Price}c)" : "Car Battery (15c)";
+			_buyBatteryBtn.Text = $"{baseText} [{gm.DailyBatteryStock} Left]";
 		}
 
 		Text = $"Carried: {batteries} Battery";

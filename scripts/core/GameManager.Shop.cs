@@ -20,6 +20,7 @@
 // - Nov 16, 2026 | air : Reordered outdoor freezer spawning to AddChild before setting GlobalPosition
 // - Nov 17, 2026 | air : Added daily limited Car Battery stock (1/day) to prevent battery hoarding
 // - Nov 17, 2026 | air : Synchronized SeedCost with ShopCatalog seed price (100 coins) and removed freezer shop purchasing
+// - Nov 18, 2026 | air : Scaled merchant daily battery stock progressively by day (Day 1-2: 1/day, Day 3-4: 2/day, Day 5+: 3/day)
 // =========================================================================================
 using Godot;
 using System.Linq;
@@ -33,6 +34,13 @@ public partial class GameManager
 	public int Barriers { get; private set; } = 0;
 	public bool HasAxe { get; private set; } = false;
 	public int DailyBatteryStock { get; private set; } = 1;
+
+	public static int GetMaxDailyBatteryStock(int day)
+	{
+		if (day >= 5) return 3;
+		if (day >= 3) return 2;
+		return 1;
+	}
 
 	private int _lastObservedSeeds = -1;
 
@@ -50,6 +58,7 @@ public partial class GameManager
 			Level1Seeds = 3;
 		}
 		_lastObservedSeeds = Level1Seeds;
+		DailyBatteryStock = GetMaxDailyBatteryStock(CurrentDay);
 
 		SeedsChanged += OnSeedsChangedInventorySync;
 		PhaseChanged += OnPhaseChangedShopStockReset;
@@ -59,7 +68,7 @@ public partial class GameManager
 	{
 		if (isDay)
 		{
-			DailyBatteryStock = 1;
+			DailyBatteryStock = GetMaxDailyBatteryStock(currentDay);
 		}
 	}
 
@@ -170,7 +179,7 @@ public partial class GameManager
 		if (id == ShopCatalog.BatteryId && DailyBatteryStock <= 0)
 		{
 			var hud = GetTree()?.Root.FindChild("HUD", true, false) as HUDManager;
-			hud?.SetInteractionPrompt("[!] OUT OF STOCK! The Balloon Merchant only carries 1 Car Battery per day.");
+			hud?.SetInteractionPrompt($"[!] OUT OF STOCK! The Balloon Merchant has sold out of Car Batteries for today (Day {CurrentDay} limit: {GetMaxDailyBatteryStock(CurrentDay)}).");
 			return false;
 		}
 

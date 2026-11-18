@@ -8,6 +8,7 @@
 // - Oct 24, 2026 | air : Streamlined score calculation and breakdown string formatting for Alpha build
 // - Oct 30, 2026 | air : Integrated persistent SaveManager for recording victories and ranking leaderboard
 // - Nov 07, 2026 | air : Released mouse cursor, paused gameplay tree, and added MainMenuButton
+// - Nov 18, 2026 | air : Unified victory tally to count all flowers across grid, inventory, freezers, and world entities
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -68,7 +69,7 @@ public partial class VictoryScreen : CanvasLayer
 		Visible = true;
 		GetTree().Paused = true;
 		Input.MouseMode = Input.MouseModeEnum.Visible;
-		var tiers = gridManager?.GetFlowerTierCounts() ?? new Dictionary<int, int> { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 } };
+		var tiers = gridManager?.GetAllFlowerTierCounts() ?? gridManager?.GetFlowerTierCounts() ?? Node3d.CollectAllFlowerCounts(GetTree());
 		int coins = gameManager?.Coins ?? 0;
 
 		int p1 = tiers[1] * 5, p2 = tiers[2] * 10, p3 = tiers[3] * 15, p4 = tiers[4] * 20, p5 = tiers[5] * 25;

@@ -1,7 +1,7 @@
 // =========================================================================================
 // Original Author : air (Airless-KV) - Nov 15, 2026
 // Responsibilities: - Dual-dock Battery Charge Transfer Station
-//                   - Real-time automatic charge transfer between two docked batteries (1% per 2s)
+//                   - Real-time automatic charge transfer between two docked batteries (1% per 0.5s)
 //                   - Aim-aware dock targeting for placing/retrieving into Slot A or Slot B independently
 //                   - Real-time LED bar levels, digital status displays, and electrical audio SFX
 // -----------------------------------------------------------------------------------------
@@ -11,6 +11,7 @@
 // - Nov 16, 2026 | air : Implemented aim-aware dock placement and automatic transfer at 1% per 2s
 // - Nov 17, 2026 | air : Streamlined prompt format to '[E / LMB]' convention
 // - Nov 17, 2026 | air : Added BatteryTransferInteracted event for interactive tutorial verification
+// - Nov 18, 2026 | air : Accelerated battery charge transfer speed to 1% per 0.5s (TransferInterval = 0.5f)
 // =========================================================================================
 using Godot;
 using System;
@@ -28,7 +29,7 @@ public partial class InteractableBatteryTransfer : InteractableBase
 	[Export] public int BatteryBHealth { get; set; } = 0;
 
 	[ExportGroup("Transfer Settings")]
-	[Export] public float TransferInterval { get; set; } = 2.0f; // 1% per 2 seconds
+	[Export] public float TransferInterval { get; set; } = 0.5f; // 1% per 0.5 seconds
 
 	[ExportGroup("Visual References")]
 	[Export] public Node3D BatteryAVisual;

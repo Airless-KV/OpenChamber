@@ -35,6 +35,7 @@
 // - Nov 17, 2026 | air : Removed approach warnings so players must spot Ani-Ani manually on CCTV; pull off CCTV into house breach fling
 // - Nov 17, 2026 | air : Implemented daily difficulty scaling (Days 1-7) and increased siren consumption to 50% power
 // - Nov 17, 2026 | air : Implemented ThreatAlert FIFO Queue and SurveillanceGraph with Breadth-First Search (BFS)
+// - Nov 18, 2026 | air : Updated FinishDeathSequence to pass flower tier counts into ShowDefeatSummary for complete score tracking on death
 // =========================================================================================
 using Godot;
 using System;
@@ -799,10 +800,14 @@ public partial class BreachManager : Node
 
 	private void FinishDeathSequence(string reason)
 	{
+		var flowerCounts = GridManagerNode?.GetAllFlowerTierCounts() 
+			?? Node3d.CollectAllFlowerCounts(GetTree());
+
 		JumpScareScreenNode?.ShowDefeatSummary(
 			reason,
 			GameManagerNode?.CurrentDay ?? 1,
-			GameManagerNode?.Coins ?? 0
+			GameManagerNode?.Coins ?? 0,
+			flowerCounts
 		);
 	}
 

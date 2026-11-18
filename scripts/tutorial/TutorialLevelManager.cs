@@ -15,6 +15,7 @@
 // - Nov 17, 2026 | air : Removed manual cursor toggle hotkeys; cursor is captured and only toggles visible when opening the Cryo-Freezer
 // - Nov 17, 2026 | air : Overhauled tutorial to verify all interactables, visit shop, and copy normal game Day 7 Night defense
 // - Nov 17, 2026 | air : Added [K] hotkey to skip tutorial, set default cursor to off (Captured), and added [Alt] cursor toggle
+// - Nov 18, 2026 | air : Updated battery transfer tutorial objective description to reflect 1% per 0.5s transfer rate
 // =========================================================================================
 using Godot;
 using System;
@@ -408,7 +409,7 @@ public partial class TutorialLevelManager : CanvasLayer
 				ShowQuest(
 					"STEP 11 / 14 - POWER & DEFENSE",
 					"BATTERY CHARGE TRANSFER MACHINE: [E / LMB]",
-					"Approach the dual-dock Battery Transfer Machine. Aim at Slot A or Slot B with a battery and press [E / LMB] to dock it for automated charge balancing (1% per 2s). Press [E / LMB] again to retrieve."
+					"Approach the dual-dock Battery Transfer Machine. Aim at Slot A or Slot B with a battery and press [E / LMB] to dock it for automated charge balancing (1% per 0.5s). Press [E / LMB] again to retrieve."
 				);
 				Vector3 transferPos = _batteryTransferNode?.GlobalPosition ?? BatteryTransferDefaultPos;
 				WaypointArrow?.SetTarget(transferPos, "BATTERY TRANSFER MACHINE");

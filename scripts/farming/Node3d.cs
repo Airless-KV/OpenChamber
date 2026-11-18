@@ -28,6 +28,7 @@
 // - Nov 17, 2026 | air : Unified farming controls with dual-scheme input ([E]/[LMB] plant & drag, [F]/[RMB] harvest & cancel) and streamlined prompts
 // - Nov 17, 2026 | air : Added CropHarvested signal and ForceBloomAllCrops for interactive tutorial progression
 // - Nov 18, 2026 | air : Rebalanced flower cultivation growth times (Daisy 15s, Sunburst 30s, Sunset Coral 45s, Crimson Rose 65s, Emerald Bloom 90s) for faster blooming
+// - Nov 18, 2026 | air : Added GetAllFlowerTierCounts, CollectAllFlowerCounts, and CalculatePointsFromTiers for comprehensive scoring across grid, inventory, freezer, and world
 // =========================================================================================
 using Godot;
 using System.Collections.Generic;
@@ -615,6 +616,116 @@ public partial class Node3d : Node3D
 			if (t.State == TileState.Planted && t.Tier is >= 1 and <= 5)
 				counts[t.Tier]++;
 		return counts;
+	}
+
+	public Dictionary<int, int> GetAllFlowerTierCounts()
+	{
+		var counts = GetFlowerTierCounts();
+
+		// Count flowers carried in player inventory
+		var player = PlayerNode ?? GetTree()?.GetFirstNodeInGroup("Player") as PlayerController;
+		if (player?.GetNodeOrNull<CarriedInventory>("CarriedInventory") is { } inv)
+		{
+			foreach (var slot in inv.Slots)
+			{
+				if (slot.IsOccupied && slot.Type == ItemType.Flower && slot.FlowerTier is >= 1 and <= 5)
+					counts[slot.FlowerTier]++;
+			}
+		}
+
+		// Count flowers stored in all Cryo-Freezers
+		var freezers = GetTree()?.GetNodesInGroup("Freezers");
+		if (freezers != null)
+		{
+			foreach (var node in freezers)
+			{
+				if (node is InteractableFreezer freezer && freezer.Slots != null)
+				{
+					foreach (var slot in freezer.Slots)
+					{
+						if (slot.IsOccupied && slot.Type == ItemType.Flower && slot.FlowerTier is >= 1 and <= 5)
+							counts[slot.FlowerTier]++;
+					}
+				}
+			}
+		}
+
+		// Count loose flower WorldItems in the scene
+		var worldItems = GetTree()?.GetNodesInGroup("WorldItems");
+		if (worldItems != null)
+		{
+			foreach (var node in worldItems)
+			{
+				if (node is WorldItem item && item.ItemType == ItemType.Flower && item.FlowerTier is >= 1 and <= 5)
+					counts[item.FlowerTier]++;
+			}
+		}
+
+		return counts;
+	}
+
+	public static Dictionary<int, int> CollectAllFlowerCounts(SceneTree tree)
+	{
+		var counts = new Dictionary<int, int> { { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 5, 0 } };
+		if (tree == null) return counts;
+
+		var grid = tree.Root.FindChild("GridManager", true, false) as Node3d;
+		if (grid != null)
+		{
+			var gridCounts = grid.GetFlowerTierCounts();
+			for (int t = 1; t <= 5; t++)
+				counts[t] += gridCounts.GetValueOrDefault(t, 0);
+		}
+
+		var player = tree.GetFirstNodeInGroup("Player") as PlayerController;
+		if (player?.GetNodeOrNull<CarriedInventory>("CarriedInventory") is { } inv)
+		{
+			foreach (var slot in inv.Slots)
+			{
+				if (slot.IsOccupied && slot.Type == ItemType.Flower && slot.FlowerTier is >= 1 and <= 5)
+					counts[slot.FlowerTier]++;
+			}
+		}
+
+		var freezers = tree.GetNodesInGroup("Freezers");
+		if (freezers != null)
+		{
+			foreach (var node in freezers)
+			{
+				if (node is InteractableFreezer freezer && freezer.Slots != null)
+				{
+					foreach (var slot in freezer.Slots)
+					{
+						if (slot.IsOccupied && slot.Type == ItemType.Flower && slot.FlowerTier is >= 1 and <= 5)
+							counts[slot.FlowerTier]++;
+					}
+				}
+			}
+		}
+
+		var worldItems = tree.GetNodesInGroup("WorldItems");
+		if (worldItems != null)
+		{
+			foreach (var node in worldItems)
+			{
+				if (node is WorldItem item && item.ItemType == ItemType.Flower && item.FlowerTier is >= 1 and <= 5)
+					counts[item.FlowerTier]++;
+			}
+		}
+
+		return counts;
+	}
+
+	public static int CalculatePointsFromTiers(Dictionary<int, int> tierCounts)
+	{
+		if (tierCounts == null) return 0;
+		int total = 0;
+		for (int tier = 1; tier <= 5; tier++)
+		{
+			if (tierCounts.TryGetValue(tier, out int count))
+				total += count * (tier * 5);
+		}
+		return total;
 	}
 
 	public Vector2I? GetHighestTierPlantedCell()

@@ -15,6 +15,7 @@
 // - Nov 15, 2026 | air : Preserved dummy entries for Plank, Barrier, and Axe to prevent HUD WireShopButton NullReferenceException
 // - Nov 17, 2026 | air : Rebalanced Car Battery price to 15 coins for power economy anti-spam
 // - Nov 17, 2026 | air : Decommissioned Cryo-Freezer from active purchase catalog
+// - Nov 18, 2026 | air : Updated Car Battery description to reflect progressive daily stock scaling (Day 1-2: 1/day, Day 3-4: 2/day, Day 5+: 3/day)
 // =========================================================================================
 using System.Collections.Generic;
 
@@ -41,7 +42,7 @@ public static class ShopCatalog
 		{ BarrierId, new ShopItem { Id = BarrierId, DisplayName = "Barrier", Price = 5, Description = "Defense barrier." } },
 		{ AxeId, new ShopItem { Id = AxeId, DisplayName = "Axe", Price = 10, Description = "Woodcutting axe." } },
 		{ SeedId, new ShopItem { Id = SeedId, DisplayName = "Level 1 Seed", Price = 100, Description = "Plantable seed to cultivate valuable flowers." } },
-		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 15, Description = "Powers cabin halogen floodlights and sirens. Limited stock (1/day)." } }
+		{ BatteryId, new ShopItem { Id = BatteryId, DisplayName = "Car Battery", Price = 15, Description = "Powers cabin halogen floodlights and sirens. Daily stock scales by day (Day 1-2: 1/day, Day 3-4: 2/day, Day 5+: 3/day)." } }
 	};
 
 	public static ShopItem Get(string id)

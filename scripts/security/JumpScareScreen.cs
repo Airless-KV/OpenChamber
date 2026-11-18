@@ -14,9 +14,11 @@
 // - Nov 14, 2026 | air : Implemented full-screen edge-to-edge jumpscare scaling, centered pivot lunge, and F11 fullscreen toggle
 // - Nov 15, 2026 | air : Added StartDeathVisuals and delayed ShowDefeatSummary for 3D animated death scenes
 // - Nov 15, 2026 | air : Added TriggerImpactFlash (receding vignette) and decoupled TriggerFadeToBlackout
+// - Nov 18, 2026 | air : Changed death scoring system to include all flower values in total score, database persistence, and defeat summary UI
 // =========================================================================================
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class JumpScareScreen : CanvasLayer
 {
@@ -138,7 +140,7 @@ public partial class JumpScareScreen : CanvasLayer
 		TriggerFadeToBlackout(1.0f, onBlackoutComplete);
 	}
 
-	public void ShowDefeatSummary(string reason, int currentDay, int coins)
+	public void ShowDefeatSummary(string reason, int currentDay, int coins, Dictionary<int, int> flowerCounts = null)
 	{
 		Visible = true;
 		GetTree().Paused = true;
@@ -147,10 +149,16 @@ public partial class JumpScareScreen : CanvasLayer
 		if (TitleLabel != null) TitleLabel.Text = "BREACH DETECTED";
 		if (ReasonLabel != null) ReasonLabel.Text = reason;
 
-		// Persist defeat run to local database
-		SaveManager.RecordGameResult(
+		// If flower counts were not passed, attempt discovery from active scene
+		flowerCounts ??= Node3d.CollectAllFlowerCounts(GetTree());
+
+		int flowerScore = Node3d.CalculatePointsFromTiers(flowerCounts);
+		int totalScore = flowerScore + coins;
+
+		// Persist defeat run to local database with full score including flower values
+		int rank = SaveManager.RecordGameResult(
 			SaveManager.CurrentData.Profile.PlayerName,
-			coins,
+			totalScore,
 			currentDay,
 			false,
 			coins,
@@ -160,7 +168,8 @@ public partial class JumpScareScreen : CanvasLayer
 		var prof = SaveManager.CurrentData.Profile;
 		if (StatsLabel != null)
 		{
-			StatsLabel.Text = $"SURVIVED UNTIL DAY {currentDay}  |  BEST DAY: {prof.HighestDayReached}  |  ATTEMPTS: {prof.TotalGamesPlayed}  |  COINS: {coins}";
+			string rankBadge = rank > 0 ? $"  |  RANK #{rank}" : "";
+			StatsLabel.Text = $"SCORE: {totalScore} PTS (FLOWERS: {flowerScore} | COINS: {coins}){rankBadge}  |  DAY {currentDay}  |  BEST: {prof.AllTimeHighScore} PTS";
 		}
 
 		if (MonsterImage != null)
@@ -176,13 +185,13 @@ public partial class JumpScareScreen : CanvasLayer
 		}
 	}
 
-	public void TriggerJumpScare(string reason, int currentDay, int coins)
+	public void TriggerJumpScare(string reason, int currentDay, int coins, Dictionary<int, int> flowerCounts = null)
 	{
 		StartDeathVisuals();
 		AudioManager.Sfx("jumpscare_stinger");
 		TriggerImpactFlashAndBlackout(() =>
 		{
-			ShowDefeatSummary(reason, currentDay, coins);
+			ShowDefeatSummary(reason, currentDay, coins, flowerCounts);
 		});
 	}
 }
